@@ -8,6 +8,7 @@ return {
       { path = "${3rd}/busted/library", words = { "it%(", "describe%(" } },
       { path = "${3rd}/luassert/library", words = { "assert" } },
       { path = "mini.test", words = { "MiniTest" } },
+      { path = "snacks.nvim", words = { "Snacks" } },
       { "nvim-dap-view" },
     },
   },

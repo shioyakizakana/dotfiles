@@ -60,7 +60,7 @@ require("lazy").setup({
     { import = get_editor("md-render") },
     { import = get_editor("min-surround")},
     { import = get_editor("mini-test") },
-    { "windwp/nvim-autopairs", event = "InsertEnter", config = true },
+--    { "windwp/nvim-autopairs", event = "InsertEnter", config = true },
     { "kylechui/nvim-surround", version = "^4.0.0", event = "VeryLazy" },
     { import = get_editor("tiny-cmdline")},
     { import = get_editor("treesj") },
@@ -70,7 +70,8 @@ require("lazy").setup({
     { import = get_utils("lazygit") },
     { import = get_utils("nvim-hlslens")},
     { import = get_utils("nvim-treesitter") },
-    { import = get_utils("telescope") },
+    { import = get_utils("snacks.index")},
+    -- { import = get_utils("telescope") },
     { import = get_utils("which-key") },
     -- skk
     { import = "plugins.skkeleton.index" },
