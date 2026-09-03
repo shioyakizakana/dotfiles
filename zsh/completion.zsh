@@ -16,7 +16,7 @@ mkdir -p "$ZSH_CACHE_DIR"
 # ------------------------------------------------------------
 
 fpath=(
-  "$HOME/.zsh/completions"
+  "$ZDIR/completions"
   $fpath
 )
 
