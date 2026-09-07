@@ -1,0 +1,48 @@
+[mgr]
+prepend_keymap = [
+  { on = "o", run = "create" },
+  { on = "q", run = "close" },
+  { on = "<C-i>", run = "forward" },
+  { on = "<C-o>", run = "back" },
+  { on = [ "g", "?", ], run = "help" },
+  { 
+    on = [ "i", "<Space>", ],
+    run = "cd --interactive",
+    desc = "パスを入力してcd"   
+  },
+  {
+    on = "-",
+    run = "leave",
+    desc = "[cd]親ディレクトリへ移動"
+  },
+  {
+    on = "<Enter>",
+    run = "plugin smart-enter",
+    desc = "[file]アクティブなファイルまたはフォルダを開く"
+  },
+  {
+    on = "<C-p>",
+    run = "plugin toggle-pane max-preview"
+  },
+  {
+    on = "e",
+    run = "plugin bunny"
+  },
+  {
+    on = [ "c", "m" ],
+    run = "plugin chmod"
+  },
+  {
+   on = [ "z", "f" ],
+   run = "plugin fzf"
+  },
+  {
+    on = [ "z", "i" ],
+    run = "plugin zoxide"
+  },
+]
+
+[input]
+prepend_keymap = [
+  { on = "<Esc>", run = "close", desc = "Cancel input" }
+]
