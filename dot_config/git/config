@@ -1,0 +1,26 @@
+[user]
+  email = shioyakizakna@gmail.com
+  name = shioyakizakana
+
+[core]
+  autoCRLF = false
+  pager = delta --side-by-side
+  quotepath = false
+  excludesfile = /home/shioyaki/.config/git/ignore
+
+[init]
+  defaultBranch = main
+
+[git "editor"]
+  default = nvim
+
+[interactive]
+  diffFilter = delta --color-only
+
+[delta]
+  navigate = true
+  light = false
+  line-numbers = true
+  keep-plus-minus-markers = true
+  hunk-header-style = "omit"
+  
