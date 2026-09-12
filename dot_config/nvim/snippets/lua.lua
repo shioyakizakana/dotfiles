@@ -1,65 +1,65 @@
-local ls = require('luasnip')
+local ls = require("luasnip")
 local s = ls.snippet
 local i = ls.insert_node
 local f = ls.function_node
-local fmt = require('luasnip.extras.fmt').fmt
+local fmt = require("luasnip.extras.fmt").fmt
 
 ---@param text string
 ---@return string
 local function dashsnake_to_pascal(text)
-  local parts = vim.split(text, '[_-]', { plain = false })
+  local parts = vim.split(text, "[_-]", { plain = false })
   for j, part in ipairs(parts) do
     parts[j] = part:sub(1, 1):upper() .. part:sub(2)
   end
-  return table.concat(parts, '')
+  return table.concat(parts, "")
 end
 
 return {
   s(
-    'snippet',
+    "snippet",
     fmt(
       [=[
         s(
-          '<trigger>',
+          "<trigger>",
           fmt(
             [[
               <text>
             ]],
-            { i(1, '<placeholder>') }
+            { i(1, "<placeholder>") }
           )
         ),
 
       ]=],
       {
-        trigger = i(1, 'trigger'),
-        text = i(2, 'text'),
-        placeholder = i(0, 'placeholder'),
+        trigger = i(1, "trigger"),
+        text = i(2, "text"),
+        placeholder = i(0, "placeholder"),
       },
-      { delimiters = '<>' }
+      { delimiters = "<>" }
     )
   ),
   s(
-    'snippet-require',
+    "snippet-require",
     fmt(
       [[
-        local ls = require('luasnip')
+        local ls = require("luasnip")
         local s = ls.snippet
         local i = ls.insert_node
-        local fmt = require('luasnip.extras.fmt').fmt
+        local fmt = require("luasnip.extras.fmt").fmt
         return {
           <>
         }
       ]],
-      { i(0, 'snippet') },
-      { delimiters = '<>' }
+      { i(0, "snippet") },
+      { delimiters = "<>" }
     )
   ),
   s(
-    'class',
+    "class",
     f(function(_, _, _)
       local plugin_name =
-      dashsnake_to_pascal(vim.fn.expand('%'):match('^lua/([^/]+)/'))
-      local class_name = dashsnake_to_pascal(vim.fn.expand('%:t:r'))
+      dashsnake_to_pascal(vim.fn.expand("%"):match("^lua/([^/]+)/"))
+      local class_name = dashsnake_to_pascal(vim.fn.expand("%:t:r"))
       local text = ([[
 ---@class pluginname.classname
 local M = {}
@@ -73,15 +73,15 @@ function M:execute()
   --
 end
 
-return M]]):gsub('classname', class_name):gsub('pluginname', plugin_name)
-      return vim.split(text, '\n')
+return M]]):gsub("classname", class_name):gsub("pluginname", plugin_name)
+      return vim.split(text, "\n")
     end, {}, {})
   ),
   s(
-    'desc',
+    "desc",
     fmt(
       [[
-        describe('{}', function ()
+        describe("{}", function ()
           {}
         end)
     ]],
@@ -89,10 +89,10 @@ return M]]):gsub('classname', class_name):gsub('pluginname', plugin_name)
     )
   ),
   s(
-    'it',
+    "it",
     fmt(
       [[
-        it('{}', function ()
+        it("{}", function ()
           {}
         end)
     ]],
@@ -100,7 +100,7 @@ return M]]):gsub('classname', class_name):gsub('pluginname', plugin_name)
     )
   ),
   s(
-    'M',
+    "M",
     fmt(
       [[
         local M = {}
@@ -110,11 +110,11 @@ return M]]):gsub('classname', class_name):gsub('pluginname', plugin_name)
         return M
     ]],
       { i(0) },
-      { delimiters = '<>' }
+      { delimiters = "<>" }
     )
   ),
   s(
-    'fun',
+    "fun",
     fmt(
       [[
         function {}({})
@@ -122,6 +122,15 @@ return M]]):gsub('classname', class_name):gsub('pluginname', plugin_name)
         end
       ]],
       { i(1), i(2), i(0) }
+    )
+  ),
+  s(
+    "longsep",
+    fmt(
+      [[
+        -- {}--------------------------------------------------
+      ]],
+      { i(0) }
     )
   ),
 }
