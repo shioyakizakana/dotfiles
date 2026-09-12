@@ -7,12 +7,17 @@ return {
   build = "make install_jsregexp",
 
   config = function()
-    ---@type LuaSnip.Loaders.LoadOpts
-    require("luasnip.loaders.from_snipmate").lazy_load()
+    -- ---@type LuaSnip.Loaders.LoadOpts
+    -- require("luasnip.loaders.from_snipmate").lazy_load()
 
     ---@type LuaSnip.Loaders.LoadOpts
-    require("luasnip.loaders.from_lua").lazy_load({
-      paths = { vim.fn.stdpath("config") .. "//snippets" },
+    require("luasnip.loaders.from_vscode").load({
+      override_priority = 1000,
+    })
+
+    ---@type LuaSnip.Loaders.LoadOpts
+    require("luasnip.loaders.from_lua").load({
+      paths = { vim.fn.stdpath("config") .. "/snippets" },
       override_priority = 2000,
     })
     -- コマンドでスニペットファイルを編集できるようにする
@@ -23,3 +28,4 @@ return {
     )
   end,
 }
+
