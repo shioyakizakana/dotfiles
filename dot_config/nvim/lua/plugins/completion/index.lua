@@ -22,6 +22,9 @@ return {
       "disrupted/blink-cmp-conventional-commits",
       -- "rinx/cmp-skkeleton",
     },
+    build = function()
+      require("blink.cmp").build():wait(60000)
+    end,
     ---@module "blink.cmp"
     ---@type blink.cmp.Config
     opts         = {
@@ -44,39 +47,44 @@ return {
           menu = { auto_show = true },
         },
       },
-    },
-    -- スニペット
-    snippets     = {
-      preset = "luasnip",
-    },
-    -- 補完ソース
-    sources = require("plugins.completion.sources"),
-    -- 外観
-    appearance   = {
-      use_nvim_as_default = true,
-      nerd_font_variant = "normal",
-    },
-    completion   = {
-      documentation = {
-        auto_show = true,
-        auto_show_delay_ms = 500,
-        window = { border = "double" },
+      -- スニペット
+      snippets     = {
+        preset = "luasnip",
       },
-      menu = {
-        auto_show = function(ctx)
-          return ctx.mode ~= "cmdline"
-            or not vim.tbl_contains({ "/", "?" }, vim.fn.getcmdtype())
-        end,
+      -- 補完ソース
+      sources = require("plugins.completion.sources"),
+      -- 外観
+      appearance   = {
+        use_nvim_as_default = true,
+        nerd_font_variant = "normal",
       },
-      ghost_text = { enabled = true },
-    },
-    signature    = {
-      window = {
-        border = "single",
+      completion   = {
+        documentation = {
+          auto_show = true,
+          auto_show_delay_ms = 500,
+          window = { border = "double" },
+        },
+        menu = {
+          auto_show = function(ctx)
+            return ctx.mode ~= "cmdline"
+              or not vim.tbl_contains({ "/", "?" }, vim.fn.getcmdtype())
+          end,
+        },
+        ghost_text = { enabled = true },
+        list = {
+          selection = {
+            aut_insert = false,
+          },
+        },
       },
-    },
-    fuzzy        = {
-      implementation = "prefer_rust_with_warning",
+      signature    = {
+        window = {
+          border = "single",
+        },
+      },
+      -- fuzzy        = {
+      --  implementation = "prefer_rust_with_warning",
+      --},
     },
     opts_extend  = { "sources.default" },
   },
