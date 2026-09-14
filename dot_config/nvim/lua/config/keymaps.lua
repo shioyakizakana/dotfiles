@@ -7,7 +7,7 @@ vim.keymap.set("n", "<leader>w", ":w<CR>")     --編集中のファイルを保�
 vim.keymap.set("n", "<leader>q", ":q<CR>")     --終了
 vim.keymap.set("n", "<leader>fr", ":oldfiles") --最近開いたファイルの一覧表示
 
--- インサートモード
+-- インサートモードでエスケープ
 vim.keymap.set("i", "<leader>jk", "<Esc>")
 
 -- 各モードでウィンドウ間を移動するためのキーマップを統一
@@ -29,3 +29,4 @@ vim.keymap.set("n", "<leader>cc", ":cd " .. luadir .. "/config<CR>", { desc = "C
 vim.keymap.set("n", "<leader>pl", ":cd " .. luadir .. "/plugins<CR>", { desc = "Change to plugins config directory" })
 -- 開発用デイレクトリへのショートカットキーマップ
 vim.keymap.set("n", "<leader>dev", ":cd " .. "/home/shioyaki/_dev<CR>", {desc = "Change to develop directory"})
+
