@@ -53,6 +53,7 @@ require("lazy").setup({
     { import = get_ui("rainbow-delimiters") },
     { import = get_ui("toggleterm") },
     { import = get_ui("winresizer") },
+    { import = get_ui("yazi") },
     -- エディター機能拡張
     { import = get_editor("csvview") },
     { import = get_editor("in-and-out") },
@@ -61,7 +62,6 @@ require("lazy").setup({
     { import = get_editor("min-surround")},
     { import = get_editor("mini-test") },
     { import = get_editor("nvim-autopairs")},
-    -- { "kylechui/nvim-surround", version = "^4.0.0", event = "VeryLazy" },
     { import = get_editor("tiny-cmdline")},
     { import = get_editor("treesj") },
     { "kana/vim-operator-replace", dependencies = { "kana/vim-operator-user", } },
@@ -71,7 +71,6 @@ require("lazy").setup({
     { import = get_utils("nvim-hlslens")},
     { import = get_utils("nvim-treesitter") },
     { import = get_utils("snacks.index")},
-    -- { import = get_utils("telescope") },
     { import = get_utils("which-key") },
     -- skk
     { import = "plugins.skkeleton.index" },
