@@ -12,3 +12,16 @@ group = "git"
 url = "*/"
 run = "git"
 
+[opener]
+nvim = [
+  { run = "nvim %s1", desc = "NeoVim" },
+]
+preview = [
+  { run = "qlmanage -p %s1", desc = "Quick Look Preview" },
+]
+
+[open]
+prepend_rules = [
+  { mime = "text/*", use = "nvim" },
+  { url = "*.html", use = [ "open", "nvim" ] }
+]
