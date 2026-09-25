@@ -27,3 +27,6 @@ alias lta='eza --tree --level=2 -a --group-directories-first'
 alias reload='source ~/.zshrc'
 alias desk='~/scripts/x11'
 alias upd='~/scripts/pack_update.sh'
+
+alias cmcd='cd -- "$(chezmoi source-path)"'
+
