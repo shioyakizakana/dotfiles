@@ -28,5 +28,6 @@ alias reload='source ~/.zshrc'
 alias desk='~/scripts/x11'
 alias upd='~/scripts/pack_update.sh'
 
+alias homecd='cd -- "${HOME}"'
 alias cmcd='cd -- "$(chezmoi source-path)"'
 
