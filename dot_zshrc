@@ -14,15 +14,14 @@ fi
 
 if [[ -r "/home/linuxbrew/.linuxbrew/bin/brew" ]]; then
   eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv zsh)"
-  
-  # proot-distro環境でのみサンドボックスを無効にする
-  if [[ -n "${PROOT_L2S_DIR:-}" ]]; then
-    export HOMEBREW_NO_SANDBOX_LINUX=1
-  fi
-  
   export BREW_PREFIX=$(brew --prefix)
+  export HOMEBREW_BUNDLE_NO_DESCRIBE=1
 fi
 
+# proot-distro環境でのみ適用
+if [[ -n "${PROOT_L2S_DIR:-}" ]]; then
+  export HOMEBREW_NO_SANDBOX_LINUX=1
+fi
 
 if type mise > /dev/null; then
   eval "$(mise activate zsh)"
@@ -39,6 +38,11 @@ if type atuin >/dev/null; then
   eval "$(atuin init zsh)"
 fi
 source $ZDIR/alias.zsh
+
+foreach script ($ZDIR/functions/*.zsh) {
+  source $script
+}
+
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
@@ -46,4 +50,3 @@ source $ZDIR/alias.zsh
 
 export LANG=ja_JP.UTF-8
 export LANGUAGE="ja_JP:ja"
-
