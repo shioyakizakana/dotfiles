@@ -13,8 +13,8 @@ url = "*/"
 run = "git"
 
 [opener]
-nvim = [
-  { run = "nvim %s1", desc = "NeoVim" },
+edit = [
+  { run = "$EDITOR %s", block = true ,for = "unix" },
 ]
 preview = [
   { run = "qlmanage -p %s1", desc = "Quick Look Preview" },
@@ -22,6 +22,6 @@ preview = [
 
 [open]
 prepend_rules = [
-  { mime = "text/*", use = "nvim" },
-  { url = "*.html", use = [ "open", "nvim" ] }
+  { mime = "text/*", use = "edit" },
+  { url = "*.html", use = [ "open", "edit" ] },
 ]
