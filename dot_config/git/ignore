@@ -111,4 +111,4 @@ zsdoc/data
 # End of https://www.toptal.com/developers/gitignore/api/linux,windows,zsh,powershell,vim,homebrew
 
 # yazi
-/.config/yazi/plugins
+/.config/yazi/plugins/*
