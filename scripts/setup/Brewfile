@@ -2,7 +2,6 @@ tap "olets/tap", trusted: true
 brew "atuin"
 brew "bat"
 brew "chafa"
-brew "chezmoi"
 brew "eza"
 brew "fd"
 brew "ffmpeg-full", link: true
