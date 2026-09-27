@@ -1,15 +1,15 @@
 local lsp_list = {
-    "lua_ls",
-    "taplo",
-    "rust_analyzer",
-    "ts_ls",
-    "pyright",
-    "ruff",
     "bashls",
-    "yamlls",
-    "jsonls",
-    "html",
     "cssls",
+    "html",
+    "jsonls",
+    "lua_ls",
+    "pyright",
+    "rust_analyzer",
+    "ruff",
+    "taplo",
+    "ts_ls",
+    "yamlls",
 }
 
 require("mason").setup({
