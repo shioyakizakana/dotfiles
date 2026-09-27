@@ -1,17 +1,25 @@
 -- 基本設定
 
--- telescope.nvimと競合するため無効化
-vim.api.nvim_set_var("loaded_netrw", 1)
-vim.api.nvim_set_var("loaded_netrwPlugin", 1)
+-- vim.api.nvim_set_var("loaded_netrw", 1)
+-- vim.api.nvim_set_var("loaded_netrwPlugin", 1)
 -- タイムアウトの設定
 vim.opt.timeoutlen = 500
 
+
 -- 言語設定
 vim.cmd.language("ja_JP.utf8")
-vim.opt.helplang = "ja"
+vim.opt.helplang = { "ja", "en" }
 if vim.fn.has("gui_running") == 1 then
     vim.o.guifont = "HackGen Console NF:h14"
 end
+
+-- エンコードの優先順位
+vim.opt.fileencodings = "utf-8,cp932,euc-jp,sjis,latin1"
+
+-- augroupのグループ設定
+local group_name = "my_nvim_rc"
+vim.api.nvim_create_augroup(group_name, { clear = true })
+
 local function to_boolean(val)
 
   if val == nil then return false end
@@ -84,4 +92,13 @@ vim.api.nvim_create_user_command("ExportKeymaps", function ()
   vim.fn.writefile(lines, outfile)
 
   vim.notify("Exported: " .. outfile)
+end, {})
+
+
+vim.api.nvim_create_user_command("EditAsSJIS", function()
+  vim.cmd("edit ++encoding=sjis")
+end, {})
+
+vim.api.nvim_create_user_command("EditAsCP932", function()
+  vim.cmd("edit ++encoding=cp932")
 end, {})
