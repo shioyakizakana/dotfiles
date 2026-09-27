@@ -16,12 +16,13 @@ HISTCONTROL=ignoreboth
 shopt -s histappend
 
 # for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
-HISTSIZE=1000
-HISTFILESIZE=2000
+HISTSIZE=10000
+HISTFILESIZE=10000
 
 # check the window size after each command and, if necessary,
 # update the values of LINES and COLUMNS.
 shopt -s checkwinsize
+
 
 # If set, the pattern "**" used in a pathname expansion context will
 # match all files and zero or more directories and subdirectories.
@@ -115,11 +116,72 @@ if ! shopt -oq posix; then
     . /etc/bash_completion
   fi
 fi
-export LANG=ja_JP.UTF-8
-export LANGUAGE=ja_JP:ja
-# change android dir
-alias android='cd /sdcard'
-alias clip_git='cd /sdcard/ClipStudio_Git'
 
+# ------------------------------------------------------------
+# user setting
+# ------------------------------------------------------------
+# シェルに依存しない汎用関数
+export SCRIPTS_DIR=$HOME/scripts
+source $SCRIPTS_DIR/shell/funciton.sh
+
+# ------------------------------------------------------------
+# PATH
+# ------------------------------------------------------------
+for dir in \
+  "$HOME/.local/bin" \
+  "$HOME/bin" \
+  "/snap/bin" \
+  "$HOME/.cargo/bin"
+do
+  if [[ -d "$dir" ]]; then
+    case ":$PATH:" in
+      *":$dir:"*) ;;
+      *) PATH="$PATH:$dir" ;;
+    esac
+  fi
+done
+export PATH
+
+# ------------------------------------------------------------
+# Tools
+# ------------------------------------------------------------
+# Editor
+if command -v nvim >/dev/null; then
+  export EDITOR=nvim
+else
+  export EDITOR=vim
+fi
+
+# homebrew
+if [[ -r "/home/linuxbrew/.linuxbrew/bin/brew" ]]; then
+  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"
+  export BREW_PREFIX=$(brew --prefix)
+  export HOMEBREW_BUNDLE_NO_DESCRIBE=1
+fi
+
+# proot-distro環境でのみ適用
+if [[ -n "${PROOT_L2S_DIR:-}" ]]; then
+  export HOMEBREW_NO_SANDBOX_LINUX=1
+  alias cd_android='cd /sdcard'
+fi
+
+# mise
+if type mise > /dev/null; then
+  eval "$(mise activate bash)"
+fi
+
+# zoxide
+if type zoxide > /dev/null; then
+  eval "$(zoxide init bash --cmd cd)"
+fi
+
+# atuin
+if type atuin >/dev/null; then
+  eval "$(atuin init bash)"
+fi
 
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
+
+export LANG=ja_JP.UTF-8
+export LANGUAGE=ja_JP:ja
+
