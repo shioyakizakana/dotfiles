@@ -3,12 +3,13 @@
 # ============================================================
 
 # fzfはプラグインディレクトリにインストール
-export FZF_INSTALL=$HOME/.zsh/plugins/fzf
+export FZF_INSTALL=$HOME/zsh/plugins/fzf
 path+=(
-  /snap/bin(N-/)
   $HOME/.local/bin(N-/)
   $HOME/bin(N-/)
+  /snap/bin(N-/)
   $FZF_INSTALL/bin(N-/)
+  $HOME/.cargo/bin(N-/)
 )
 
 if type nvim > /dev/null; then
