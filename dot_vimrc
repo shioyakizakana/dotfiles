@@ -1,0 +1,62 @@
+set autoindent
+
+set expandtab
+set tabstop=2
+set shiftwidth=2
+
+" 行の折り返し表示
+set wrap
+" 空白文字を可視化
+set list
+set listchars=tab:»·,eol:¶,nbsp:␣
+
+set number
+set relativenumber
+set autochdir
+set clipboard+=unnamedplus
+
+" シンタックスハイライトを有効化
+syntax on
+" 検索結果をハイライト
+set hlsearch
+" インクリメンタルサーチ
+set incsearch
+" 検索が末尾まで行ったら先頭にもどる
+set wrapscan
+" 正規表現
+set magic
+
+" エンコード
+set encoding=utf-8
+set fileencodings=utf-8
+
+set ruler
+set laststatus=2
+
+" バックアップファイルを作らない
+set nobackup
+set noswapfile
+
+" カーソル行をハイライト
+set cursorline
+" 対応する括弧を強調表示
+set showmatch
+
+
+set t_Co=256
+" カラースキーム
+colorscheme desert
+
+let mapleader = "\<Space>"
+
+" 上書き保存
+nnoremap <Leader>w :w<CR>
+" 終了
+nnoremap <Leader>q :q<CR>
+
+" 行末までヤンク
+nnoremap Y y$
+
+vnoremap < <gv
+vnoremap > >gv
+
