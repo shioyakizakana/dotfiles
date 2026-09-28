@@ -1,6 +1,4 @@
 # リポジトリ専用ファイル(ホームディレクトリに展開しない)
-# chezmooiで管理しないファイルやディレクトリもここに記載
-README.md
-.gitignore
+# chezmoiで管理しないファイルやディレクトリもここに記載
 
 zsh/plugin/plugins/
