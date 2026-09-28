@@ -1,0 +1,36 @@
+{{ if eq .chezmoi..os "linux" }}
+["zsh/plugin/plugins/powerlevel10k"]
+type = "git-repo"
+url = "htps://github.com/romkatv/powerlevel10k.git"
+clone.args = [
+  "--depth", "1"
+]
+
+["zsh/plugin/plugins/fast-syntax-highlighting"]
+type = "git-repo"
+url = "https://github.com/zdharma-continuum/fast-syntax-highlighting.git"
+
+["zsh/plugin/plugins/zsh-autosuggesions"]
+type = "git-repo"
+url = "https://github.com/zsh-users/zsh-autosuggesions.git"
+
+["zsh/plugin/plugins/zsh-completions"]
+type = "git-repo"
+url = "https://github.com/zsh-users/zsh-completions.git"
+
+["zsh/plugin/plugins/fzf"]
+type = "git-repo"
+url = "https://guthub.com/junegunn/fzf.git"
+
+["zsh/plugin/plugins/zeno"]
+type = "git-repo"
+url = "https://github.com/yuki-yano/zeno.zsh.git"
+
+[".config/tmux/plugins/catppuccin/tmux"]
+type = "git-repo"
+url = "https://github.com/catppuccin/tmux.git"
+clone.args = [
+  "-b", "v2.3.1"
+]
+
+{{ end }}
