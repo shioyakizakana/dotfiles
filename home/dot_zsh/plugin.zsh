@@ -1,4 +1,4 @@
-export PLUGINS_ROOT=$HOME/zsh/plugin/plugins
+export PLUGINS_ROOT=$ZDIR/plugin/plugins
 
 source $PLUGINS_ROOT/powerlevel10k/powerlevel10k.zsh-theme
 source $PLUGINS_ROOT/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh

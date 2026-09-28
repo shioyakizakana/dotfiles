@@ -25,7 +25,7 @@ alias lta='eza --tree --level=2 -a --group-directories-first'
 # commands
 # ------------------------------------------------------------
 alias reload='source ~/.zshrc'
-alias desk='~/scripts/x11'
+alias desk='~/scripts/desk/ubuntu_desk.sh'
 alias upd='~/scripts/pack_update.sh'
 
 alias homecd='cd -- "${HOME}"'

@@ -75,8 +75,8 @@ function _fzf_lazy_load() {
 
   _FZF_LAZY_LOADED=1
   # キーバインドと候補を有効化
-  source "$HOME/.zsh/plugins/fzf/shell/key-bindings.zsh"
-  source "$HOME/.zsh/plugins/fzf/shell/completion.zsh"
+  source "$HOME/.zsh/plugin/plugins/fzf/shell/key-bindings.zsh"
+  source "$HOME/.zsh/plugin/plugins/fzf/shell/completion.zsh"
 
   # zeno completionとの循環を防ぐ
   fzf_default_completion='expand-or-complete'

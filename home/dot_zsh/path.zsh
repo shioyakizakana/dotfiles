@@ -3,7 +3,7 @@
 # ============================================================
 
 # fzfはプラグインディレクトリにインストール
-export FZF_INSTALL=$HOME/zsh/plugins/fzf
+export FZF_INSTALL=$ZDIR/plugin/plugins/fzf
 path+=(
   $HOME/.local/bin(N-/)
   $HOME/bin(N-/)

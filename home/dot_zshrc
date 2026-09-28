@@ -1,7 +1,7 @@
 # Created by newuser for 5.9
 
 # zshの設定ファイルディレクトリ
-export ZDIR=$HOME/zsh
+export ZDIR=$HOME/.zsh
 
 # シェルに依存しない汎用関数
 export SCRIPTS_DIR=$HOME/scripts
