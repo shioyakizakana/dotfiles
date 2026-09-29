@@ -9,7 +9,7 @@
 export ZENO_HOME="$HOME/.config/zeno"
 export ZENO_GIT_CAT="bat --color=always"
 
-export ZENO_ROOT="$HOME/.zsh/plugin/plugins/zeno"
+export ZENO_ROOT="$ZDIR/plugin/plugins/zeno"
 
 # 先にfzfをロードする
 _fzf_lazy_load
