@@ -30,4 +30,7 @@ alias upd='~/scripts/pack_update.sh'
 
 alias homecd='cd -- "${HOME}"'
 alias cmcd='cd -- "$(chezmoi source-path)"'
+alias cmlg='cd -- "$(chezmoi source-path)" && nvim +LazyGit'
+
+alias nvlg="nvim +LazyGit"
 
