@@ -8,10 +8,16 @@ idiomatic_version_file_enable_tools = [
 
 [tools]
 bun = "1"
+delta = "latest"
 deno = "2"
+gh = "latest"
+ghq = "latest"
 go = "1"
+lazydocker = "latest"
+lazygit = "latest"
 lua = "5.1" # NeoVim0.12に合わせる
 lua-language-server = "latest"
+neovim = "latest"
 nim = {
   version = "latest",
   platforms = {
@@ -53,4 +59,5 @@ shellcheck = "prefix:0.11"
 shfmt = "prefix:3.14"
 stylua = "latest"
 taplo = "0.10"
+tree-sitter = "latest"
 uv = "prefix:0.12"
