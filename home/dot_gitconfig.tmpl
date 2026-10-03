@@ -1,7 +1,7 @@
 [user]
   name = shioyakizakana
-  email = {{ secret.command "pass://dotfiles/Github_Account/email" }}
-  signingkey = {{ secret.command "pass://dotfiles/Github_Account/signingkey" }}
+  email = {{ protonPass "pass://dotfiles/Github_Account/email" }}
+  signingkey = {{ protonPass "pass://dotfiles/Github_Account/signingkey" }}
 
 [core]
   autoCRLF = false

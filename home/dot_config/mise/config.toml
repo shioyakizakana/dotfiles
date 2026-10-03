@@ -7,57 +7,47 @@ idiomatic_version_file_enable_tools = [
 ]
 
 [tools]
-bun = "1"
+bun = "latest"
+"cargo:sleek" = "latest"
 delta = "latest"
-deno = "2"
+deno = "latest"
 gh = "latest"
 ghq = "latest"
-go = "1"
+go = "latest"
+"go:github.com/nametake/golangci-lint-langserver" = "latest"
+"go:github.com/sqls-server/sqls" = "latest"
+"go:golang.org/x/tools/gopls" = "latest"
+gofumpt = "latest"
+golangci-lint = "latest"
 lazydocker = "latest"
 lazygit = "latest"
 lua = "5.1" # NeoVim0.12に合わせる
 lua-language-server = "latest"
+marksman = "latest"
 neovim = "latest"
-nim = {
-  version = "latest",
-  platforms = {
-    linux-arm64 = {
-      checksum_url = "https://nim-lang.org/download/nim-{{ version }}-linux_arm64.tar.xz.sha256",
-      url = "https://nim-lang.org/download/nim-{{ version }}-linux_arm64.tar.xz"
-    },
-    linux-x64 = {
-      checksum_url = "https://nim-lang.org/download/nim-{{ version }}-linux_x64.tar.xz.sha256",
-      url = "https://nim-lang.org/download/nim-{{ version }}-linux_x64.tar.xz"
-    }, 
-    macos-arm64 = {
-      checksum_url = "https://nim-lang.org/download/nim-{{ version }}-macosx_arm64.tar.xz.sha256",
-      url = "https://nim-lang.org/download/nim-{{ version }}-macosx_arm64.tar.xz"
-    },
-    macos-x64 = {
-      checksum_url = "https://nim-lang.org/download/nim-{{ version }}-macosx_x64.tar.xz.sha256",
-      url = "https://nim-lang.org/download/nim-{{ version }}-macosx_x64.tar.xz"
-    },
-    windows-arm64 = {
-      checksum_url = "https://nim-lang.org/download/nim-{{ version }}_x64.zip.sha256",
-      url = "https://nim-lang.org/download/nim-{{ version }}_x64.zip"
-    },
-    windows-x64 = {
-      checksum_url = "https://nim-lang.org/download/nim-{{ version }}_x64.zip.sha256",
-      url = "https://nim-lang.org/download/nim-{{ version }}_x64.zip"
-    }
-  },
-  strip_components = 1,
-  version_list_url = "https://nim-lang.org/install.html",
-  version_regex = 'nim-(\d+\.\d+\.\d+)-linux_x64\.tar\.xz'
-}
-node = "26"
+nim = { version = "latest", strip_components = "1", version_list_url = "https://nim-lang.org/install.html", version_regex = 'nim-(\d+\.\d+\.\d+)-linux_x64\.tar\.xz', platforms = { linux-arm64 = { checksum_url = "https://nim-lang.org/download/nim-{{ version }}-linux_arm64.tar.xz.sha256", url = "https://nim-lang.org/download/nim-{{ version }}-linux_arm64.tar.xz" }, linux-x64 = { checksum_url = "https://nim-lang.org/download/nim-{{ version }}-linux_x64.tar.xz.sha256", url = "https://nim-lang.org/download/nim-{{ version }}-linux_x64.tar.xz" }, macos-arm64 = { checksum_url = "https://nim-lang.org/download/nim-{{ version }}-macosx_arm64.tar.xz.sha256", url = "https://nim-lang.org/download/nim-{{ version }}-macosx_arm64.tar.xz" }, macos-x64 = { checksum_url = "https://nim-lang.org/download/nim-{{ version }}-macosx_x64.tar.xz.sha256", url = "https://nim-lang.org/download/nim-{{ version }}-macosx_x64.tar.xz" }, windows-arm64 = { checksum_url = "https://nim-lang.org/download/nim-{{ version }}_x64.zip.sha256", url = "https://nim-lang.org/download/nim-{{ version }}_x64.zip" }, windows-x64 = { checksum_url = "https://nim-lang.org/download/nim-{{ version }}_x64.zip.sha256", url = "https://nim-lang.org/download/nim-{{ version }}_x64.zip" } } }
+node = "24"
+npm = "latest"
+"npm:@fsouza/prettierd" = "latest"
+"npm:@olrtg/emmet-language-server" = "latest"
+"npm:@tailwindcss/language-server" = "latest"
+"npm:basedpyright" = "latest"
+"npm:bash-language-server" = "latest"
+"npm:prettier" = "latest"
+"npm:pyright" = "latest"
+"npm:typescript" = "latest"
+"npm:vscode-langservers-extracted" = "latest"
+"npm:yaml-language-server" = "latest"
+pipx = "latest"
+"pipx:ty" = "latest"
+pnpm = "latest"
 python = "3.14"
-ruby = "4"
-ruff = "prefix:0.16"
+ruby = "latest"
+ruff = "latest"
 rust = "latest"
-shellcheck = "prefix:0.11"
-shfmt = "prefix:3.14"
+shellcheck = "latest"
+shfmt = "latest"
 stylua = "latest"
-taplo = "0.10"
+taplo = "latest"
 tree-sitter = "latest"
-uv = "prefix:0.12"
+uv = "latest"
