@@ -1,6 +1,7 @@
 [user]
-  email = shioyakizakna@gmail.com
   name = shioyakizakana
+  email = {{ secret.command "pass://dotfiles/Github_Account/email" }}
+  signingkey = {{ secret.command "pass://dotfiles/Github_Account/signingkey" }}
 
 [core]
   autoCRLF = false
