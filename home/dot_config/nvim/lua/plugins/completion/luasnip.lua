@@ -20,6 +20,11 @@ return {
       paths = { vim.fn.stdpath("config") .. "/snippets" },
       override_priority = 2000,
     })
+
+    -- ファイルタイプ別に読み込むスニペットを追加
+    require("luasnip").filetype_extend("bash", { "sh" })
+    require("luasnip").filetype_extend("zsh", { "sh" })
+
     -- コマンドでスニペットファイルを編集できるようにする
     vim.api.nvim_create_user_command(
       "LuaSnipEdit",
