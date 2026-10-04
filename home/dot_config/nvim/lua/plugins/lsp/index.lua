@@ -20,16 +20,19 @@ return {
           {"jay-babu/mason-null-ls.nvim"},
           {"nvimtools/none-ls.nvim"},
         },
-        cmd = "Mason",
+        -- cmd = "Mason",
       },
       { "saghen/blink.cmp" },
     },
     config = function ()
       require("plugins.lsp.diagnostic")
+      require("plugins.lsp.attach")
+      require("plugins.lsp.code-actions")
       require("plugins.lsp.server-register")
     end,
   },
+  -- { import = "plugins.lsp.none-ls" },
+  { import = "plugins.lsp.conform" },
   { import = "plugins.lsp.lazydev" },
-  { import = "plugins.lsp.none-ls" },
 }
 
