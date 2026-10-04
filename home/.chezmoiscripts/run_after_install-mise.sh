@@ -96,8 +96,10 @@ if [[ "$confirm" =~ ^[Yy]$ ]]; then
   log " NeoVim / Lua ==="
   mise use -g neovim
   mise use -g lua@5.1 # NeoVim0.12に合わせる
-  mise use -g lua-language-server 
-  mise use -g stylua
+  mise use -g lua-language-server
+  mise use -g stylua                          # フォーマッター
+  luarocks --lua-version=5.1 install luacheck # リンター
+  luarocks --lua-version=5.1 install vuseted  # テストツール
 
   log " Nim ==="
   mise use -g nim
@@ -107,4 +109,3 @@ else
   log "インストールをスキップしました。"
   exit 0
 fi
-
