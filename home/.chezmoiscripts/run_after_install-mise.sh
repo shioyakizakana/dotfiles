@@ -2,7 +2,7 @@
 set -euo pipefail
 
 log() {
-  printf "\n==> %s\n" "$*"
+  printf "\n=== %s\n" "$*"
 }
 
 if ! command -v mise >/dev/null 2>&1; then
