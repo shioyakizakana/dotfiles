@@ -27,17 +27,20 @@ return {
 
     config = function()
       local language_list = {
+        "go",
+        "gotmpl",
+        "javascript",
         "lua",
+        "markdown",
+        "python",
+        "powershell",
+        "query",
+        "ruby",
+        "rust",
+        "sql",
+        "typescript",
         "vim",
         "vimdoc",
-        "query",
-        "python",
-        "go",
-        "javascript",
-        "typescript",
-        "powershell",
-        "markdown",
-        "rust",
       }
       require("nvim-treesitter").install(language_list)
 

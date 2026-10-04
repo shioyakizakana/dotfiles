@@ -17,3 +17,31 @@ vim.api.nvim_create_autocmd({ "BufNewFile", "BufRead" }, {
     vim.opt_local.filetype = "csv"
   end,
 })
+
+-- chezmoiのテンプレートファイル対応
+vim.filetype.add({
+  extension = {
+    tmpl = "gotmpl",
+  },
+  filename = {
+    Brewfile = "ruby",
+  },
+})
+
+local tmpl_map = {
+  { pattern = { "*.toml.tmpl" }, ft = "toml" },
+  { pattern = { "*.yaml.tmpl", "*.yml.tmpl" }, ft = "yaml" },
+  { pattern = { "*.sh.tmpl" }, ft = "sh" },
+  { pattern = { "*.json.tmpl" }, ft = "json" },
+  { pattern = { "dot_Brewfile.tmpl" }, ft = "ruby" },
+}
+
+for _, entry in ipairs(tmpl_map) do
+  vim.api.nvim_create_autocmd( { "BufRead", "BufNewFile" }, {
+    group = group_name,
+    pattern = entry.pattern,
+    callback = function ()
+      vim.bo.filetype = entry.ft
+    end,
+  } )
+end
