@@ -127,12 +127,16 @@ source $SCRIPTS_DIR/shell/funciton.sh
 # ------------------------------------------------------------
 # PATH
 # ------------------------------------------------------------
+export TMPDIR="${TMPDIR:-$HOME/tmp}"
+if [[ ! -d "$TMPDIR" ]]; then
+  mkdir -p "$TMPDIR"
+fi
+
 for dir in \
   "$HOME/.local/bin" \
   "$HOME/bin" \
   "/snap/bin" \
-  "$HOME/.cargo/bin"
-do
+  "$HOME/.cargo/bin"; do
   if [[ -d "$dir" ]]; then
     case ":$PATH:" in
       *":$dir:"*) ;;

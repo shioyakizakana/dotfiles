@@ -1,5 +1,10 @@
 # Created by newuser for 5.9
 
+export TMPDIR="${TMPDIR:-$HOME/tmp}"
+if [[ ! -d "$TMPDIR" ]]; then
+  mkdir -p "$TMPDIR"
+fi
+
 # zshの設定ファイルディレクトリ
 export ZDIR=$HOME/.zsh
 
@@ -30,7 +35,7 @@ if [[ -n "${PROOT_L2S_DIR:-}" ]]; then
 fi
 
 if type mise > /dev/null; then
-  eval "$($HOME/.local/bin/mise activate zsh)"
+  eval "$(mise activate zsh)"
 fi
 
 source $ZDIR/completion.zsh
