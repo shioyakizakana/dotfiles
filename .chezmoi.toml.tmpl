@@ -1,10 +1,10 @@
 {{- $machineType := promptStringOnce . "machineType" "Machine type (personal/work)" -}}
-{{ if  eq .chezmoi.os "linux" }}
+
+{{ $linuxEnv := "false" }}
+{{ if eq .chezmoi.os "linux" }}
   {{- $linuxEnv := promptStringOnce . "linuxEnv" "Execute Linux Environment (native-ubuntu/wsl-ubuntu)" -}}
 {{ else if eq .chezmoi.os "android"}}
-  {{- $linuxEnv := promptStringOnce . "linuxEnv" "Execute Linux Environment (proot-ubuntu/termux)" -}}
-{{ else }}
-  {{ $linuxEnv := "false" }}
+  {{- $linuxEnv := promptStringOnce . "linuxEnv" "Execute Linux Environment (termux/qemu-ubuntu/proot-ubuntu)" -}}
 {{ end }}
 
 [data]
@@ -12,8 +12,9 @@
   work = {{ eq $machineType "work" }}
   native-ubuntu = {{ eq $linuxEnv "native-ubuntu" }}
   wsl-ubuntu = {{ eq $linuxEnv "wsl-ubuntu" }}
-  proot-ubuntu = {{ eq $linuxEnv "proot-ubuntu" }}
   termux = {{ eq $linuxEnv "termux" }}
+  qemu-ubuntu = {{ eq $linuxEnv "qemu-ubuntu" }}
+  proot-ubuntu = {{ eq $linuxEnv "proot-ubuntu" }}
 
 [edit]
   command = "nvim"
