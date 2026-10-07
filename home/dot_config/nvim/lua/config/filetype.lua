@@ -2,6 +2,12 @@
 
 local group_name = "my_nvim_rc"
 
+vim.filetype.add({
+  extension = {
+    mdx = "mdx",
+  },
+})
+
 vim.api.nvim_create_autocmd({ "FileType" }, {
   group = group_name,
   pattern = { "help", "man" },
@@ -37,11 +43,11 @@ local tmpl_map = {
 }
 
 for _, entry in ipairs(tmpl_map) do
-  vim.api.nvim_create_autocmd( { "BufRead", "BufNewFile" }, {
+  vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
     group = group_name,
     pattern = entry.pattern,
-    callback = function ()
+    callback = function()
       vim.bo.filetype = entry.ft
     end,
-  } )
+  })
 end
