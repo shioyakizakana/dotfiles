@@ -103,6 +103,7 @@ if [[ "$confirm" =~ ^[Yy]$ ]]; then
 
   log " Nim ==="
   mise use -g nim
+  nimble install nimlsp # LSP
 
   log "インストールが完了しました。"
 else
