@@ -1,4 +1,5 @@
 # リポジトリ専用ファイル(ホームディレクトリに展開しない)
 # chezmoiで管理しないファイルやディレクトリもここに記載
 
-zsh/plugin/plugins/
+.zsh/plugin/plugins/
+.config/nvim/lazy-lock.json
