@@ -1,15 +1,20 @@
 {{- $machineType := promptStringOnce . "machineType" "Machine type (personal/work)" -}}
 
-{{ $linuxEnv := "false" }}
-{{ if eq .chezmoi.os "linux" }}
+{{- $linuxEnv := "false" -}}
+{{- if eq .chezmoi.os "linux" -}}
   {{- $linuxEnv := promptStringOnce . "linuxEnv" "Execute Linux Environment (native-ubuntu/wsl-ubuntu)" -}}
-{{ else if eq .chezmoi.os "android"}}
+{{- else if eq .chezmoi.os "android" -}}
   {{- $linuxEnv := promptStringOnce . "linuxEnv" "Execute Linux Environment (termux/qemu-ubuntu/proot-ubuntu)" -}}
-{{ end }}
+{{- end -}}
 
 [data]
   personal = {{ eq $machineType "personal" }}
   work = {{ eq $machineType "work" }}
+  {{ if ne $linuxEnv "false" -}}
+  linux-env = true
+  {{ else -}}
+  linux-env = false
+  {{ end -}}
   native-ubuntu = {{ eq $linuxEnv "native-ubuntu" }}
   wsl-ubuntu = {{ eq $linuxEnv "wsl-ubuntu" }}
   termux = {{ eq $linuxEnv "termux" }}
