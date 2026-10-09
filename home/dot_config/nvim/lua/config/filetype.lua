@@ -25,26 +25,20 @@ vim.api.nvim_create_autocmd({ "BufNewFile", "BufRead" }, {
 })
 
 -- chezmoiのテンプレートファイル対応
-vim.filetype.add({
-  extension = {
-    tmpl = "gotmpl",
-  },
-  filename = {
-    Brewfile = "ruby",
-  },
-})
-
+local chezmoi_ft = vim.api.nvim_create_augroup("chezmoi_file_type", { clear = true })
 local tmpl_map = {
   { pattern = { "*.toml.tmpl" }, ft = "toml" },
   { pattern = { "*.yaml.tmpl", "*.yml.tmpl" }, ft = "yaml" },
   { pattern = { "*.sh.tmpl" }, ft = "sh" },
   { pattern = { "*.json.tmpl" }, ft = "json" },
-  { pattern = { "dot_Brewfile.tmpl" }, ft = "ruby" },
+  { pattern = { "Brewfile.tmpl", "dot_Brewfile.tmpl" }, ft = "ruby" },
+  { pattern = { ".bashrc.tmpl", "dot_bashrc.tmpl" }, ft = "bash" },
+  { pattern = { ".zshrc.tmpl", "dot_zshrc.tmpl" }, ft = "zsh" },
 }
 
 for _, entry in ipairs(tmpl_map) do
   vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
-    group = group_name,
+    group = chezmoi_ft,
     pattern = entry.pattern,
     callback = function()
       vim.bo.filetype = entry.ft
