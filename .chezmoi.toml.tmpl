@@ -11,15 +11,15 @@
   personal = {{ eq $machineType "personal" }}
   work = {{ eq $machineType "work" }}
   {{ if ne $linuxEnv "false" -}}
-  linux-env = true
+  linuxEnv = true
   {{ else -}}
-  linux-env = false
+  linuxEnv = false
   {{ end -}}
-  native-ubuntu = {{ eq $linuxEnv "native-ubuntu" }}
-  wsl-ubuntu = {{ eq $linuxEnv "wsl-ubuntu" }}
+  nativeUbuntu = {{ eq $linuxEnv "native-ubuntu" }}
+  wslUbuntu = {{ eq $linuxEnv "wsl-ubuntu" }}
   termux = {{ eq $linuxEnv "termux" }}
-  qemu-ubuntu = {{ eq $linuxEnv "qemu-ubuntu" }}
-  proot-ubuntu = {{ eq $linuxEnv "proot-ubuntu" }}
+  qemuUbuntu = {{ eq $linuxEnv "qemu-ubuntu" }}
+  prootUbuntu = {{ eq $linuxEnv "proot-ubuntu" }}
 
 [edit]
   command = "nvim"

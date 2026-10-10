@@ -1,0 +1,31 @@
+#compdef ctmpl
+
+_ctmpl() {
+  local source_dir
+  source_dir="$(chezmoi source-path 2>/dev/null)" || return 1
+
+  # 第1引数: テンプレートファイル
+  if ((CURRENT == 2)); then
+    _files \
+      -W "$source_dir" \
+      -g '*.tmpl'
+    return
+  fi
+
+  # 第2引数以降: execute-template のオプション
+  _arguments -s \
+    '(-f --file)'{-f,--file}'[引数をテンプレートファイルとして扱う]' \
+    '(-i --init)'{-i,--init}'[init 専用関数をシミュレートする]' \
+    '--left-delimiter[左側のテンプレート区切り文字]:delimiter:' \
+    '--right-delimiter[右側のテンプレート区切り文字]:delimiter:' \
+    '--promptString[文字列入力の戻り値を指定する]:prompt=value:' \
+    '--promptBool[真偽値入力の戻り値を指定する]:prompt=value:' \
+    '--promptInt[整数入力の戻り値を指定する]:prompt=value:' \
+    '--promptChoice[選択入力の戻り値を指定する]:prompt=value:' \
+    '--promptMultichoice[複数選択入力の戻り値を指定する]:prompt=value:' \
+    '--stdinisatty[stdinIsATTY の戻り値を指定する]:bool:(true false)' \
+    '--with-stdin[標準入力を .chezmoi.stdin に設定する]' \
+    '*:template option:'
+}
+
+_ctmpl "$@"

@@ -28,8 +28,8 @@ if [[ -r "/home/linuxbrew/.linuxbrew/bin/brew" ]]; then
   export HOMEBREW_BUNDLE_NO_DESCRIBE=1
 fi
 
+{{ if .prootUbuntu -}}
 # proot-distro環境でのみ適用
-{{ if .proot-ubuntu -}}
 if [[ -n "${PROOT_L2S_DIR:-}" ]]; then
   export HOMEBREW_NO_SANDBOX_LINUX=1
   alias cd_android='cd /sdcard'
