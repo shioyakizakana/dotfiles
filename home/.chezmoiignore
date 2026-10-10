@@ -2,4 +2,10 @@
 # chezmoiで管理しないファイルやディレクトリもここに記載
 
 .zsh/plugin/plugins/
+.config/yazi/plugins/
 .config/nvim/lazy-lock.json
+
+# 自作以外のパッケージを除外
+.local/bin/chezmoi
+.local/bin/mise
+.local/bin/pass-cli

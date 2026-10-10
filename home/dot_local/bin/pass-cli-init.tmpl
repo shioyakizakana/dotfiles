@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+umask 077
+
+# 明示指定を優先し、未指定の場合だけ環境に応じて決定する。
+resolve_provider() {
+  if [[ -n "${PROTON_PASS_KEY_PROVIDER:-}" ]]; then
+      printf '%s\n' "$PROTON_PASS_KEY_PROVIDER"
+      return 0
+  fi
+
+{{ if .nativeUbuntu -}}
+  printf '%s\n' keyring
+{{ else if .termux -}}
+  printf '%s\n' env
+{{ else if .prootUbuntu -}}
+  printf '%s\n' env
+{{ else if .qemuUbuntu -}}
+  printf '%s\n' keyring
+{{ else if .wslUbuntu -}}
+  printf '%s\n' keyring
+{{ else -}}
+  printf '%s\n' "未対応の環境です" >&2
+  return 1
+{{ end -}}
+}
+
+provider="$(resolve_provider)"
+export PROTON_PASS_KEY_PROVIDER="$provider"
+
+case "$provider" in
+  keyring)
+      ;;
+  env)
+    config_dir="${XDG_CONFIG_HOME:-"$HOME/.config"}/pass-cli"
+    key_file="$config_dir/encryption-key"
+
+    mkdir -p "$config_dir"
+    chmod 700 "$config_dir"
+
+    if [[ ! -s "$key_file" ]]; then
+      # 初回のみ生成。既存ファイルは上書きしない。
+      tmp_file="$(mktemp "$config_dir/.encryption-key.XXXXXXXX")"
+      trap 'rm -f -- "${tmp_file:-}"' EXIT
+
+      if ! od -An -N32 -tx1 /dev/urandom |
+        tr -d ' \n' > "$tmp_file"; then
+        echo "暗号化キーを生成できませんでした" >&2
+        exit 1
+      fi
+
+      chmod 600 "$tmp_file"
+
+      # 同時実行時も既存キーを上書きしない。
+      if ! ln "$tmp_file" "$key_file" 2>/dev/null; then
+        if [[ ! -s "$key_file" ]]; then
+          echo "暗号化キーを保存できませんでした" >&2
+          exit 1
+        fi
+      fi
+
+      rm -f -- "$tmp_file"
+      trap - EXIT
+    fi
+
+    export PROTON_PASS_ENCRYPTION_KEY
+    PROTON_PASS_ENCRYPTION_KEY="$(< "$key_file")"
+
+    if [[ ! "$PROTON_PASS_ENCRYPTION_KEY" =~ ^[[:xdigit:]]{64}$ ]]; then
+      echo "暗号化キーの形式が不正です: $key_file" >&2
+      exit 1
+    fi
+    ;;
+    *)
+      echo "未対応の provider: $provider" >&2
+      exit 1
+      ;;
+esac
+
+# 既にログイン済みの場合の扱いは、使用中の pass-cli の仕様に合わせる。
+exec pass-cli login --interactive
