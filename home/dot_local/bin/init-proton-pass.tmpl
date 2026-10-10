@@ -6,8 +6,8 @@ umask 077
 # 明示指定を優先し、未指定の場合だけ環境に応じて決定する。
 resolve_provider() {
   if [[ -n "${PROTON_PASS_KEY_PROVIDER:-}" ]]; then
-      printf '%s\n' "$PROTON_PASS_KEY_PROVIDER"
-      return 0
+    printf '%s\n' "$PROTON_PASS_KEY_PROVIDER"
+    return 0
   fi
 
 {{ if .nativeUbuntu -}}

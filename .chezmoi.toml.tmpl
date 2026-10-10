@@ -21,6 +21,12 @@
   qemuUbuntu = {{ eq $linuxEnv "qemu-ubuntu" }}
   prootUbuntu = {{ eq $linuxEnv "proot-ubuntu" }}
 
+[diff]
+  exclude = [
+    "externals",
+    "scripts"
+  ]
+
 [edit]
   command = "nvim"
 

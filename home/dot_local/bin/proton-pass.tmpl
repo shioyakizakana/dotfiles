@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+umask 077
+
+# 明示指定を優先する。
+if [[ -n "${PROTON_PASS_KEY_PROVIDER:-}" ]]; then
+    provider="$PROTON_PASS_KEY_PROVIDER"
+else
+{{ if .nativeUbuntu }}
+  provider=keyring
+{{ else if .termux }}
+  provider=env
+{{ else if .prootUbuntu }}
+  provider=env
+{{ else if .qemuUbuntu }}
+  provider=keyring
+{{ else if .wslUbuntu }}
+  provider=keyring
+{{ else }}
+  echo "未対応の環境です。PROTON_PASS_KEY_PROVIDER を指定してください。" >&2
+  exit 1
+{{ end }}
+fi
+
+case "$provider" in
+keyring)
+  exec env \
+    PROTON_PASS_KEY_PROVIDER=keyring \
+    pass-cli "$@"
+  ;;
+env)
+  config_root="${XDG_CONFIG_HOME:-"$HOME/.config"}"
+  config_dir="$config_root/pass-cli"
+    key_file="$config_dir/encryption-key"
+
+    # キーがなければ初期化を促す。通常利用時には生成しない。
+    if [[ -L "$config_dir" || ! -d "$config_dir" ||
+        -L "$key_file" || ! -f "$key_file" || ! -r "$key_file" ]]; then
+      echo "Proton Pass の暗号化キーがありません。" >&2
+      echo "先に proton-pass-init を実行してください。" >&2
+      exit 1
+    fi
+
+    key="$(< "$key_file")"
+
+    if [[ ! "$key" =~ ^[[:xdigit:]]{64}$ ]]; then
+      echo "暗号化キーの形式が不正です: $key_file" >&2
+      exit 1
+    fi
+
+    # 親シェルには export せず、pass-cli の環境だけに渡す。
+    exec env \
+      PROTON_PASS_KEY_PROVIDER=env \
+      PROTON_PASS_ENCRYPTION_KEY="$key" \
+      pass-cli "$@"
+    ;;
+*)
+  echo "未対応の provider: $provider" >&2
+  exit 1
+  ;;
+esac
