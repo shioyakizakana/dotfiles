@@ -2,9 +2,9 @@
 
 {{- $linuxEnv := "false" -}}
 {{- if eq .chezmoi.os "linux" -}}
-  {{- $linuxEnv := promptStringOnce . "linuxEnv" "Execute Linux Environment (native-ubuntu/wsl-ubuntu)" -}}
+  {{- $linuxEnv = promptStringOnce . "linuxEnv" "Execute Linux Environment (native-ubuntu/wsl-ubuntu)" -}}
 {{- else if eq .chezmoi.os "android" -}}
-  {{- $linuxEnv := promptStringOnce . "linuxEnv" "Execute Linux Environment (termux/qemu-ubuntu/proot-ubuntu)" -}}
+  {{- $linuxEnv = promptStringOnce . "linuxEnv" "Execute Linux Environment (termux/qemu-ubuntu/proot-ubuntu)" -}}
 {{- end -}}
 
 [data]

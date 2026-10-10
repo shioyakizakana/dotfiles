@@ -29,10 +29,12 @@ if [[ -r "/home/linuxbrew/.linuxbrew/bin/brew" ]]; then
 fi
 
 # proot-distro環境でのみ適用
+{{ if .proot-ubuntu -}}
 if [[ -n "${PROOT_L2S_DIR:-}" ]]; then
   export HOMEBREW_NO_SANDBOX_LINUX=1
   alias cd_android='cd /sdcard'
 fi
+{{ end -}}
 
 if type mise > /dev/null; then
   eval "$(mise activate zsh)"
@@ -50,9 +52,9 @@ if type atuin >/dev/null; then
 fi
 source $ZDIR/alias.zsh
 
-foreach script ($ZDIR/functions/*.zsh) {
+for script in $ZDIR/functions/*.zsh; do
   source $script
-}
+done
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
