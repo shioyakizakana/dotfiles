@@ -42,7 +42,7 @@ case "$provider" in
     if [[ ! -s "$key_file" ]]; then
       # 初回のみ生成。既存ファイルは上書きしない。
       tmp_file="$(mktemp "$config_dir/.encryption-key.XXXXXXXX")"
-      trap 'rm -f -- "${tmp_file:-}"' EXIT
+      trap 'command rm -f -- "${tmp_file:-}"' EXIT
 
       if ! od -An -N32 -tx1 /dev/urandom |
         tr -d ' \n' > "$tmp_file"; then
@@ -60,7 +60,7 @@ case "$provider" in
         fi
       fi
 
-      rm -f -- "$tmp_file"
+      command rm -f -- "$tmp_file"
       trap - EXIT
     fi
 
@@ -78,5 +78,9 @@ case "$provider" in
       ;;
 esac
 
-# 既にログイン済みの場合の扱いは、使用中の pass-cli の仕様に合わせる。
-exec pass-cli login --interactive
+# 初期化スクリプト内で読み込んだキーを後続処理へ引き継がない。
+unset PROTON_PASS_ENCRYPTION_KEY
+
+# ラッパー経由でpass-cliを実行
+# PROTON_PASS_KEY_PROVIDERは明示的に渡して、同じ設定でログインする。
+exec "$HOME/.local/bin/proton-pass" login --interactive
