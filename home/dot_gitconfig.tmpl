@@ -15,6 +15,30 @@
 [git "editor"]
   default = nvim
 
+[alias]
+  graph = log --oneline --graph --decorate --all
+  co = checkout
+  stash = stash -u
+  # ログ系
+  lo10 = log --oneline -n 10
+  diffw = diff --word-diff
+  loa = log --oneline --all
+  loag = log --oneline --graph --all
+  today = log --since\"1 day ago\" --oneline  # 今日のコミット
+  last = log -1 HEAD # 最後のコミット
+  # ブランチ系
+  current = rev-parse --abbrev-ref HEAD # 現在のブランチ名
+  # 情報確認
+  aliases = config --get-regexp alias # エイリアス一覧
+  size = count-objects -vH # リポジトリのサイズ
+  files = diff --name-only # 変更ファイル一覧
+
+[filter "lfs"]
+  clean = git-lfs clean -- %f
+  smudge = git-lfs smudge -- %f
+  process = git-lfs filter-process
+  required = true
+
 [interactive]
   diffFilter = delta --color-only
 
@@ -24,4 +48,6 @@
   line-numbers = true
   keep-plus-minus-markers = true
   hunk-header-style = "omit"
-  
+
+[ghq]
+  root = ~/repo
