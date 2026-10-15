@@ -41,6 +41,7 @@ if [[ "$confirm" =~ ^[Yy]$ ]]; then
   mise use -g npm:@olrtg/emmet-language-server
   mise use -g npm:@tailwindcss/language-server
   # mise use -g npm:unocss-language-server
+  mise use -g npm:@astrojs/language-server
 
   log " Bash ==="
   mise use -g npm:bash-language-server
@@ -104,6 +105,9 @@ if [[ "$confirm" =~ ^[Yy]$ ]]; then
   log " Nim ==="
   mise use -g nim
   nimble install nimlsp # LSP
+
+  log "Codex CLI"
+  mise use -g npm:@openai/codex
 
   log "インストールが完了しました。"
 else
