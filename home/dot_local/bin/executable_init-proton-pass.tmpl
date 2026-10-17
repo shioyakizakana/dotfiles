@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+umask 077
+
+# 明示指定を優先し、未指定の場合だけ環境に応じて決定する。
+resolve_provider() {
+  if [[ -n "${PROTON_PASS_KEY_PROVIDER:-}" ]]; then
+    printf '%s\n' "$PROTON_PASS_KEY_PROVIDER"
+    return 0
+  fi
+
+  {{ if .nativeUbuntu -}}
+  printf '%s\n' keyring
+  {{ else if .termux -}}
+  printf '%s\n' env
+  {{ else if .prootUbuntu -}}
+  printf '%s\n' env
+  {{ else if .qemuUbuntu -}}
+  printf '%s\n' keyring
+  {{ else if .wslUbuntu -}}
+  printf '%s\n' keyring
+  {{ else -}}
+  printf '%s\n' "未対応の環境です" >&2
+  return 1
+  {{ end -}}
+}
+
+# 必要なコマンドが利用可能か確認する。
+check_command() {
+  local cmd="$1"
+
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    printf '必要なコマンドが見つかりません: %s\n' "$cmd" >&2
+    return 1
+  fi
+}
+
+# Proton Pass CLIの鍵プロバイダーを決定する。
+provider="$(resolve_provider)"
+# 共通パス
+readonly DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/pass-cli"
+readonly PAT_FILE="$DATA_DIR/token.age"
+readonly ENCRYPTION_FILE="$DATA_DIR/encryption-key.age"
+readonly AGE_IDENTITY_FILE="${AGE_IDENTITY_FILE:-${XDG_DATA_HOME:-$HOME/.local/share}/age/id_proton_pat}"
+
+case "$provider" in
+keyring | env)
+  ;;
+*)
+  printf '未対応のprovider: %s\n' "$provider" >&2
+  exit 1
+  ;;
+esac
+
+# 必要な実行ファイルを確認する。
+readonly PASS_WRAPPER="$HOME/.local/bin/proton-pass"
+
+check_command pass-cli
+
+if [[ ! -x "$PASS_WRAPPER" ]]; then
+  printf 'Proton Passラッパーが見つかりません: %s\n' \
+    "$PASS_WRAPPER" >&2
+  exit 1
+fi
+
+# envプロバイダーの場合は暗号化鍵の準備状況を確認する。
+if [[ "$provider" == "env" ]]; then
+  check_command age
+
+  if [[ ! -s "$DATA_DIR/encryption-key.age" ]]; then
+    printf '暗号化されたデータベース鍵が見つかりません。\n' >&2
+    exit 1
+  fi
+
+  if [[ ! -r "$AGE_IDENTITY_FILE" ]]; then
+    printf 'age identityが読み取れません: %s\n' \
+      "$AGE_IDENTITY_FILE" >&2
+    exit 1
+  fi
+fi
+
+# PATはkeyring/envのどちらのプロバイダーでも利用する。
+
+check_command age
+
+if [[ ! -s "$PAT_FILE" ]]; then
+  printf '暗号化されたPATが見つかりません: %s\n' \
+    "$PAT_FILE" >&2
+  exit 1
+fi
+
+# ラッパー側でproviderの再指定とPATとデータベース暗号化鍵の復号を行う。
+export PROTON_PASS_KEY_PROVIDER="$provider"
+
+# PATによるログインを実行する。
+exec "$PASS_WRAPPER" login
