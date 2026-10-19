@@ -10,20 +10,7 @@ resolve_provider() {
     return 0
   fi
 
-  {{ if .nativeUbuntu -}}
-  printf '%s\n' keyring
-  {{ else if .termux -}}
-  printf '%s\n' env
-  {{ else if .prootUbuntu -}}
-  printf '%s\n' env
-  {{ else if .qemuUbuntu -}}
-  printf '%s\n' keyring
-  {{ else if .wslUbuntu -}}
-  printf '%s\n' keyring
-  {{ else -}}
-  printf '%s\n' "未対応の環境です" >&2
-  return 1
-  {{ end -}}
+  printf '%s\n' {{ .protonPassProvider }}
 }
 
 # 必要なコマンドが利用可能か確認する。
@@ -39,7 +26,7 @@ check_command() {
 # Proton Pass CLIの鍵プロバイダーを決定する。
 provider="$(resolve_provider)"
 # 共通パス
-readonly DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/pass-cli"
+readonly DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/proton-pass"
 readonly PAT_FILE="$DATA_DIR/token.age"
 readonly ENCRYPTION_FILE="$DATA_DIR/encryption-key.age"
 readonly AGE_IDENTITY_FILE="${AGE_IDENTITY_FILE:-${XDG_DATA_HOME:-$HOME/.local/share}/age/id_proton_pat}"
