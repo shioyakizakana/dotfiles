@@ -11,6 +11,18 @@
   {{- $provider = "env" -}}
 {{- end -}}
 
+{{- $command := "pass-cli" -}}
+{{- $wrapper := "proton-pass" -}}
+
+{{- $path := lookPath $wrapper -}}
+{{- if $path -}}
+  {{- $command = $path -}}
+{{- else -}}
+  {{- $source := joinPath .chezmoi.sourceDir "dot_local/bin/executable_proton-pass" -}}
+  {{- if stat $source -}}
+    {{- $command = $source -}}
+  {{- end -}}
+{{- end }}
 [data]
   personal = {{ eq $machineType "personal" }}
   work = {{ eq $machineType "work" }}
@@ -36,5 +48,5 @@
   command = "nvim"
 
 [protonPass]
-  command = "pass-cli"
+  command = {{ $command | quote }}
 

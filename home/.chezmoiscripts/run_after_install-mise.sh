@@ -86,6 +86,7 @@ if [[ "$confirm" =~ ^[Yy]$ ]]; then
   mise use -g delta
   mise use -g ghq
   mise use -g lazygit
+  mise use -g lefthook
 
   log " LazyDocker ==="
   mise use -g lazydocker

@@ -12,29 +12,46 @@ REPO_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
 BOOTSTRAP := $(REPO_ROOT)/bootstrap/setup-proton-pass.sh
 
-CHEZMOI := chezmoi --source "$(REPO_ROOT)"
+CHEZMOI := ~/.local/bin/chezmoi --source "$(REPO_ROOT)"
 
-.PHONY: help doctor setup diff apply test status
+# ラッパースクリプトの展開先
+PROTON_PASS_WRAPPER := $(HOME)/.local/bin/proton-pass
+
+.PHONY: help diff apply status require wrapper bootstrap
 
 help:
 	@printf '%s\n' \
 		'使用可能なターゲット:' \
-		'  make setup/diff    : chezmoiの変更差分を表示' \
-		'  make setup/apply   : chezmoiの設定を反映' \
-		'  make setup/status  : chezmoi管理ファイルの状態確認' \
-		'  make setup/doctor  : 実行環境の診断' \
-		'  make pp/setup   : Proton Passとchezmoiの初期化'
+		'  diff    : chezmoiの変更差分を表示' \
+		'  apply   : chezmoiの設定を反映' \
+		'  status  : chezmoi管理ファイルの状態確認' \
+		'  require  : セットアップ実行環境の診断' \
+		'  wrapper  : Proton Passラッパーを展開' \
+		'  bootstrap   : 初期セットアップを実行'
 
-setup/diff:
+# ========================================
+# chezmoi
+# ========================================
+diff:
 	@$(CHEZMOI) diff --no-pager 2> /dev/null | grep '^diff --git' | sed -E 's|^diff --git a/(.*) b/.*|\1|' || true
 
-setup/apply:
-	@$(CHEZMOI) apply
+apply:
+	@echo "以下のファイルが適用対象となります。:"
+	@$(MAKE) -s setup/diff | sed 's|^|  |'
+	@printf "変更を適用しますか？ [y/N] "; read -r confirm; \
+	if [[ ! "$$confirm" =~ ^[Yy]$$]]; then \
+		echo "キャンセルしました。"; \
+	else \
+		@$(CHEZMOI) apply; \
+	fi
 
-setup/status:
+status:
 	@$(CHEZMOI) status
 
-setup/doctor:
+# ========================================
+# bootstrap
+# ========================================
+require:
 	@missing=0; \
 	for cmd in bash age age-keygen pass-cli chezmoi openssl; do \
 		if command -v "$$cmd" >/dev/null 2>&1; then \
@@ -46,6 +63,16 @@ setup/doctor:
 	done; \
 	exit "$$missing"
 
-pp/setup:
+# Proton Passラッパースクリプトを先行展開
+wrapper:
+	@echo "==> Proton Passラッパーを展開"
+	$(CHEZMOI) apply "$(PROTON_PASS_WRAPPER)"
+	@test -x "$(PROTON_PASS_WRAPPER)" || { \
+		echo "ERROR: ラッパーが実行可能ではありません" >&2; \
+		exit 1; \
+	}
+
+bootstrap:
+	@$(MAKE) wrapper
 	@bash "$(BOOTSTRAP)"
 
