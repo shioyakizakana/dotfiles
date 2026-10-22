@@ -1,84 +1,77 @@
 #!/usr/bin/env bash
-
 set -euo pipefail
 umask 077
 
-# 明示指定を優先し、未指定の場合だけ環境に応じて決定する。
-resolve_provider() {
-  if [[ -n "${PROTON_PASS_KEY_PROVIDER:-}" ]]; then
-    printf '%s\n' "$PROTON_PASS_KEY_PROVIDER"
-    return 0
-  fi
+# Proton Pass CLIの初期ログイン用エントリーポイント。
+# 秘密情報の復号とpass-cliの実行はproton-passラッパーに委ねる。
+# setup-proton-pass.shと同じidentityのデフォルトパスを使う。
 
-  printf '%s\n' {{ .protonPassProvider }}
+die() {
+  printf '[-] ' >&2
+  printf "$1\n" "${@:2}" >&2
+  exit 1
 }
 
-# 必要なコマンドが利用可能か確認する。
 require() {
-  local cmd="$1"
-
-  if ! command -v "$cmd" >/dev/null 2>&1; then
-    printf '必要なコマンドが見つかりません: %s\n' "$cmd" >&2
-    return 1
-  fi
+  local cmd
+  for cmd in "$@"; do
+    command -v "$cmd" >/dev/null 2>&1 ||
+      die '必要なコマンドが見つかりません: %s' "$cmd"
+  done
 }
 
-# Proton Pass CLIの鍵プロバイダーを決定する。
-provider="$(resolve_provider)"
-# 共通パス
-readonly DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/proton-pass"
-readonly PAT_FILE="$DATA_DIR/token.age"
-readonly ENCRYPTION_FILE="$DATA_DIR/encryption-key.age"
-readonly AGE_IDENTITY_FILE="${AGE_IDENTITY_FILE:-${XDG_DATA_HOME:-$HOME/.local/share}/age/id_proton_pat}"
+resolve_provider() {
+  local configured_provider={{ .protonPassProvider | quote }}
+  local requested="${PROTON_PASS_KEY_PROVIDER:-$configured_provider}"
 
-case "$provider" in
-keyring | env)
-  ;;
-*)
-  printf '未対応のprovider: %s\n' "$provider" >&2
-  exit 1
-  ;;
-esac
+  case "$requested" in
+  env | keyring) printf '%s\n' "$requested" ;;
+  *) die '未対応のprovider: %s' "$requested" ;;
+  esac
+}
 
-# 必要な実行ファイルを確認する。
-readonly PASS_WRAPPER="$HOME/.local/bin/proton-pass"
+require_secret_file() {
+  local name="$1" path="$2"
 
-require pass-cli
+  [[ ! -L "$path" && -f "$path" &&
+    -s "$path" && -r "$path" ]] ||
+    die '%sが見つからないか、読み取れません: %s' \
+      "$name" "$path"
+}
 
-if [[ ! -x "$PASS_WRAPPER" ]]; then
-  printf 'Proton Passラッパーが見つかりません: %s\n' \
-    "$PASS_WRAPPER" >&2
-  exit 1
-fi
+main() {
+  (($# == 0)) ||
+    die '引数は受け付けません（使用方法: %s）' "$0"
 
-# envプロバイダーの場合は暗号化鍵の準備状況を確認する。
-if [[ "$provider" == "env" ]]; then
-  require age
+  provider="$(resolve_provider)"
 
-  if [[ ! -s "$DATA_DIR/encryption-key.age" ]]; then
-    printf '暗号化されたデータベース鍵が見つかりません。\n' >&2
-    exit 1
+  local provider
+
+  local -r DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/proton-pass"
+  local -r IDENTITY_DIR="${AGE_IDENTITY_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/age}"
+  local -r IDENTITY_FILE="${AGE_IDENTITY_FILE:-$IDENTITY_DIR/id_proton_pat.age}"
+  local -r PAT_FILE="$DATA_DIR/token.age"
+  local -r ENCRYPTION_FILE="$DATA_DIR/encryption-key.age"
+  local -r PASS_WRAPPER="$HOME/.local/bin/proton-pass"
+
+  require age pass-cli
+
+  [[ -f "$PASS_WRAPPER" && -x "$PASS_WRAPPER" &&
+    ! -L "$PASS_WRAPPER" ]] ||
+    die 'Proton Passラッパーが存在しないか実行できません: %s' \
+      "$PASS_WRAPPER"
+
+  require_secret_file '暗号化PAT' "$PAT_FILE"
+  require_secret_file '暗号化identity' "$IDENTITY_FILE"
+
+  if [[ "$provider" == env ]]; then
+    require_secret_file '暗号化鍵' "$ENCRYPTION_FILE"
   fi
 
-  if [[ ! -r "$AGE_IDENTITY_FILE" ]]; then
-    printf 'age identityが読み取れません: %s\n' \
-      "$AGE_IDENTITY_FILE" >&2
-    exit 1
-  fi
-fi
+  export PROTON_PASS_KEY_PROVIDER="$provider"
+  export AGE_IDENTITY_FILE="$IDENTITY_FILE"
 
-# PATはkeyring/envのどちらのプロバイダーでも利用する。
+  exec "$PASS_WRAPPER" login
+}
 
-require age
-
-if [[ ! -s "$PAT_FILE" ]]; then
-  printf '暗号化されたPATが見つかりません: %s\n' \
-    "$PAT_FILE" >&2
-  exit 1
-fi
-
-# ラッパー側でproviderの再指定とPATとデータベース暗号化鍵の復号を行う。
-export PROTON_PASS_KEY_PROVIDER="$provider"
-
-# PATによるログインを実行する。
-exec "$PASS_WRAPPER" login
+main "$@"

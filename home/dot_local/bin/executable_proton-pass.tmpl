@@ -1,88 +1,93 @@
 #!/usr/bin/env bash
-
 set -euo pipefail
 umask 077
 
-# 明示指定がある場合は優先する。
-# 未指定の場合はchezmoiの環境判定を利用する。
-resolve_provider() {
-  if [[ -n "${PROTON_PASS_KEY_PROVIDER:-}" ]]; then
-    printf '%s\n' "$PROTON_PASS_KEY_PROVIDER"
-    return 0
-  fi
+# Proton Pass CLI用ラッパー。
+# 暗号化されたPATとデータベース鍵の復号は必要なコマンド実行時のみ行う。
+# パスフレーズ付きage identityはage自身に復号させる（キャッシュしない）。
 
-  printf '%s\n' {{ .protonPassProvider }}
+error() {
+  printf '[-] ' >&2
+  printf "$1\n" "${@:2}" >&2
+}
+die() {
+  error "$@"
+  exit 1
 }
 
-readonly PROVIDER="$(resolve_provider)"
+require() {
+  local cmd
+  for cmd in "$@"; do
+    command -v "$cmd" >/dev/null 2>&1 ||
+      die '必要なコマンドが見つかりません: %s' "$cmd"
+  done
+}
 
-# 共通パス
-readonly DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/proton-pass"
-readonly PAT_FILE="$DATA_DIR/token.age"
-readonly ENCRYPTION_FILE="$DATA_DIR/encryption-key.age"
-readonly AGE_IDENTITY_FILE="${AGE_IDENTITY_FILE:-${XDG_DATA_HOME:-$HOME/.local/share}/age/id_proton_pat}"
+resolve_provider() {
+  local configured_provider={{ .protonPassProvider | quote }}
+  local requested="${PROTON_PASS_KEY_PROVIDER:-$configured_provider}"
+  case "$requested" in
+  env | keyring) printf '%s\n' "$requested" ;;
+  *) die '未対応のprovider: %s' "$requested" ;;
+  esac
+}
+
+require_secret_file() {
+  local label="$1" path="$2"
+  [[ ! -L "$path" && -f "$path" && -s "$path" && -r "$path" ]] ||
+    die '%sが存在しないか、読み取れません: %s' "$label" "$path"
+}
 
 decrypt_secret() {
-  local file="$1"
-
-  if [[ ! -r "$file" ]]; then
-    printf '暗号化ファイルが読み取れません: %s\n' "$file" >&2
-    return 1
-  fi
-
-  age --decrypt \
-    --identity "$AGE_IDENTITY_FILE" \
-    "$file"
+  local file="$1" identity="$2"
+  age --decrypt --identity "$identity" "$file"
 }
 
 main() {
-  local encryption_key=""
-  local token=""
+  local provider encryption_key='' token=''
+  local -r DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/proton-pass"
+  local -r IDENTITY_DIR="${AGE_IDENTITY_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/age}"
+  local -r IDENTITY_FILE="${AGE_IDENTITY_FILE:-$IDENTITY_DIR/id_proton_pat.age}"
+  local -r PAT_FILE="$DATA_DIR/token.age"
+  local -r ENCRYPTION_FILE="$DATA_DIR/encryption-key.age"
 
-  case "$PROVIDER" in
-  keyring)
-    ;;
-  env)
-    encryption_key="$(decrypt_secret "$ENCRYPTION_FILE")"
+  provider="$(resolve_provider)" || die 'providerを決定できませんでした'
+  require pass-cli
 
-    if [[ -z "$encryption_key" ]]; then
-      printf 'データベース暗号化鍵が空です。\n' >&2
-      return 1
-    fi
-    ;;
-  *)
-    printf '未対応のprovider: %s\n' "$PROVIDER" >&2
-    return 1
-    ;;
-  esac
-
-  # PATはログイン時だけ復号する。
-  if [[ "${1:-}" == "login" ]]; then
-    token="$(decrypt_secret "$PAT_FILE")"
-
-    if [[ -z "$token" ]]; then
-      printf 'PATが空です。\n' >&2
-      return 1
-    fi
+  # envではすべてのpass-cli操作でデータベース鍵が必要。
+  # keyringでは復号はlogin時のPATに限る。
+  if [[ "$provider" == env || "${1:-}" == login ]]; then
+    require age
+    require_secret_file '暗号化identity' "$IDENTITY_FILE"
+  fi
+  if [[ "$provider" == env ]]; then
+    require_secret_file 'データベース暗号化鍵' "$ENCRYPTION_FILE"
+    encryption_key="$(decrypt_secret "$ENCRYPTION_FILE" "$IDENTITY_FILE")" ||
+      die 'データベース暗号化鍵の復号に失敗しました'
+    [[ "$encryption_key" =~ ^[[:xdigit:]]{64}$ ]] ||
+      die 'データベース暗号化鍵の形式が不正です'
+  fi
+  if [[ "${1:-}" == login ]]; then
+    require_secret_file '暗号化PAT' "$PAT_FILE"
+    token="$(decrypt_secret "$PAT_FILE" "$IDENTITY_FILE")" ||
+      die 'PATの復号に失敗しました'
+    [[ -n "$token" ]] || die '復号したPATが空です'
   fi
 
+  # 秘密情報は呼び出したpass-cliプロセスのみに渡す。
+  # 呼び出し元シェルの環境は変更しない。
   (
-    export PROTON_PASS_KEY_PROVIDER="$PROVIDER"
-
-    if [[ "$PROVIDER" == "env" ]]; then
+    export PROTON_PASS_KEY_PROVIDER="$provider"
+    if [[ "$provider" == env ]]; then
       export PROTON_PASS_ENCRYPTION_KEY="$encryption_key"
     else
       unset PROTON_PASS_ENCRYPTION_KEY
     fi
-
-    if [[ -n "$token" ]]; then
+    if [[ "${1:-}" == login ]]; then
       export PROTON_PASS_PERSONAL_ACCESS_TOKEN="$token"
     else
       unset PROTON_PASS_PERSONAL_ACCESS_TOKEN
     fi
-
-    unset encryption_key token
-
     exec pass-cli "$@"
   )
 }
