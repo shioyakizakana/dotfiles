@@ -135,7 +135,8 @@ LINUX_ENV=proot-ubuntu \
 
 # keyringを使用するネイティブUbuntuでの実行例
 LINUX_ENV=native-ubuntu \
-  bash "$(chezmoi source-path)/bootstrap/setup-proton-pass.sh" keyring```
+  bash "$(chezmoi source-path)/bootstrap/setup-proton-pass.sh" keyring
+```
 
 `LINUX_ENV`およびKey Providerは、chezmoi側の設定と一致させる。
 
