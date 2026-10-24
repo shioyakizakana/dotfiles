@@ -5,6 +5,47 @@ log() {
   printf "\n=== %s\n" "$*"
 }
 
+# rustupコンポーネントの導入
+install_rustup_component() {
+  local component="$1"
+  local installed
+
+  if ! command -v rustup >/dev/null 2>&1; then
+    log "rustupが見つかりません。"
+    return 1
+  fi
+
+  if ! installed=$(rustup component list --installed); then
+    log "rustupのコンポーネント一覧取得に失敗しました。"
+    return 1
+  fi
+
+  if printf '%s\n' "$installed" |
+    command -v grep -Eq "^${component}(-|$)"; then
+    log "${component} はインストール済みです。"
+    return 0
+  fi
+
+  log "${component} をインストールします。"
+  rustup component add "$component"
+}
+
+# LuaRocksパッケージを未インストールの場合のみ導入する
+install_luarock() {
+  local package="$1"
+  local lua_version="${2:-5.1}"
+
+  if luarocks --lua-version="$lua_version" list --porcelain |
+    awk '{print $1}' |
+    command -v grep -Fxq "$package"; then
+    log "${package} はインストール済みです。"
+    return 0
+  fi
+
+  log "${package} をインストールします。"
+  luarocks --lua-version="$lua_version" install "$package"
+}
+
 if ! command -v mise >/dev/null 2>&1; then
   read -rp "miseがインストールされていません。インストールしますか? [y/N]: " confirm
 
@@ -67,7 +108,7 @@ if [[ "$confirm" =~ ^[Yy]$ ]]; then
 
   log " Rust ==="
   mise use -g rust
-  rustup component add rust-analyzer
+  install_rustup_component "rust-analyzer"
 
   log " Ruby ==="
   mise use -g ruby
@@ -99,9 +140,9 @@ if [[ "$confirm" =~ ^[Yy]$ ]]; then
   mise use -g neovim
   mise use -g lua@5.1 # NeoVim0.12に合わせる
   mise use -g lua-language-server
-  mise use -g stylua                          # フォーマッター
-  luarocks --lua-version=5.1 install luacheck # リンター
-  luarocks --lua-version=5.1 install vuseted  # テストツール
+  mise use -g stylua       # フォーマッター
+  install_luarock luacheck # リンター
+  install_luarock vuseted  # テストツール
 
   log " Nim ==="
   mise use -g nim

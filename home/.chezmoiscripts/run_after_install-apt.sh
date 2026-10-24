@@ -6,7 +6,7 @@ log() {
   printf "\n=== %s\n" "$*"
 }
 
-read -rp "インストールを開始しますか? [y/N]: " confirm
+read -rp "標準パッケージマネージャーによるインストールを開始しますか? [y/N]: " confirm
 
 if [[ "$confirm" =~ ^[Yy] ]]; then
 
@@ -24,7 +24,7 @@ if [[ "$confirm" =~ ^[Yy] ]]; then
     libreadline-dev \
     libsqlite3-dev \
     libssl-dev \
-    ligz-dev \
+    libz-dev \
     make \
     tar \
     tree \

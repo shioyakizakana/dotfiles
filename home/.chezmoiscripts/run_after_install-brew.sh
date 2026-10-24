@@ -13,7 +13,7 @@ if ! command -v >/dev/null 2>&1; then
   if [[ "$confirm" =~ ^[Yy]$ ]]; then
     log "Homebrewをインストールしています..."
     /bin/bash -c \
-    "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   else
     log "Homebrewのインストールをスキップしました。"
     exit 0
@@ -27,8 +27,8 @@ if [[ -f "$HOME/.Brewfile" ]]; then
 
   read -rp "インストールを開始しますか? [y/N]: " confirm
   if [[ "$confirm" =~ ^[Yy]$ ]]; then
-    brew bundle
-    brew bundle cleanup
+    brew bundle --file "$HOME/.Brewfile"
+    brew bundle cleanup --file "$HOME/.Brewfile"
     log "インストールが完了しました。"
   else
     log "インストールをスキップしました。"
@@ -38,4 +38,3 @@ else
   log "$HOME/.Brewfileがありません。\nインストールをスキップしました。"
   exit 0
 fi
-

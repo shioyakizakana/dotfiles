@@ -21,6 +21,7 @@ local suffix_map = {
 	{ "%.ya?ml%.tmpl$", "yaml" },
 	{ "%.json%.tmpl$", "json" },
 	{ "%.sh%.tmpl$", "sh" },
+	{ "%.py%.tmpl$", "python" },
 }
 
 local function detect_shebang(buf)
