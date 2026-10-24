@@ -54,6 +54,7 @@ main() {
   local -r ENCRYPTION_FILE="$DATA_DIR/encryption-key.age"
   local -r PASS_WRAPPER="$HOME/.local/bin/proton-pass"
 
+  provider="$(resolve_provider)" || die 'providerを決定できませんでした'
   require age pass-cli
 
   [[ -f "$PASS_WRAPPER" && -x "$PASS_WRAPPER" &&

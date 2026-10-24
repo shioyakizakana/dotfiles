@@ -1,6 +1,6 @@
 # dotfiles
 
-chezmoiとGitを使用して、Linux環境の設定ファイルを管理するためのdotfilesリポジトリ。
+`chezmoi`とGitを使用して、Linux環境の設定ファイルを管理するためのdotfilesリポジトリ。
 Proton Pass CLIと連携し、認証情報を必要とする設定ファイルも管理する。
 
 ## 1. 対応環境
@@ -22,7 +22,7 @@ Proton Pass CLIと連携し、認証情報を必要とする設定ファイル�
 
 ## 2. ディレクトリ構成
 
-主要なファイル構成は以下の通り。
+Proton Pass CLIセットアップ関わる主要なファイル構成は以下の通り。
 
 ```tree
 dotfiles/
@@ -35,7 +35,8 @@ dotfiles/
     └── dot_local/
         └── bin/
             ├── executable-init-proton-pass.tmpl
-            └── executable-proton-pass.tmpl
+            ├── executable-proton-pass.tmpl
+            └── executable-proton-pass-key-cache.py.tmpl
 
 ```
 
@@ -47,12 +48,13 @@ dotfiles/
 
 初期構築には以下のコマンドが必要となる。
 
+- `curl`
+- `wget`
 - `git`
 - `chezmoi`
 - `age` / `age-keygen`
 - `pass-cli`（Proton Pass CLI）
 - `openssl`
-- `flock`
 - その他、Bashおよび基本的なシステムコマンド
 
 ### 3.1.1 基礎ツールのインストール
@@ -60,7 +62,7 @@ dotfiles/
 ```shell
 # 先にaptをアップデート
 apt update -y && apt upgrade -y
-apt install -y age buiild-essential curl flock openssl wget vim
+apt install -y age buiild-essential curl openssl wget vim
 ```
 
 ### 3.1.2 chezmoiとProton Pass CLIをインストール
@@ -89,9 +91,10 @@ PATには必要なVaultまたはItemへのアクセス権限のみを付与し�
 ### 4.1 dotfilesの取得
 
 以下のコマンドでdotfilesをクローンする。
+この時点では`chezmoi`にPATHが通っていないため、`apply`するまでは`~/.local/bin/chezmoi`でコマンドを実行する。
 
 ```shell
-chezmoi init shioyakizakana
+~/.local/bin/chezmoi init shioyakizakana
 ```
 
 この段階では`--apply`を指定しない。
@@ -111,13 +114,13 @@ chezmoi init shioyakizakana
 初期化後、chezmoiのテンプレートデータを確認。
 
 ```shell
-chezmoi data
+~/.local/bin/chezmoi data
 ```
 
 特に`protonPassProvider`が、使用するKey Providerと一致していることを確認する。
 
 ```shell
-chezmoi execute-template '{{ .protonPassProvider }}'
+~/.local/bin/chezmoi execute-template '{{ .protonPassProvider }}'
 ```
 
 設定内容を修正する場合は、chezmoiのローカル設定ファイルを編集する。(デフォルトは`~/.config/chezmoi/chezmoi.toml`)
@@ -244,7 +247,8 @@ make -C ~/.local/share/chezmoi apply
 ```tree
 ~/.local/bin/
 ├── init-proton-pass
-└── proton-pass
+├── proton-pass
+└── proton-pass-key-cache.py
 ```
 
 `~/.local/bin`にPATHが通っていない場合は、`.bashrc`などのシェル設定を確認する。(`zsh`におけるPATHは`~/.zsh/path.zsh`にて管理)
@@ -272,16 +276,40 @@ Proton Pass CLIに関わる各スクリプトの役割は次の通り。
 
 | スクリプト| 役割 | 実行タイミング |
 | --- | --- | --- |
-| `setup-proton-pass.sh` | 認証環境の初期構築 | 新規環境構築時 |
-| `init-proton-pass` | PATによるログイン| 再ログインが必要な場合 |
-| `proton-pass` | 暗号化鍵を一時注入してCLIを実行| 通常操作時 |
+| `setup-proton-pass.sh` | identity・PAT・暗号化鍵の初期生成 | 新規環境構築時 |
+| `init-proton-pass` | PATによるログインの入口 | 再ログインが必要な場合 |
+| `proton-pass` | 暗号化鍵を一時注入してProton Pass CLIを実行 | 通常操作時 |
+| `proton-pass-key-cache.py` | CLI暗号化鍵のみを一時的にキャッシュして`pass-cli`へ注入 | `env`環境における通常操作時 |
 
+### 7.1 キャッシュスクリプトの仕様
 
-> [!パスフレーズ入力について]
-> 現在の構成では復号鍵のキャッシュを行わない。
-> `env`プロバイダーの場合、通常操作でも暗号化鍵の復号時にパスフレーズ入力が必要となる。
-> また、ログイン時はPATとCLI用暗号化鍵をそれぞれ復号するため、複数回入力を求められる場合がある。
-> これは現在の設計上、正常な動作。
+`env`環境の場合、通常の`pass-cli`操作にCLI暗号化鍵の入力が毎回必要になる。
+通常運用に影響が出るため、キャッシュスクリプト`proton-pass-key-cache.py`によりCLI暗号化鍵のみ一時的なキャッシュを容認。
+
+キャッシュスクリプトの簡易的な仕様を示す。
+
+| 項目   | 実行    |
+|--------------- | --------------- |
+| 使用言語   | Pytnon3.11以上(OS標準搭載のPythonを使用)   |
+| 保存対象  | Proton Pass CLIの暗号鍵のみ   |
+| 標準有効期限   | 15分  |
+| 設定可能な最大有効期限   | 60分  |
+| 有効期限後   | プロセスを終了してキャッシュを破棄   |
+| 手動ロック   | 対応   |
+| 再起動後の状態   | ロック状態   |
+| `pass-cli`の起動   | キャッシュスクリプト経由で実行   |
+
+キャッシュが作成されると、有効期限内の操作はパスフレーズの入力が不要となる。
+
+キャッシュを手動で破棄する場合は、以下を実行する。
+
+```shell
+proton-pass-key-cache.py lock
+```
+
+> [!Note] 
+> 有効期限はキャッシュを解除した時点から計算する。
+> 起動済みエージェントの有効期限を変更する場合は、一度ロックして再度解除する必要がある。
 
 ## 8. 既存環境からの移行
 

@@ -31,25 +31,26 @@ resolve_provider() {
   *) die '未対応のprovider: %s' "$requested" ;;
   esac
 }
-
 require_secret_file() {
   local label="$1" path="$2"
   [[ ! -L "$path" && -f "$path" && -s "$path" && -r "$path" ]] ||
     die '%sが存在しないか、読み取れません: %s' "$label" "$path"
 }
 
-decrypt_secret() {
+decrypt_pat() {
   local file="$1" identity="$2"
-  age --decrypt --identity "$identity" "$file"
+  [[ -f "$file" && ! -L "$file" && -s "$file" && -r "$file" ]] || die "暗号化PATが読み取れません: $file"
+  [[ -f "$identity" && ! -L "$identity" && -s "$identity" && -r "$identity" ]] || die "identityが読み取れません: $identity"
+  age -d -i "$identity" "$file"
 }
 
 main() {
-  local provider encryption_key='' token=''
+  local provider token=''
   local -r DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/proton-pass"
   local -r IDENTITY_DIR="${AGE_IDENTITY_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/age}"
   local -r IDENTITY_FILE="${AGE_IDENTITY_FILE:-$IDENTITY_DIR/id_proton_pat.age}"
   local -r PAT_FILE="$DATA_DIR/token.age"
-  local -r ENCRYPTION_FILE="$DATA_DIR/encryption-key.age"
+  local -r CACHE_HELPER="$HOME/.local/bin/proton-pass-key-cache.py"
 
   provider="$(resolve_provider)" || die 'providerを決定できませんでした'
   require pass-cli
@@ -58,18 +59,10 @@ main() {
   # keyringでは復号はlogin時のPATに限る。
   if [[ "$provider" == env || "${1:-}" == login ]]; then
     require age
-    require_secret_file '暗号化identity' "$IDENTITY_FILE"
-  fi
-  if [[ "$provider" == env ]]; then
-    require_secret_file 'データベース暗号化鍵' "$ENCRYPTION_FILE"
-    encryption_key="$(decrypt_secret "$ENCRYPTION_FILE" "$IDENTITY_FILE")" ||
-      die 'データベース暗号化鍵の復号に失敗しました'
-    [[ "$encryption_key" =~ ^[[:xdigit:]]{64}$ ]] ||
-      die 'データベース暗号化鍵の形式が不正です'
   fi
   if [[ "${1:-}" == login ]]; then
     require_secret_file '暗号化PAT' "$PAT_FILE"
-    token="$(decrypt_secret "$PAT_FILE" "$IDENTITY_FILE")" ||
+    token="$(decrypt_pat "$PAT_FILE" "$IDENTITY_FILE")" ||
       die 'PATの復号に失敗しました'
     [[ -n "$token" ]] || die '復号したPATが空です'
   fi
@@ -78,17 +71,20 @@ main() {
   # 呼び出し元シェルの環境は変更しない。
   (
     export PROTON_PASS_KEY_PROVIDER="$provider"
-    if [[ "$provider" == env ]]; then
-      export PROTON_PASS_ENCRYPTION_KEY="$encryption_key"
-    else
-      unset PROTON_PASS_ENCRYPTION_KEY
-    fi
     if [[ "${1:-}" == login ]]; then
       export PROTON_PASS_PERSONAL_ACCESS_TOKEN="$token"
     else
       unset PROTON_PASS_PERSONAL_ACCESS_TOKEN
     fi
-    exec pass-cli "$@"
+    unset token
+    if [[ "$provider" == env ]]; then
+      [[ -f "$CACHE_HELPER" && -x "$CACHE_HELPER" ]] || die 'キャッシュスクリプトがありません'
+      unset PROTON_PASS_ENCRYPTION_KEY
+      exec "$CACHE_HELPER" run -- "$@"
+    else
+      unset PROTON_PASS_ENCRYPTION_KEY
+      exec pass-cli "$@"
+    fi
   )
 }
 
