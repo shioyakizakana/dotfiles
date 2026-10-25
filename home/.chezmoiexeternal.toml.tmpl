@@ -1,31 +1,42 @@
 [".zsh/plugin/plugins/powerlevel10k"]
 type = "git-repo"
-url = "htps://github.com/romkatv/powerlevel10k.git"
-clone.args = [
-  "--depth", "1"
-]
+url = "https://github.com/romkatv/powerlevel10k.git"
+refreshPeriod = "168h"
+clone.args = ["--depth", "1"]
+pull.args = ["--ff-only"]
 
 [".zsh/plugin/plugins/fast-syntax-highlighting"]
 type = "git-repo"
 url = "https://github.com/zdharma-continuum/fast-syntax-highlighting.git"
+refreshPeriod = "168h"
+pull.args = ["--ff-only"]
 
-[".zsh/plugin/plugins/zsh-autosuggesions"]
+[".zsh/plugin/plugins/zsh-autosuggestions"]
 type = "git-repo"
-url = "https://github.com/zsh-users/zsh-autosuggesions.git"
+url = "https://github.com/zsh-users/zsh-autosuggestions.git"
+refreshPeriod = "168h"
+pull.args = ["--ff-only"]
 
 [".zsh/plugin/plugins/zsh-completions"]
 type = "git-repo"
 url = "https://github.com/zsh-users/zsh-completions.git"
+refreshPeriod = "168h"
+pull.args = ["--ff-only"]
 
 [".zsh/plugin/plugins/fzf"]
 type = "git-repo"
-url = "https://guthub.com/junegunn/fzf.git"
+url = "https://github.com/junegunn/fzf.git"
+refreshPeriod = "168h"
+pull.args = ["--ff-only"]
 
 [".zsh/plugin/plugins/zeno"]
 type = "git-repo"
 url = "https://github.com/yuki-yano/zeno.zsh.git"
+refreshPeriod = "168h"
+pull.args = ["--ff-only"]
 
 [".config/tmux/plugins/tpm"]
 type = "git-repo"
-url = "git clone https://github.com/tmux-plugins/tpm"
-
+url = "https://github.com/tmux-plugins/tpm.git"
+refreshPeriod = "168h"
+pull.args = ["--ff-only"]
