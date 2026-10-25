@@ -10,15 +10,21 @@
 # Makefileのあるディレクトリを基準とする
 REPO_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
+# セットアップ用スクリプト
 BOOTSTRAP := $(REPO_ROOT)/bootstrap/setup-proton-pass.sh
 
-CHEZMOI := ~/.local/bin/chezmoi --source "$(REPO_ROOT)"
+# 実行ファイルと引数
+CHEZMOI_BIN := $(HOME)/.local/bin/chezmoi
+CHEZMOI := "$(CHEZMOI_BIN)" --source "$(REPO_ROOT)"
 
 # ラッパースクリプトの展開先
 PROTON_PASS_WRAPPER := $(HOME)/.local/bin/proton-pass
 
-.PHONY: help diff apply status require wrapper bootstrap
+.PHONY: help diff apply status require require-bootstrap wrapper bootstrap
 
+# ========================================
+# help
+# ========================================
 help:
 	@printf '%s\n' \
 		'使用可能なターゲット:' \
@@ -32,28 +38,28 @@ help:
 # ========================================
 # chezmoi
 # ========================================
-diff:
-	@$(CHEZMOI) diff --no-pager 2> /dev/null | grep '^diff --git' | sed -E 's|^diff --git a/(.*) b/.*|\1|' || true
+diff: require
+	@$(CHEZMOI) diff --no-pager
 
-apply:
-	@echo "以下のファイルが適用対象となります。:"
-	@$(MAKE) -s setup/diff | sed 's|^|  |'
-	@printf "変更を適用しますか？ [y/N] "; read -r confirm; \
-	if [[ ! "$$confirm" =~ ^[Yy]$$]]; then \
-		echo "キャンセルしました。"; \
-	else \
-		@$(CHEZMOI) apply; \
-	fi
+apply: require
+	@echo "以下のファイルが適用対象となります:"
+	@$(CHEZMOI) diff --no-pager
+	@printf "変更を適用しますか？ [y/N] "; \
+	read -r confirm || exit 1; \
+	case "$$confirm" in \
+		[yY]) $(CHEZMOI) apply ;; \
+		*) echo "キャンセルしました。" ;; \
+	esac
 
-status:
+status: require
 	@$(CHEZMOI) status
 
 # ========================================
-# bootstrap
+# 実行環境確認
 # ========================================
 require:
 	@missing=0; \
-	for cmd in bash age age-keygen pass-cli chezmoi openssl; do \
+	for cmd in age age-keygen curl git pass-cli openssl wget; do \
 		if command -v "$$cmd" >/dev/null 2>&1; then \
 			printf '[OK] %s\n' "$$cmd"; \
 		else \
@@ -61,18 +67,28 @@ require:
 			missing=1; \
 		fi; \
 	done; \
+	if test -x "$(CHEZMOI_BIN)"; then \
+		printf '[OK] chezmoi\n'; \
+	else \
+		printf '[NG] chezmoi\n'; \
+		missing=1; \
+	fi; \
 	exit "$$missing"
 
-# Proton Passラッパースクリプトを先行展開
-wrapper:
+# ========================================
+# Proton Pass
+# ========================================
+wrapper: require
 	@echo "==> Proton Passラッパーを展開"
-	$(CHEZMOI) apply "$(PROTON_PASS_WRAPPER)"
+	@$(CHEZMOI) apply "$(PROTON_PASS_WRAPPER)"
 	@test -x "$(PROTON_PASS_WRAPPER)" || { \
 		echo "ERROR: ラッパーが実行可能ではありません" >&2; \
 		exit 1; \
 	}
 
-bootstrap:
-	@$(MAKE) wrapper
+# ========================================
+# 初期セットアップ
+# ========================================
+bootstrap: wrapper
+	@echo "==> Proton Pass初期セットアップ"
 	@bash "$(BOOTSTRAP)"
-
