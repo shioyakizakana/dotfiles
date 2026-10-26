@@ -25,12 +25,11 @@ alias lta='eza --tree --level=2 -a --group-directories-first'
 # commands
 # ------------------------------------------------------------
 alias reload='source ~/.zshrc'
-alias desk='~/scripts/desk/ubuntu_desk.sh'
-alias upd='~/scripts/pack_update.sh'
+# alias desk='~/scripts/desk/ubuntu_desk.sh'
+alias upd='~/.local/bin/update_apps'
 
 alias homecd='cd -- "${HOME}"'
 alias cmcd='cd -- "$(chezmoi source-path)"'
 alias cmlg='cd -- "$(chezmoi source-path)" && nvim +LazyGit'
 
 alias nvlg="nvim +LazyGit"
-
