@@ -1,3 +1,6 @@
+# ===========================================================
+# Zsh Plugins
+# ===========================================================
 [".zsh/plugin/plugins/powerlevel10k"]
 type = "git-repo"
 url = "https://github.com/romkatv/powerlevel10k.git"
@@ -35,8 +38,21 @@ url = "https://github.com/yuki-yano/zeno.zsh.git"
 refreshPeriod = "168h"
 pull.args = ["--ff-only"]
 
+# ===========================================================
+# TMUX Plugin Manager
+# ===========================================================
 [".config/tmux/plugins/tpm"]
 type = "git-repo"
 url = "https://github.com/tmux-plugins/tpm.git"
 refreshPeriod = "168h"
 pull.args = ["--ff-only"]
+
+# ===========================================================
+# AI Agent Skills
+# ===========================================================
+[".local/share/agent-skills/natural-japanese"]
+type = "git-repo"
+url = "https://github.com/coji/natural-japanese.git"
+clone.args = ["--depth", "1"]
+pull.args = ["--ff-only"]
+refreshPeriod = "0"

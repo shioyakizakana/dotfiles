@@ -1,0 +1,163 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+readonly SKILLS_DIR="${HOME}/.local/share/agent-skills"
+
+# 更新対象として許可するスキル
+readonly -a SKILLS=(
+  "natural-japanese"
+)
+
+log() {
+  printf '\n==> %s\n' "$*"
+}
+
+error() {
+  printf 'Error: %s\n' "$*" >&2
+  exit 1
+}
+
+usage() {
+  cat <<'EOF'
+Usage:
+  update-agent-skills list
+  update-agent-skills check [skill]
+  update-agent-skills update <skill>
+  update-agent-skills update --all
+EOF
+}
+
+is_managed_skill() {
+  local name="$1"
+  local skill
+
+  for skill in "${SKILLS[@]}"; do
+    if [[ "$skill" == "$name" ]]; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+get_repo() {
+  local name="$1"
+
+  is_managed_skill "$name" ||
+    error "未登録のスキル: $name"
+
+  REPLY="${SKILLS_DIR}/${name}"
+
+  [[ -d "$REPLY/.git" ]] ||
+    error "Gitリポジトリがありません: $REPLY"
+}
+
+check_skill() {
+  local name="$1"
+  local repo upstream counts behind ahead
+
+  get_repo "$name"
+  repo="$REPLY"
+
+  log "更新確認: $name"
+
+  git -C "$repo" fetch --quiet
+
+  upstream=$(git -C "$repo" rev-parse \
+    --abbrev-ref --symbolic-full-name '@{upstream}') ||
+    error "追跡先が設定されていません: $name"
+
+  counts=$(git -C "$repo" rev-list \
+    --left-right --count "HEAD...${upstream}")
+
+  read -r ahead behind <<< "$counts"
+
+  printf 'Ahead: %s / Behind: %s\n' "$ahead" "$behind"
+
+  if (( behind > 0 )); then
+    git -C "$repo" log --oneline "HEAD..${upstream}"
+  fi
+}
+
+update_skill() {
+  local name="$1"
+  local repo old_rev new_rev
+
+  get_repo "$name"
+  repo="$REPLY"
+
+  log "更新: $name"
+
+  # ローカル変更がある場合は更新しない
+  [[ -z "$(git -C "$repo" status --porcelain)" ]] ||
+    error "ローカルに変更があります: $name"
+
+  old_rev=$(git -C "$repo" rev-parse HEAD)
+
+  git -C "$repo" pull --ff-only
+
+  new_rev=$(git -C "$repo" rev-parse HEAD)
+
+  if [[ "$old_rev" == "$new_rev" ]]; then
+    printf '変更なし\n'
+    return
+  fi
+
+  printf '\n更新内容:\n'
+  git -C "$repo" log --oneline \
+    "${old_rev}..${new_rev}"
+
+  printf '\n変更ファイル:\n'
+  git -C "$repo" diff --stat \
+    "$old_rev" "$new_rev"
+
+  # 現在のnatural-japaneseの構成を検査
+  if [[ "$name" == "natural-japanese" ]]; then
+    [[ -f "$repo/skills/natural-japanese/SKILL.md" ]] ||
+      error "SKILL.mdが見つかりません"
+  fi
+}
+
+main() {
+  local command="${1:-}"
+  local target="${2:-}"
+  local skill
+
+  case "$command" in
+    list)
+      for skill in "${SKILLS[@]}"; do
+        printf '%s\n' "$skill"
+      done
+      ;;
+    check)
+      if [[ -n "$target" ]]; then
+        check_skill "$target"
+      else
+        for skill in "${SKILLS[@]}"; do
+          check_skill "$skill"
+        done
+      fi
+      ;;
+    update)
+      [[ -n "$target" ]] || {
+        usage
+        exit 2
+      }
+
+      if [[ "$target" == "--all" ]]; then
+        for skill in "${SKILLS[@]}"; do
+          update_skill "$skill"
+        done
+      else
+        update_skill "$target"
+      fi
+      ;;
+    *)
+      usage
+      exit 2
+      ;;
+  esac
+}
+
+main "$@"
+

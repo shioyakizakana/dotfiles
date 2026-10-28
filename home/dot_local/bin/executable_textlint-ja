@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+readonly TOOL_DIR="${HOME}/.local/share/textlint-ja"
+readonly TEXTLINT="${TOOL_DIR}/node_modules/.bin/textlint"
+readonly CONFIG="${TOOL_DIR}/.textlintrc.json"
+
+if [[ ! -x "$TEXTLINT" ]]; then
+  printf 'Error: textlintがインストールされていません。\n' >&2
+  exit 1
+fi
+
+exec "$TEXTLINT" \
+  --config "$CONFIG" \
+  --rules-base-directory "$TOOL_DIR" \
+  "$@"
+
