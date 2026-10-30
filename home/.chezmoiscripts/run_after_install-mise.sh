@@ -148,8 +148,9 @@ if [[ "$confirm" =~ ^[Yy]$ ]]; then
   mise use -g nim
   nimble install nimlsp # LSP
 
-  log "Codex CLI"
+  log "AI Agents utils ==="
   mise use -g npm:@openai/codex
+  mise use -g npm:editprompt
 
   log "インストールが完了しました。"
 else
