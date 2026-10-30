@@ -20,6 +20,8 @@ vim.opt.fileencodings = "utf-8,cp932,euc-jp,sjis,latin1"
 local group_name = "my_nvim_rc"
 vim.api.nvim_create_augroup(group_name, { clear = true })
 
+vim.g.skk_mode = "SKK off"
+
 local function to_boolean(val)
 
   if val == nil then return false end
