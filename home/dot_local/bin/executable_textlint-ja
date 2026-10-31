@@ -12,6 +12,5 @@ fi
 
 exec "$TEXTLINT" \
   --config "$CONFIG" \
-  --rules-base-directory "$TOOL_DIR" \
+  --rulesdir "$TOOL_DIR" \
   "$@"
-
