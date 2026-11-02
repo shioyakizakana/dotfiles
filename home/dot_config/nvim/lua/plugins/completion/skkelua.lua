@@ -15,7 +15,7 @@ return {
 			completionRankFile = vim.fn["expand"]("~/.skk/rank.json"),
 			completion = {
 				enabled = true,
-				insertOnSelect = false,
+				insertOnSelect = true,
 				deferOkuri = true,
 			},
 			eggLikeNewline = true,
