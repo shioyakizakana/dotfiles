@@ -123,6 +123,7 @@ if [[ "$confirm" =~ ^[Yy]$ ]]; then
   mise use -g marksman
 
   log " Git utils ==="
+  mise use -g git-lfs
   mise use -g gh
   mise use -g delta
   mise use -g ghq
@@ -151,6 +152,37 @@ if [[ "$confirm" =~ ^[Yy]$ ]]; then
   log "AI Agents utils ==="
   mise use -g npm:@openai/codex
   mise use -g npm:editprompt
+
+  log "tmux ==="
+  mise use -g tmux
+
+  log "yazi ==="
+  mise use -g 7zip
+  mise use -g ffmpeg
+  mise use -g poppler
+  mise use -g imagemagick
+  # arm版は非対応のためhomebrewでインストール
+  # mise use -g resvg
+  mise use -g yazi
+
+  log "Encryption Tools ==="
+  mise use -g age
+  mise use -g sops
+
+  log "CLI Utils ==="
+  mise use -g atuin
+  mise use -g bat
+  mise use -g bats
+  mise use -g aqua:hpjansson/chafa
+  mise use -g eza
+  mise use -g fd
+  mise use -g go:github.com/babarot/gomi
+  mise use -g jq
+  mise use -g ripgrep
+  mise use -g tealdeer
+  mise use -g tree-sitter
+  mise use -g yq
+  mise use -g zoxide
 
   log "インストールが完了しました。"
 else

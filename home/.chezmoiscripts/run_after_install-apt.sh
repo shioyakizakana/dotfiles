@@ -13,7 +13,6 @@ if [[ "$confirm" =~ ^[Yy] ]]; then
   sudo apt update -y && sudo apt upgrade -y
 
   sudo apt install -y \
-    age \
     autoconf \
     build-essential \
     cmake \
