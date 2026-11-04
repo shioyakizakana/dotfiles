@@ -33,21 +33,21 @@ return {
 		require("skkelua").register_kanatable("rom", {
 			["jj"] = "escape",
 		})
-		-- vim.keymap.set({ "i", "c", "t" }, "<C-j>", "<Plug>(skkelua-toggle)")
+		vim.keymap.set({ "i", "c", "t" }, "<C-j>", "<Plug>(skkelua-toggle)")
 
 		-- Ctrl+j
-		vim.keymap.set({ "i", "c", "t" }, "<C-j>", function()
-			local skkelua = require("skkelua")
-			local mode = skkelua.mode()
+		-- vim.keymap.set({ "i", "c", "t" }, "<C-j>", function()
+		-- 	local skkelua = require("skkelua")
+		-- 	local mode = skkelua.mode()
 
-			if mode == "" then
-				skkelua.handle("enable")
-			else
-				skkelua.handle("handleKey", {
-					["function"] = "hirakana",
-				})
-			end
-		end, { expr = true })
+		-- if mode == "" then
+		-- 	skkelua.handle("enable")
+		-- else
+		-- 	skkelua.handle("handleKey", {
+		-- 		["function"] = "hirakana",
+		-- 	})
+		-- end
+		-- end, { expr = true })
 
 		--Ctrl+eでキャンセル
 		vim.keymap.set("i", "<C-e>", function()
