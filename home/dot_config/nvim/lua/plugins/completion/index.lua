@@ -37,7 +37,7 @@ return {
 					return true
 				end
 
-				return skkelua.mode() ~= ""
+				return not skkelua.is_enabled()
 			end,
 			keymap = require("plugins.completion.keymaps"),
 			cmdline = {
