@@ -189,11 +189,16 @@ def unlock(
         return
     key = decrypt_key(identity, encrypted)
     if not (reply := try_request(sock_path, {"op": "status"})):
+        # ログイン用PATを、CLIより長く生存する常駐プロセスへ継承させない。
+        daemon_env = os.environ.copy()
+        daemon_env.pop("PROTON_PASS_PERSONAL_ACCESS_TOKEN", None)
+        daemon_env.pop("PROTON_PASS_ENCRYPTION_KEY", None)
         subprocess.Popen(
             [sys.executable, str(Path(__file__).resolve()), "_serve", str(ttl)],
             stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
+            env=daemon_env,
             start_new_session=True,
             close_fds=True,
         )
