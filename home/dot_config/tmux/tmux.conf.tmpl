@@ -16,8 +16,11 @@ set-option -g repeat-time 5000
 # マウス操作を有効化
 set-option -g mouse on
 
-# デフォルトシェルをzshに設定
-set-option -g default-shell /bin/zsh
+# TermuxのPREFIX配下もPATHから探す。未導入時はtmux既定のシェルを使う。
+{{ $zsh := lookPath "zsh" -}}
+{{ if $zsh -}}
+set-option -g default-shell {{ $zsh | quote }}
+{{ end -}}
 
 # 番号基準値を変更
 set-option -g base-index 1

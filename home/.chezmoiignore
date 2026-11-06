@@ -9,3 +9,19 @@
 .local/bin/chezmoi
 .local/bin/mise
 .local/bin/pass-cli
+
+{{ $ubuntuFlags := or (get . "nativeUbuntu") (get . "wslUbuntu") (get . "qemuUbuntu") (get . "prootUbuntu") }}
+# Android版chezmoiをUbuntuゲスト内から使う構成も、環境フラグで区別する。
+{{ $androidGuest := and (eq .chezmoi.os "android") (or (get . "qemuUbuntu") (get . "prootUbuntu")) }}
+{{ $ubuntu := and (not (get . "termux")) (or (and (eq .chezmoi.os "linux") $ubuntuFlags) $androidGuest) }}
+{{ if not $ubuntu }}
+# Ubuntu用の一括導入とmise設定は、Termuxや未対応環境には適用しない。
+# スクリプトはrun_after_属性を除いた名前で指定する。
+.chezmoiscripts/install-apt.sh
+.chezmoiscripts/install-mise.sh
+.config/mise/config.toml
+{{ end }}
+{{ if or (not $ubuntu) (get . "prootUbuntu") }}
+# prootでも既存HomebrewのBundle処理を含めて対象外とする。
+.chezmoiscripts/install-brew.sh
+{{ end }}

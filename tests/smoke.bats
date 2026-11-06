@@ -40,8 +40,8 @@ ZDIR="$REPO_ROOT/home/dot_zsh"
   [ -f "$REPO_ROOT/home/dot_Brewfile.tmpl" ]
 }
 
-@test "home/dot_tmux.conf exists" {
-  [ -f "$REPO_ROOT/home/dot_tmux.conf" ]
+@test "home/dot_config/tmux/tmux.conf.tmpl exists" {
+  [ -f "$REPO_ROOT/home/dot_config/tmux/tmux.conf.tmpl" ]
 }
 
 # -----------------------------------------------------------
