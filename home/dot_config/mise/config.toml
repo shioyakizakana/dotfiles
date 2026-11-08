@@ -10,6 +10,7 @@ experimental = true
 [tools]
 7zip = "latest"
 age = "latest"
+"aqua:hpjansson/chafa" = "latest"
 atuin = "latest"
 bat = "latest"
 bats = "latest"
@@ -59,7 +60,7 @@ pipx = "latest"
 "pipx:ty" = "latest"
 pnpm = "latest"
 poppler = "latest"
-python = "3.13"
+python = ["3.13", "3.12"]
 ripgrep = "latest"
 ruby = "latest"
 ruff = "latest"
