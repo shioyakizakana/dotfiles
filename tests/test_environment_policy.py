@@ -118,6 +118,30 @@ class EnvironmentPolicyTests(unittest.TestCase):
         entries = self.managed({"nativeUbuntu": True}, "darwin")
         self.assertEqual(self.installer_names(entries), set())
 
+    def test_project_skills_stay_in_repository_while_common_skills_are_managed(self):
+        checkout = self.base / "checkout"
+        checkout.mkdir()
+        self.source.rename(checkout / "home")
+        self.source = checkout
+        shutil.copyfile(ROOT / ".chezmoiroot", checkout / ".chezmoiroot")
+        shutil.copytree(ROOT / ".agents/skills", checkout / ".agents/skills")
+        common = checkout / "home/dot_agents/skills/common-fixture/SKILL.md"
+        common.parent.mkdir(parents=True)
+        common.write_text("common skill fixture\n")
+
+        result = self.run_chezmoi(["managed", "--path-style=absolute"])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        targets = set(result.stdout.splitlines())
+        destination = self.base / "home/.agents/skills"
+        self.assertIn(str(destination / "common-fixture/SKILL.md"), targets)
+        for skill in (ROOT / ".agents/skills").iterdir():
+            with self.subTest(skill=skill.name):
+                self.assertFalse(any(
+                    path == str(destination / skill.name)
+                    or path.startswith(str(destination / skill.name) + "/")
+                    for path in targets
+                ))
+
     def test_init_data_selects_termux_and_proot_policies(self):
         for linux_env, os_name, expected in (
             ("termux", "linux", set()),
