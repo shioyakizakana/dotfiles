@@ -10,7 +10,6 @@ experimental = true
 [tools]
 7zip = "latest"
 age = "latest"
-"aqua:hpjansson/chafa" = "latest"
 atuin = "latest"
 bat = "latest"
 bats = "latest"
