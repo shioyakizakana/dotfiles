@@ -491,7 +491,7 @@ python3 -B -m unittest discover -s tests -p 'test_*.py'
 bats tests/smoke.bats
 ```
 
-一部のテストはchezmoiがなければskipするため、終了状態とskipの有無を確認する。Batsには`home/dot_Brewfile.tmpl`を期待する古いテストが残っており、現状の`home/dot_Brewfile`に対して失敗する。
+一部のテストはchezmoiがなければskipするため、終了状態とskipの有無を確認する。BatsのBrewfile期待パスは実体の`home/dot_Brewfile`に合わせて修正済み。
 実サービスへの認証、パッケージ導入、AndroidのBionicなどはモックの成功だけでは確認できない。環境ごとの手動確認範囲は[環境別テストの説明](docs/testing/environment-matrix.md)に記載している。
 
 未解決の依存関係、シェル起動時の参照、バージョン固定、CIなどは[監査記録](docs/reviews/dotfiles-audit.md)で管理する。コード上の対応状況と実機への適用状況を分けて確認する。

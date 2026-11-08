@@ -34,7 +34,7 @@ bats tests/smoke.bats
 git diff --check
 ```
 
-Batsは主に配置を確認する。現時点では`home/dot_Brewfile.tmpl`を期待する古いテストがあり、実体は`home/dot_Brewfile`。実行時の結果を確認し、既知の失敗でも隠さない。課題の対応状況は`docs/reviews/dotfiles-audit.md`のDF-11で確認する。
+Batsは主に配置を確認し、Brewfileの期待パスは`home/dot_Brewfile`。以前のtmplを期待するテストは修正済みだが、実行時の結果を確認し、失敗を隠さない。テスト拡充・CIなどの残件は`docs/reviews/dotfiles-audit.md`のDF-11で確認する。
 
 | 対象 | 検証方法 |
 | --- | --- |
