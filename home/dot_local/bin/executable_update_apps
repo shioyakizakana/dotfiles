@@ -7,13 +7,23 @@ log() {
 
 update_apt() {
   command -v apt-get >/dev/null 2>&1 || return 0
+  local uid
+  local -a apt_command=(apt-get)
+  uid="$(id -u)" || return 1
+  if [[ "$uid" != 0 ]]; then
+    command -v sudo >/dev/null 2>&1 || {
+      log "APTの更新にはrootまたはsudoが必要です。"
+      return 1
+    }
+    apt_command=(sudo apt-get)
+  fi
 
   log "Updating APT..."
 
-  sudo apt-get update &&
-    sudo apt-get upgrade -y &&
-    sudo apt-get autoremove -y &&
-    sudo apt-get autoclean -y
+  "${apt_command[@]}" update &&
+    "${apt_command[@]}" upgrade -y &&
+    "${apt_command[@]}" autoremove -y &&
+    "${apt_command[@]}" autoclean -y
 }
 
 update_brew() {
@@ -89,4 +99,6 @@ main() {
   log "All selected updates completed successfully."
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
+fi

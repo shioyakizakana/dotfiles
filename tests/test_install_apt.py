@@ -29,7 +29,20 @@ class AptInstallTests(unittest.TestCase):
         self.command(
             "apt",
             'printf "apt %s\\n" "$*" >> "$TRACE"\n'
-            'if [[ "$1" == update ]]; then exit "${UPDATE_EXIT:-0}"; fi\n',
+            'if [[ "$1" == update ]]; then exit "${UPDATE_EXIT:-0}"; fi\n'
+            'if [[ "$1" == install ]]; then\n'
+            '  [[ "${INSTALL_EXIT:-0}" == 0 ]] || exit "$INSTALL_EXIT"\n'
+            '  : > "$PACKAGE_STATE"\n'
+            'fi\n',
+        )
+        self.command(
+            "dpkg-query",
+            '[[ "${QUERY_EXIT:-0}" == 0 ]] || exit "$QUERY_EXIT"\n'
+            'package="${@: -1}"\n'
+            'if [[ "${ALL_INSTALLED:-0}" == 1 || -f "$PACKAGE_STATE" ||\n'
+            '  ( -n "${MISSING_ONLY:-}" && "$package" != "$MISSING_ONLY" ) ]]; then\n'
+            '  printf "install ok installed"\n'
+            'else exit 1; fi\n',
         )
         self.command(
             "sudo", 'printf "sudo %s\\n" "$*" >> "$TRACE"\n"$@"\n'
@@ -39,6 +52,7 @@ class AptInstallTests(unittest.TestCase):
             "PATH": str(self.bin),
             "TRACE": str(self.trace),
             "TEST_UID": "1000",
+            "PACKAGE_STATE": str(self.base / "package-state"),
         }
 
     def command(self, name, content):
@@ -62,8 +76,8 @@ class AptInstallTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         trace = self.trace.read_text()
         self.assertIn("apt update -y\n", trace)
-        self.assertIn("apt upgrade -y\n", trace)
-        self.assertIn("apt install -y ", trace)
+        self.assertNotIn("apt upgrade", trace)
+        self.assertIn("apt install -y --no-upgrade ", trace)
         self.assertNotIn("sudo", trace)
 
     def test_non_root_uses_sudo_for_apt(self):
@@ -71,8 +85,8 @@ class AptInstallTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         trace = self.trace.read_text()
         self.assertIn("sudo apt update -y\n", trace)
-        self.assertIn("sudo apt upgrade -y\n", trace)
-        self.assertIn("sudo apt install -y ", trace)
+        self.assertNotIn("apt upgrade", trace)
+        self.assertIn("sudo apt install -y --no-upgrade ", trace)
 
     def test_non_root_without_sudo_stops_before_apt(self):
         (self.bin / "sudo").unlink()
@@ -103,6 +117,43 @@ class AptInstallTests(unittest.TestCase):
         result = self.run_script("")
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(self.trace.read_text(), "")
+
+    def test_all_installed_needs_no_input_or_sudo(self):
+        (self.bin / "sudo").unlink()
+        result = self.run_script("", ALL_INSTALLED="1")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.trace.read_text(), "")
+
+    def test_only_missing_package_is_requested(self):
+        result = self.run_script(MISSING_ONLY="curl")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("apt install -y --no-upgrade curl\n", self.trace.read_text())
+
+    def test_query_error_does_not_install(self):
+        result = self.run_script(QUERY_EXIT="2")
+        self.assertEqual(result.returncode, 2)
+        self.assertEqual(self.trace.read_text(), "")
+
+    def test_zlib_uses_installed_package_name(self):
+        result = self.run_script(MISSING_ONLY="zlib1g-dev")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("apt install -y --no-upgrade zlib1g-dev\n", self.trace.read_text())
+
+    def test_successful_install_is_not_repeated(self):
+        first = self.run_script()
+        self.assertEqual(first.returncode, 0, first.stderr)
+        self.trace.write_text("")
+        second = self.run_script("")
+        self.assertEqual(second.returncode, 0, second.stderr)
+        self.assertEqual(self.trace.read_text(), "")
+
+    def test_decline_and_failure_can_be_retried(self):
+        declined = self.run_script("n\n")
+        self.assertEqual(declined.returncode, 0, declined.stderr)
+        failed = self.run_script(INSTALL_EXIT="17")
+        self.assertEqual(failed.returncode, 17)
+        retried = self.run_script()
+        self.assertEqual(retried.returncode, 0, retried.stderr)
 
 
 if __name__ == "__main__":
