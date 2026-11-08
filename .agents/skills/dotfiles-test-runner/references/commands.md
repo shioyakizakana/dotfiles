@@ -8,6 +8,7 @@
 | --- | --- |
 | 初期設定・環境フラグ・ignore・tmux・スキルの展開範囲 | `tests/test_environment_policy.py` |
 | Bash・Zshの共通環境・PATH・エイリアス・起動設定 | `tests/test_shell_config.py` |
+| Zshプラグイン・Yazi初期化・textlintの任意依存 | `tests/test_optional_dependencies.py` |
 | 基礎ツールbootstrap | `tests/test_bootstrap_tools.py` |
 | APT導入 | `tests/test_install_apt.py` |
 | Homebrew導入 | `tests/test_install_brew.py` |
@@ -26,6 +27,7 @@ python3 -B -m unittest discover -s tests -p 'test_*.py' -v
 既存テストはダミーコマンドやモックを使用するが、新規・変更されたテストは実行前に確認する。秘密情報取得、外部通信、実パッケージ操作が残っていれば実行を止める。
 Python 3.11以上とBashを前提とする。chezmoiやmakeがない場合にskipするケースもあるため、終了コードだけで成功と判断しない。
 シェル起動テストはBash・Zsh・chezmoi・mkdirを必要とし、欠けていればskipする。システム補完・Homebrewの固定パス・プラグインはfixtureに置き換え、実際の初期化を避ける。
+任意依存テストはZsh・Bash・Luaの利用状況に応じてskipする。Yaziのrequireと通知をモック化し、実プラグインや私的設定は読み込まない。実YaziのAPI互換性は別途確認する。
 
 ## 配置と静的確認
 

@@ -88,7 +88,7 @@ Codex CLIではこのリポジトリ内から`/skills`や`$スキル名`で選�
 | `aliases.sh` | コマンド置換、eza、ホーム・chezmoiへの移動、LazyGit起動、upd |
 
 BashもZshと同じ共通設定を使う。PATHは存在するディレクトリだけを末尾へ追加し、再読み込みで同じ項目を増やさない。
-`upd`は管理対象の`~/.local/bin/update_apps`を呼ぶ。例えば`upd apt`のように更新対象を指定する。必要なツールの導入状況は別途確認する。
+`upd`は管理対象の`~/.local/bin/update_apps`を呼ぶ。例えば`upd apt`のように更新対象を指定する。コマンド置換のエイリアスは、対応するツールがPATHにある場合だけ定義する。導入担当と手動準備は[設定の依存一覧](docs/setup/dependencies.md)を参照する。
 reload、プロンプト、補完、キー操作、mise・zoxide・atuinなどのシェル別初期化は各シェルの設定に残す。SSH_AUTH_SOCKも既存どおりZsh側だけで設定する。
 
 旧構成の`~/scripts/shell/funciton.sh`は、読み取り可能な場合だけ任意拡張として読み込む。既存端末の手動配置を引き続き利用できるが、その内容はリポジトリで管理・検証していない。

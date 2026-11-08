@@ -91,7 +91,7 @@ systemdの起動は共通前提ではない。`systemd-detect-virt`は存在時�
 | DF-06 | 保守性・信頼性 | mise二重管理と更新方針の整理 | Medium | Medium | mise設定・導入スクリプト | 対応中（一覧集約済み、固定方針は残件） |
 | DF-07 | 信頼性 | providerの選択・受け渡し・事前検証 | Medium | Medium | 初期設定、bootstrap、Makefile、認証ラッパー | 修正済み・未適用 |
 | DF-08 | 不具合 | 欠落した共通シェルスクリプト参照の解消 | Medium | Small | Bash・Zsh設定、共通シェル設定 | 修正済み・未適用 |
-| DF-09 | 信頼性 | 利用設定と導入依存の整合 | Medium | Medium | Yazi、tmux、ツール導入設定 | 未着手 |
+| DF-09 | 信頼性 | 利用設定と導入依存の整合 | Medium | Medium | Yazi、tmux、ツール導入設定 | コード修正済み・手動準備と実機確認は残件 |
 | DF-10 | 互換性 | Yazi keymapのTOML互換性確認 | Medium | Small | `yazi/keymap.toml` | 未着手 |
 | DF-11 | テスト | 古い期待値の更新と重要処理の回帰検証 | Medium | Medium | `tests/smoke.bats`、テスト基盤 | 対応中（配置期待値は修正済み、回帰拡充・CIは残件） |
 | DF-12 | ドキュメント・保守性 | 構築手順・配置説明・管理状態の整合 | Low | Small | README、AGENTS、Git除外設定 | 未着手 |
@@ -167,7 +167,7 @@ systemdの起動は共通前提ではない。`systemd-detect-virt`は存在時�
 - 対応方針：TOMLを正本とし、導入時は設定を変更しない操作を中心にする。Rustコンポーネントなどの補助処理は残す。重要ツールから固定方針を決める。
 - 注意・検証：全ツールの厳密固定は更新負担を増やす。DF-09で依存を確定後、新規導入・再導入・更新・失敗後再開と設定差分を検証する。変更リスクはMedium。
 - 前提の追加：DF-04で環境別の導入対象を決め、DF-05で導入済み判定を直してから集約する。Homebrewを省く環境の代替ツールはDF-09で決める。
-- 対応状況：対応中。一覧集約を`6505297`へコミットした。通常導入をmise installへ変更し、Python 3.13・3.12とchafaをTOML側で維持した。Rust・LuaRocks・nimlspの補助処理は一覧取得後に不足だけを導入する。ツール別の固定・更新方針と実機の互換性確認は残件。
+- 対応状況：対応中。一覧集約を`6505297`へコミットした。通常導入をmise installへ変更し、Python 3.13・3.12をTOML側で維持した。chafaはその後、導入失敗のため利用者がmise一覧から除外している。Brewfileの指定は残る。Rust・LuaRocks・nimlspの補助処理は一覧取得後に不足だけを導入する。ツール別の固定・更新方針と実機の互換性確認は残件。
 
 ### DF-07：providerの整合性
 
@@ -196,12 +196,15 @@ systemdの起動は共通前提ではない。`systemd-detect-virt`は存在時�
 
 ### DF-09：設定と導入依存の不一致
 
-- 根拠：`bootstrap/bootstrap-tools.sh:197-206`の基礎導入一覧にPython・LuaRocks・Zshがない。`home/.chezmoiexternal.toml.tmpl:29-33`はfzfのGit取得のみ。`home/dot_config/yazi/init.lua:9-33`は追加プラグインとbunny-privateを要求。`home/dot_config/tmux/tmux.conf:52-55`の補助コマンドも提供元不明。textlintラッパーには依存導入の処理を確認できない。
-- 判断・影響：新規環境での潜在的リスク。既存環境の不足は未確認。特に私的Yazi設定を無条件に読み込む。
+- 根拠：`bootstrap/bootstrap-tools.sh:197-206`の基礎導入一覧にPython・LuaRocks・Zshがない。`home/.chezmoiexternal.toml.tmpl:29-33`はfzfのGit取得のみ。初回調査時のYazi初期化は追加プラグインとbunny-privateを無条件に要求していた。現行のtmuxソースは`home/dot_config/tmux/tmux.conf.tmpl`で、補助コマンド3本の提供元は未確定。textlintのnpm依存は従来から手動準備の設計。
+- 判断・影響：初回調査では新規環境での潜在的リスクとして記録した。今回、依存欠落時の失敗を隔離テストで再現した。既存の実環境の不足状況は未確認。
 - 対応方針：必須の自動導入、手動準備、任意機能を分けて設定と対応させる。私的設定は公開せず、欠落時の安全な省略か案内を実装する。
 - 注意・検証：外部依存の追加は事前承認が必要。空のHOMEと不足コマンドのモックで診断と起動を確認する。変更リスクはMedium。
 - DF-03後の確認対象：Brewfileに並ぶCLI・フォント・Go・npm関連の項目を、対象環境と導入担当に分けて確認する。Homebrewを省く環境ではchafa・resvgなどの必要性と代替手段を検討する。Bundleのモック成功を実パッケージの導入保証として扱わない。
-- 対応状況：未着手。
+- 対応状況：コード修正済み・未適用。`home/dot_config/shell/aliases.sh:4-27`でコマンドの存在を確認してからエイリアスを定義する。Zsh外部プラグインは読み取り可能なものだけ読み込み、fzfは実行ファイルとシェル設定、zenoはそれらとdenoが準備できた場合だけ連携する。`home/dot_config/yazi/init.lua:10-22`は追加プラグインの読み込み失敗を名前だけ通知して続行し、setupの失敗は隠さない。`home/dot_config/tmux/tmux.conf.tmpl:55-73`は補助コマンドがある場合だけキーを定義する。textlintとLuaRocksの不足時には準備方法を案内する。
+- 依存の整理：[依存一覧と手動準備](../setup/dependencies.md)へ導入担当・環境差・任意機能を記録した。新しい自動導入や提供元の推測は行っていない。利用者によるchafaのmise設定削除を保持し、古い説明を修正した。
+- 検証：修正前にエイリアス失敗、Zshの欠落参照、Yazi初期化中断、textlintの案内不足を隔離環境で再現した。修正後はunittest全128件とBats全18件が成功。任意依存の欠落・存在、空白を含むHOME、Yaziのsetup失敗、textlintの引数と終了状態、Termux・prootでのtmuxキー生成をダミーで検証した。実プラグイン・実認証・実インストールは実行していない。
+- 残件：初期認証前のPython、Zsh・fzf・LuaRocksの手動準備、Yazi追加プラグインの提供元と互換性、tmux補助コマンドの提供元、Brewfileを使わない環境のプレビュー機能を実機で確認する。Yaziのキー操作には未導入プラグインが残り得る。TOML記法はDF-10で扱い、DF-09を全機能の動作確認済みとはしない。
 
 ### DF-10：Yazi keymapのTOML互換性
 
