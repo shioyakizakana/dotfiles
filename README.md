@@ -1,11 +1,14 @@
 # dotfiles
 
-`chezmoi`とGitを使用して、Linux環境の設定ファイルを管理するためのdotfilesリポジトリ。
-Proton Pass CLIと連携し、認証情報を必要とする設定ファイルも管理する。
+chezmoiを中心に、Linux環境の設定ファイル、開発ツール、初期構築を管理するdotfilesリポジトリ。
+開発ツールは主にmise、システム依存はAPT、補助ツールはHomebrewで管理する。Proton Pass CLIとageを使い、必要な設定へ秘密情報を渡す。
+
+新規構築では1〜6節を順に確認する。通常の更新は7節、既存identityの移行は8節、問題が起きた場合は10節を参照する。
+最初の`chezmoi init`では`--apply`を付けず、認証bootstrapとラッパーの限定展開を済ませてから全体を適用する。
 
 ## 1. 対応環境
 
-現在、以下の実行環境を想定。
+以下はコード上の対象環境。実機での動作保証とは区別し、確認範囲は[環境別テストの説明](docs/testing/environment-matrix.md)を参照する。
 
 | 実行環境| `LINUX_ENV` | Key Provider |
 | --- | --- | --- |
@@ -15,32 +18,55 @@ Proton Pass CLIと連携し、認証情報を必要とする設定ファイル�
 | WSL版Ubuntu | `wsl-ubuntu` | `keyring` / `env` |
 | ネイティブUbuntu | `native-ubuntu` | `keyring` / `env` |
 
-`keyring`を利用する場合は、D-BusセッションおよびSecret Serviceが使用できる必要がある。
+`keyring`を利用する場合は、D-Busセッション、`busctl`、Secret Serviceが必要になる。Termuxのツール導入は手動で準備する。Ubuntu向けの一括導入やmise設定はTermuxには適用しない。
 
 > [!Note]
-> 実行環境の自動検出も実装しているが、Prootなどを正確に識別できない場合があるため、初期構築時には`LINUX_ENV`を明示することを推奨。
+> 認証bootstrapはchezmoiに保存した環境フラグを使用する。`LINUX_ENV`を明示する場合も、保存した環境との一致を要求する。
 
 ## 2. ディレクトリ構成
 
-Proton Pass CLIセットアップ関わる主要なファイル構成は以下の通り。
+主要なファイルを示す。詳細な配置と作業規約は[AGENTS.md](AGENTS.md)を参照する。
 
-```tree
-dotfiles/
+```text
+.
 ├── .chezmoiroot
+├── .chezmoi.toml.tmpl
+├── AGENTS.md
 ├── README.md
+├── Makefile
 ├── bootstrap/
+│   ├── bootstrap-tools.sh
 │   └── setup-proton-pass.sh
-└── home/
-    ├── .chezmoi.toml.tmpl
-    └── dot_local/
-        └── bin/
-            ├── executable-init-proton-pass.tmpl
-            ├── executable-proton-pass.tmpl
-            └── executable-proton-pass-key-cache.py.tmpl
-
+├── docs/
+│   ├── reviews/dotfiles-audit.md
+│   ├── setup/proton-pass.md
+│   └── testing/environment-matrix.md
+├── home/
+│   ├── .chezmoiignore
+│   ├── .chezmoiexternal.toml.tmpl
+│   ├── .chezmoiscripts/
+│   ├── dot_agents/skills/
+│   ├── dot_codex/symlink_AGENTS.md.tmpl
+│   ├── dot_config/
+│   ├── dot_local/
+│   │   ├── bin/
+│   │   │   ├── executable_init-proton-pass.tmpl
+│   │   │   ├── executable_proton-pass.tmpl
+│   │   │   ├── private_executable_proton-pass-key-cache.py.tmpl
+│   │   │   ├── executable_update_apps
+│   │   │   ├── executable_update-agent-skills
+│   │   │   └── executable_textlint-ja
+│   │   └── share/textlint-ja/
+│   ├── dot_zsh/
+│   ├── scripts/desk/
+│   ├── dot_Brewfile
+│   └── dot_gitconfig.tmpl
+└── tests/
 ```
 
-`.chezmoiroot`には`home`を指定。
+`.chezmoiroot`は`home`をsource stateのルートに指定する。初期設定の`.chezmoi.toml.tmpl`はリポジトリ直下に置く。
+管理対象はソース側を編集し、`dot_`、`executable_`、`private_`、`symlink_`、`.tmpl`などの属性に従ってホームへ展開する。
+たとえば`home/dot_local/bin/executable_proton-pass.tmpl`は`~/.local/bin/proton-pass`になる。初期構築や文書用の`bootstrap/`、`docs/`、`tests/`はホームへ展開しない。
 
 ## 3. セットアップ前の準備
 
@@ -55,17 +81,37 @@ dotfiles/
 - `age` / `age-keygen`
 - `pass-cli`（Proton Pass CLI）
 - `openssl`
-- その他、Bashおよび基本的なシステムコマンド
+- `make`、Bash、`flock`などの基本コマンド
+- Python 3.11以上（env方式の鍵キャッシュに使用）
 
-### 3.1.1 基礎ツールのインストール
+鍵キャッシュのシバンは`#!/usr/bin/env python3`なので、PATH上のPythonを使う。OS標準のPythonに固定されているわけではない。
+`make require`の確認対象は主要コマンドと`~/.local/bin/chezmoi`。Pythonやflockなどは別途用意する。
+
+#### 3.1.1 基礎ツールのインストール
+
+以下はsudoを利用できるUbuntuの通常ユーザー向けの例。Pythonのバージョンも別途確認する。
 
 ```shell
-# 先にaptをアップデート
-apt update -y && apt upgrade -y
-apt install -y age buiild-essential curl openssl wget vim
+sudo apt-get update
+sudo apt-get install -y age build-essential ca-certificates curl git make openssl python3 wget
 ```
 
-### 3.1.2 chezmoiとProton Pass CLIをインストール
+rootで基礎パッケージを準備する場合はsudoを外す。ただし、Proton Passの認証bootstrapはrootを拒否するため、通常ユーザーで実行する。
+TermuxではこのUbuntu用コマンドを使わず、Termux側で必要なコマンドを準備する。
+
+リポジトリを取得済みのUbuntuでは、`bootstrap/bootstrap-tools.sh`も利用できる。
+
+```shell
+bash bootstrap/bootstrap-tools.sh --check
+# 導入内容を確認してから実行する。
+bash bootstrap/bootstrap-tools.sh --install
+```
+
+`--check`は導入状況を表示するが、`~/.local/bin`の作成も行う。`--install`はAPTの基礎パッケージと、未導入のchezmoi・pass-cli・mise・Homebrewを導入する。
+APTの導入は既存パッケージを更新する場合がある。Python・wget・opensslなど、別途準備が必要な依存も残る。
+prootで自動判定が難しい場合は`BOOTSTRAP_PROOT=1`を付ける。prootのHomebrew新規導入は省く。
+
+#### 3.1.2 chezmoiとProton Pass CLIをインストール
 
 `chezmoi`とProton Pass CLIは公式のインストールスクリプトを使ってインストール。
 
@@ -91,10 +137,11 @@ PATには必要なVaultまたはItemへのアクセス権限のみを付与し�
 ### 4.1 dotfilesの取得
 
 以下のコマンドでdotfilesをクローンする。
-この時点では`chezmoi`にPATHが通っていないため、`apply`するまでは`~/.local/bin/chezmoi`でコマンドを実行する。
+chezmoiを`~/.local/bin`へ導入した場合は、シェル設定の適用前にPATHを追加する。
 
 ```shell
-~/.local/bin/chezmoi init shioyakizakana
+export PATH="$HOME/.local/bin:$PATH"
+chezmoi init shioyakizakana
 ```
 
 この段階では`--apply`を指定しない。
@@ -106,18 +153,14 @@ PATには必要なVaultまたはItemへのアクセス権限のみを付与し�
 | 設定| 内容 |
 | --- | --- |
 | `machineType` | `personal` / `work` |
-| `linuxEnv` | Termux、Proot、WSLなどの実行環境 |
-| `protonPassProvider` | `keyring` / `env` |
+| 実行環境の入力 | `native-ubuntu` / `wsl-ubuntu` / `qemu-ubuntu` / `proot-ubuntu` / `termux` |
+| `protonPassProvider` | Ubuntu系で`keyring` / `env`を選択。Termux・prootは`env` |
+
+入力した環境名は`nativeUbuntu`、`wslUbuntu`、`qemuUbuntu`、`prootUbuntu`、`termux`のフラグへ変換する。保存される`linuxEnv`は環境名ではなく、Linux系環境かどうかを表す真偽値。再初期化では既存の環境フラグとproviderを引き継ぐ。
 
 ### 4.3 設定の確認
 
-初期化後、chezmoiのテンプレートデータを確認。
-
-```shell
-~/.local/bin/chezmoi data
-```
-
-特に`protonPassProvider`が、使用するKey Providerと一致していることを確認する。
+初期化後、秘密情報を含まないproviderだけを表示し、使用するKey Providerと一致していることを確認する。
 
 ```shell
 ~/.local/bin/chezmoi execute-template '{{ .protonPassProvider }}'
@@ -129,30 +172,29 @@ PATには必要なVaultまたはItemへのアクセス権限のみを付与し�
 
 ### 5.1 Bootstrapの実行
 
-リポジトリ内のセットアップスクリプトを実行する。
+初期化したリポジトリへ移動し、chezmoiに保存した実行環境とproviderでセットアップする。
+以下は標準配置での例。別の場所にcloneした場合は、そのディレクトリを使う。
 
 ```shell
-# Proot版Ubuntuでの実行例
-LINUX_ENV=proot-ubuntu \
-  bash "$(chezmoi source-path)/bootstrap/setup-proton-pass.sh" env
-
-# keyringを使用するネイティブUbuntuでの実行例
-LINUX_ENV=native-ubuntu \
-  bash "$(chezmoi source-path)/bootstrap/setup-proton-pass.sh" keyring
+cd "$HOME/.local/share/chezmoi"
+make bootstrap
+# 初回の全体適用より前に、ラッパーと鍵キャッシュだけを展開する。
+make wrapper
 ```
 
-`LINUX_ENV`およびKey Providerは、chezmoi側の設定と一致させる。
+`LINUX_ENV`や`PROTON_PASS_KEY_PROVIDER`を指定した場合は、chezmoi側の設定との一致を要求する。
+Termux・prootはenvを使用し、Ubuntu系は初期化時にenvまたはkeyringを選択する。
+既存環境の確認、エラー時の対処、手動での適用手順は[Proton Passの構築・確認手順](docs/setup/proton-pass.md)を参照する。
 
 セットアップスクリプトは以下の処理を実施する。
 
-1. 実行環境とKey Providerの検証
+1. chezmoi設定と実行環境・Key Providerの整合性検証
 2. age identityの生成または既存identityの検証
 3. identityのパスフレーズによる暗号化
 4. 公開鍵（recipient）の生成・整合性確認
 5. Proton Pass PATの暗号化保存
 6. `env`プロバイダーの場合、CLI用暗号化鍵の生成
 7. PATによるProton Pass CLIへのログイン
-8. chezmoi設定との整合性確認
 
 > [!Note]
 > Bootstrapは`chezmoi apply`を自動実行しない。
@@ -160,11 +202,11 @@ LINUX_ENV=native-ubuntu \
 
 ### 5.2 age identityのパスフレーズ設定
 
-新規構築時には、`age identity`を生成し、パスフレーズによって暗号化する。
+新規構築時には、age identityを生成し、パスフレーズによって暗号化する。
 パスフレーズは安全な場所に保管しておく。
 
-暗号化identityとパスフレーズの両方を失うと、保存されたPATなどを復号できなくなる可能性がある。
-また、パスフレーズを忘れた場合の復旧手段として、identityのバックアップを別の安全な場所に保管することを推奨。
+復号には暗号化identityとパスフレーズの両方が必要になる。どちらかを失うと、保存されたPATなどを復号できなくなる可能性がある。
+暗号化identityは別の安全な場所にバックアップし、パスフレーズも保管する。同じ暗号化identityのコピーだけでは、忘れたパスフレーズを復旧できない。
 
 ### 5.3 認証情報の保存先
 
@@ -190,11 +232,11 @@ LINUX_ENV=native-ubuntu \
 | `.setup-proton-pass.lock`| Bootstrapの同時実行防止 |
 
 `encryption-key.age`は`env`プロバイダーの場合に生成する。
-これらの秘密情報はdotfilesリポジトリでは管理しない。
+認証関連ファイルはdotfilesリポジトリの外に保存する。recipientは公開鍵、`.setup-proton-pass.lock`は排他用ファイルであり、秘密情報そのものとは区別する。
 
 ### 5.4 保存先の変更
 
-必要に応じて、環境変数からidentityの保存先を変更できる。
+`XDG_DATA_HOME`を指定した場合、ageとproton-passの保存先はその配下になる。identityの保存先は次の変数で個別指定できる。
 
 ```shell
 export AGE_IDENTITY_DIR="$HOME/.local/state/secure-keys"
@@ -210,35 +252,49 @@ Proton Pass CLIの初期構築が完了したら、chezmoiの管理対象ファ�
 
 ### 6.1 差分確認
 
-`Makefile`より実行する場合は、以下のコマンドで適用対象のファイルを列挙した上で適用するかどうかを決める事ができる。
+標準配置のリポジトリから、差分を確認して適用する。
 
 ```shell
-make -C ~/.local/share/chezmoi apply
+make -C "$HOME/.local/share/chezmoi" diff
+make -C "$HOME/.local/share/chezmoi" apply
 ```
 
-`apply`ではまず適用されるファイルの一覧を表示し、実行前の確認にて`y`を選択した場合に`chezmoi apply`を実行する。
+`make apply`は`chezmoi diff`を表示し、`y`を入力した場合に全体を適用する。初期設定ではdiffからscriptsとexternalsを除外しているため、表示された差分が適用時の全処理を表すわけではない。
+差分の生成にはProton Passへのアクセスや秘密情報の復号が伴う場合がある。出力は手元で確認し、共有ログへ貼り付けない。
 
 ### 6.2 ツール類のインストール
 
-`chezmoi apply`により管理ファイルの展開と`home/.chezmoiscripts`以下のセットアップスクリプトが実行される。
+管理ファイルを展開した後、対象環境の`home/.chezmoiscripts/`を実行する。現在の3本はいずれも`run_after_`であり、適用ごとに導入状況を確認する。
 
 | スクリプト| 処理内容 |
 | --- | --- |
-| `run_after_install-apt.sh` | `apt`のアップデートおよびツール(OSの基本的な操作やシステム直接変更を加えるツール類)のインストール |
-| `run_after_install-brew.sh` | `Homebrew`およびツール(主にユーティリティー系)のインストール |
-| `run_after_install-mise.sh` | `mise`およびツール(主に開発、言語ランタイム等)のインストール |
+| `run_after_install-apt.sh` | 不足パッケージがある場合に確認し、一覧更新後に`--no-upgrade`で不足分を導入 |
+| `run_after_install-brew.sh` | Homebrewの導入を確認し、`~/.Brewfile`の不足依存を`--no-upgrade`で導入 |
+| `run_after_install-mise.sh` | `~/.config/mise/config.toml`に従い不足ツールを`mise install`で導入。Rust・LuaRocks・nimlspの補助依存も確認 |
 
-また、`home/.chezmoiexternal.toml.tmpl`に定義した以下のツール、プラグインが指定のパスにインストールされる。
+| 環境 | APT | Homebrew | mise一括導入・管理設定 |
+| --- | --- | --- | --- |
+| ネイティブ・WSL・QEMUのUbuntu | 対象 | 対象 | 対象 |
+| proot Ubuntu | 対象 | 既存Bundleも含めて対象外 | 対象 |
+| Termux・未指定・未対応環境 | 対象外 | 対象外 | 対象外 |
+
+不足導入を辞退した場合は次回の適用で再確認する。確認入力の取得失敗や導入失敗はエラーとして終了し、再適用で再試行できる。
+通常適用では既存ツールの一括更新を行わない。更新は7.1節の`update_apps`で指定する。
+
+`home/.chezmoiexternal.toml.tmpl`は、次のGitリポジトリの取得・更新も定義する。Zshプラグインとtpmの更新間隔は168時間。
 
 | ツール名 | ルートパス | 概要 |
 | --------------- | --------------- | --------------- |
 | `powerlevel10k` | `~/.zsh/plugin/plugins/` | `zsh`の外観をカスタマイズする。 |
 | `fast-syntax-highlighting` | `~/.zsh/plugin/plugins/` | `zsh`上でシンタックスハイライトを適用するプラグイン |
-| `zsh-autosuggesions` | `~/.zsh/plugin/plugins/` | `zsh`上で履歴から候補を表示するプラグイン |
+| `zsh-autosuggestions` | `~/.zsh/plugin/plugins/` | `zsh`上で履歴から候補を表示するプラグイン |
 | `zsh-completions` | `~/.zsh/plugin/plugins/` | `zsh`上で入力補完を行うプラグイン |
-| `fzf` | `~/.zsh/plugin/plugins/` | コマンドの履歴やファイルをあいまい検索するツール |
+| `fzf` | `~/.zsh/plugin/plugins/fzf/` | Gitソースの取得。実行ファイルの導入処理はこのexternals定義に含まれない |
 | `zeno.zsh` | `~/.zsh/plugin/plugins/` | キーワードに対して定義したスニペットを展開するプラグイン(`fzf`と`deno`に依存) |
 | `tpm` | `~/.config/tmux/plugins/` | `tmux`のプラグインマネージャー |
+| `natural-japanese` | `~/.local/share/agent-skills/natural-japanese/` | 外部スキル。`~/.agents/skills/natural-japanese`から参照 |
+
+外部スキルを専用コマンドで確認・更新する手順は7.3節を参照する。
 
 ### 6.3 Proton Pass CLIラッパーの確認
 
@@ -270,27 +326,41 @@ init-proton-pass
 `init-proton-pass`はPATを復号してログインを実行するためのエントリーポイント。
 通常のProton Pass CLI操作には、`proton-pass`ラッパーを使用する。
 
-## 7. Proton Pass CLIの通常運用
+## 7. 日常の更新とProton Passの運用
 
 Proton Pass CLIに関わる各スクリプトの役割は次の通り。
 
 | スクリプト| 役割 | 実行タイミング |
 | --- | --- | --- |
 | `setup-proton-pass.sh` | identity・PAT・暗号化鍵の初期生成 | 新規環境構築時 |
-| `init-proton-pass` | PATによるログインの入口 | 再ログインが必要な場合 |
+| `init-proton-pass` | PATによる再ログイン | 再ログインが必要な場合 |
 | `proton-pass` | 暗号化鍵を一時注入してProton Pass CLIを実行 | 通常操作時 |
 | `proton-pass-key-cache.py` | CLI暗号化鍵のみを一時的にキャッシュして`pass-cli`へ注入 | `env`環境における通常操作時 |
 
-### 7.1 キャッシュスクリプトの仕様
+### 7.1 ツールの更新
 
-`env`環境の場合、通常の`pass-cli`操作にCLI暗号化鍵の入力が毎回必要になる。
-通常運用に影響が出るため、キャッシュスクリプト`proton-pass-key-cache.py`によりCLI暗号化鍵のみ一時的なキャッシュを容認。
+適用済みの`update_apps`で更新対象を明示する。引数なしでは何も更新せず、使用方法を表示して終了コード2で終了する。
+
+```shell
+update_apps apt
+update_apps brew mise
+update_apps all
+```
+
+APTは一覧更新・upgrade・autoremove・autoclean、Homebrewはupdate・upgrade・cleanup、miseはoutdatedの表示とupgradeを実行する。
+PATHに該当するパッケージマネージャーがなければ省略する。これはchezmoiの環境別除外とは独立した処理なので、`all`を指定する前に実行環境と対象を確認する。
+miseのツール一覧は`home/dot_config/mise/config.toml`で管理し、多くは`latest`を指定している。全ツールのバージョンを厳密に固定した構成ではない。
+
+### 7.2 キャッシュスクリプトの仕様
+
+env方式では、通常のCLI操作にも暗号化鍵を渡す必要がある。`proton-pass-key-cache.py`はCLI暗号化鍵だけを常駐プロセスのメモリに保持し、有効期限内は復号結果を再利用する。
+PATとage identityはキャッシュしない。
 
 キャッシュスクリプトの簡易的な仕様を示す。
 
-| 項目   | 実行    |
+| 項目   | 内容    |
 |--------------- | --------------- |
-| 使用言語   | Pytnon3.11以上(OS標準搭載のPythonを使用)   |
+| 使用言語   | Python 3。PATH上の`python3`を使用   |
 | 保存対象  | Proton Pass CLIの暗号鍵のみ   |
 | 標準有効期限   | 15分  |
 | 設定可能な最大有効期限   | 60分  |
@@ -299,7 +369,8 @@ Proton Pass CLIに関わる各スクリプトの役割は次の通り。
 | 再起動後の状態   | ロック状態   |
 | `pass-cli`の起動   | キャッシュスクリプト経由で実行   |
 
-キャッシュが作成されると、有効期限内の操作はパスフレーズの入力が不要となる。
+有効期限内はCLI暗号化鍵の復号を省略できる。再ログイン時のPAT復号では、別途ageのパスフレーズ入力が必要になる。
+キャッシュの通信先は標準で`~/.cache/proton-pass-key-cache/agent.sock`。`PROTON_PASS_CACHE_DIR`でディレクトリを変更できる。平文の鍵をこのディレクトリに保存しない。
 
 キャッシュを手動で破棄する場合は、以下を実行する。
 
@@ -307,9 +378,25 @@ Proton Pass CLIに関わる各スクリプトの役割は次の通り。
 proton-pass-key-cache.py lock
 ```
 
-> [!Note] 
-> 有効期限はキャッシュを解除した時点から計算する。
-> 起動済みエージェントの有効期限を変更する場合は、一度ロックして再度解除する必要がある。
+> [!Note]
+> 有効期限は鍵を登録した時点から計算し、通常の参照では延長しない。`PROTON_PASS_CACHE_TTL`は秒単位で1〜3600を指定できる。
+> 起動済みエージェントの有効期限を変更する場合は、一度ロックして再度解除する。
+
+### 7.3 外部スキルと文章チェック
+
+natural-japaneseの更新には専用コマンドを使う。`check`もGit fetchによる通信を行い、`update`は未コミット変更がある場合に停止する。
+
+```shell
+update-agent-skills list
+update-agent-skills check natural-japanese
+update-agent-skills update natural-japanese
+```
+
+`textlint-ja`は`~/.local/share/textlint-ja/node_modules/.bin/textlint`を使用する。設定とnpm依存定義は管理しているが、node_modulesの自動導入処理はない。Node.js・npmを用意し、初回は展開先の`~/.local/share/textlint-ja`で`npm ci`を実行する。
+
+```shell
+textlint-ja README.md
+```
 
 ## 8. 既存環境からの移行
 
@@ -346,10 +433,10 @@ proton-pass-key-cache.py lock
 
 ### 10.1 `chezmoi: map has no entry for key`
 
-`chezmoi`の設定に必要なテンプレート変数が存在しない可能性がある。
-`chezmoi data`で設定値を確認すること。
+chezmoiの設定に必要なテンプレート変数がない可能性がある。ローカル設定の`[data]`と`.chezmoi.toml.tmpl`を比較する。
+全データの出力を共有せず、必要な環境フラグとproviderだけを確認する。具体的なコマンドは[Proton Passの確認手順](docs/setup/proton-pass.md)を参照する。
 
-### 10.2 `IDENTITYとrecipientが一致しません`
+### 10.2 `identityとrecipientが一致しません`
 
 暗号化identityと公開鍵が異なる鍵ペアに由来している可能性がある。
 
@@ -358,12 +445,27 @@ proton-pass-key-cache.py lock
 ### 10.3 `PATの復号に失敗しました`
 
 パスフレーズ、identityの保存先、暗号化ファイルの組み合わせを確認する。
+
 ### 10.4 `Keyringの利用条件を満たしていません`
 
 D-BusセッションおよびSecret Serviceが利用可能か確認する。
-Keyringを使用できない環境では、`env`プロバイダーによる構築を検討する。
+初回構築ならenv方式も選べる。認証済みの環境では、providerを一時的に上書きして回避せず、認証方式の移行を別途計画する。
 
-### 10.5 `Proton Passラッパーが見つかりません`
+### 10.5 ラッパー・鍵キャッシュが見つからない
 
-`chezmoi`による設定適用が完了しているか確認する。
-`~/.local/bin/proton-pass`が存在し、実行権限が付与されていることも確認する。
+`make wrapper`が成功し、`~/.local/bin/proton-pass`と`proton-pass-key-cache.py`が実行可能であることを確認する。
+ソースの`.tmpl`を直接実行しない。provider不一致や実行環境の不一致で停止した場合も、[手動手順の対処表](docs/setup/proton-pass.md#5-停止した場合の対処)を参照する。
+
+## 11. 検証と改善状況
+
+Python unittestは、隔離したHOME・ダミーコマンド・モックで認証周辺、環境分岐、導入失敗、再試行などを検証する。Batsは主にファイル配置を確認する。
+
+```shell
+python3 -B -m unittest discover -s tests -p 'test_*.py'
+bats tests/smoke.bats
+```
+
+一部のテストはchezmoiがなければskipするため、終了状態とskipの有無を確認する。Batsには`home/dot_Brewfile.tmpl`を期待する古いテストが残っており、現状の`home/dot_Brewfile`に対して失敗する。
+実サービスへの認証、パッケージ導入、AndroidのBionicなどはモックの成功だけでは確認できない。環境ごとの手動確認範囲は[環境別テストの説明](docs/testing/environment-matrix.md)に記載している。
+
+未解決の依存関係、シェル起動時の参照、バージョン固定、CIなどは[監査記録](docs/reviews/dotfiles-audit.md)で管理する。コード上の対応状況と実機への適用状況を分けて確認する。
