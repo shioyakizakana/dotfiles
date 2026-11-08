@@ -27,6 +27,15 @@ curl() {
 }
 '''
 
+CHECK_PRELUDE = '''
+check_environment() { :; }
+install_base_tools() { return 97; }
+install_chezmoi() { return 97; }
+install_proton_pass() { return 97; }
+install_mise() { return 97; }
+install_homebrew() { return 97; }
+'''
+
 
 class BootstrapInstallerTests(unittest.TestCase):
     def setUp(self):
@@ -79,6 +88,39 @@ class BootstrapInstallerTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("--install", result.stdout)
+        self.assertFalse(self.download_path.exists())
+
+    def test_check_mode_reports_manual_dependencies_without_creating_home_files(self):
+        home = self.workspace / "empty home"
+        home.mkdir()
+        result = self.run_shell(CHECK_PRELUDE + '''
+has_tool() { [[ "$1" == python3 || "$1" == zsh ]]; }
+get_brew_path() { return 1; }
+main --check
+''', HOME=str(home))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        for tool in ("python3", "zsh"):
+            self.assertIn(f"[OK] {tool}\n", result.stdout)
+        for tool in ("fzf", "luarocks", "make", "openssl", "wget", "flock"):
+            self.assertIn(f"[--] {tool}\n", result.stdout)
+        self.assertIn("docs/setup/dependencies.md", result.stdout)
+        self.assertEqual(list(home.iterdir()), [])
+        self.assertFalse(self.download_path.exists())
+
+    def test_check_mode_leaves_existing_home_files_unchanged(self):
+        home = self.workspace / "existing home"
+        home.mkdir()
+        existing = home / "existing.txt"
+        existing.write_text("keep\n")
+        result = self.run_shell(CHECK_PRELUDE + '''
+has_tool() { return 0; }
+get_brew_path() { printf '/dummy/brew\\n'; }
+main --check
+''', HOME=str(home))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotIn("[--]", result.stdout)
+        self.assertEqual(list(home.iterdir()), [existing])
+        self.assertEqual(existing.read_text(), "keep\n")
         self.assertFalse(self.download_path.exists())
 
     def test_chezmoi_installer_receives_destination(self):

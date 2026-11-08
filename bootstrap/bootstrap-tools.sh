@@ -10,13 +10,14 @@ set -Eeuo pipefail
 #   - Ubuntu (native)
 #   - Ubuntu (WSL2)
 #   - Ubuntu (Termux + proot)
+#   - Termux (APT/dpkg方式)
 #
 # 使用方法:
 #   bash bootstrap-tools.sh --check
 #   bash bootstrap-tools.sh --install
 #
 # 注意:
-#   - 既存ツールの更新は行わない
+#   - 一括upgradeは行わない（依存解決による更新はあり得る）
 #   - Proton Passのログインは行わない
 #   - Homebrewはproot環境では自動導入しない
 # ============================================================
@@ -26,6 +27,8 @@ readonly BIN_DIR="${HOME}/.local/bin"
 
 MODE="install"
 IS_PROOT=false
+IS_TERMUX=false
+TERMUX_INDEX_UPDATED=0
 FAILED=0
 
 # ------------------------------------------------------------
@@ -105,29 +108,33 @@ run_installer() {
 # 環境判定
 # ------------------------------------------------------------
 
+read_os_release() {
+  ID='' PRETTY_NAME=''
+  [[ -r /etc/os-release ]] || return 0
+  # shellcheck disable=SC1091
+  source /etc/os-release
+}
+
 check_environment() {
   [[ "$(uname -s)" == "Linux" ]] ||
     die "Linux以外には対応していません"
 
-  [[ -r /etc/os-release ]] ||
-    die "/etc/os-releaseが見つかりません"
-
-  # shellcheck disable=SC1091
-  source /etc/os-release
-
-  [[ "${ID:-}" == "ubuntu" ]] ||
-    die "Ubuntu以外には対応していません"
-
-  if [[ -d /proc/1/root/.proot ]] ||
-    [[ -n "${PROOT_TMP_DIR:-}" ]] ||
-    [[ -n "${PROOT_LOADER:-}" ]]; then
-    IS_PROOT=true
-  fi
-
-  # prootの環境変数は常に設定されるとは限らないため、
-  # proot実行時は明示的な指定も許可する。
-  if [[ "${BOOTSTRAP_PROOT:-0}" == "1" ]]; then
-    IS_PROOT=true
+  IS_PROOT=false
+  IS_TERMUX=false
+  read_os_release
+  # prootはTermuxのPREFIXやpkgへのパスを引き継ぐため、ゲストOSを先に確認する。
+  if [[ "$ID" == ubuntu ]]; then
+    if [[ -d /proc/1/root/.proot || -n "${PROOT_TMP_DIR:-}" ||
+      -n "${PROOT_LOADER:-}" || "${BOOTSTRAP_PROOT:-0}" == 1 ]]; then
+      IS_PROOT=true
+    fi
+  elif [[ -z "$ID" || "$ID" == android ]] &&
+    [[ -n "${PREFIX:-}" && -x "${PREFIX}/bin/pkg" && -x "${PREFIX}/bin/sh" ]]; then
+    [[ "${BOOTSTRAP_PROOT:-0}" != 1 ]] || die "proot指定時はUbuntuゲスト内で実行してください"
+    IS_TERMUX=true
+    PRETTY_NAME='Termux'
+  else
+    die "UbuntuまたはTermux以外には対応していません"
   fi
 
   log "OS: ${PRETTY_NAME:-Ubuntu}"
@@ -172,30 +179,99 @@ check_tools() {
     chezmoi
     pass-cli
     mise
+    age-keygen
+    make
+    openssl
+    wget
+    flock
+    python3
   )
 
   log "ツールのインストール状況"
 
   for name in "${tools[@]}"; do
-    if has_tool "$name"; then
+    if [[ "$IS_TERMUX" == true && "$name" == pass-cli ]]; then
+      if has_tool "$name"; then
+        printf '[UNVERIFIED] pass-cli: 存在のみ確認。Termuxでの実行可否は手動確認\n'
+      else
+        printf '[MANUAL] pass-cli: Termux向け自動導入は対象外\n'
+      fi
+    elif has_tool "$name"; then
       printf '[OK] %s\n' "$name"
     else
       printf '[--] %s\n' "$name"
     fi
   done
 
-  if get_brew_path >/dev/null; then
+  if [[ "$IS_TERMUX" == true ]]; then
+    printf '[SKIP] Homebrew: Termuxでは対象外\n'
+  elif get_brew_path >/dev/null; then
     printf '[OK] Homebrew\n'
   else
     printf '[--] Homebrew\n'
   fi
+
+  log "設定で使う追加ツール（自動導入対象には追加しません）"
+  for name in zsh fzf luarocks deno node npm; do
+    if has_tool "$name"; then
+      printf '[OK] %s\n' "$name"
+    else
+      printf '[--] %s\n' "$name"
+    fi
+  done
+  printf '準備方法: docs/setup/dependencies.md\n'
+  printf '存在確認のみです。Python 3.11以上、Lua 5.1向けLuaRocks、各ツールの互換性は別途確認してください。\n'
 }
 
 # ------------------------------------------------------------
-# APT
+# Termuxパッケージ
+# ------------------------------------------------------------
+
+termux_package_installed() {
+  [[ "$("${PREFIX}/bin/dpkg-query" -W -f="\${Status}" "$1" 2>/dev/null)" == 'install ok installed' ]]
+}
+
+install_termux_packages() {
+  local package_manager="${TERMUX_APP_PACKAGE_MANAGER:-${TERMUX_MAIN_PACKAGE_FORMAT:-apt}}"
+  # 古いTermuxはパッケージ形式名を公開する。pkgと同じ対応関係で判定する。
+  if [[ "$package_manager" == debian && -z "${TERMUX_APP_PACKAGE_MANAGER:-}" ]]; then
+    package_manager=apt
+  fi
+  [[ "$package_manager" == apt && -x "${PREFIX}/bin/dpkg-query" ]] ||
+    die "現在はAPT/dpkg方式のTermuxに対応しています"
+  [[ "$(id -u)" != 0 ]] || die "Termuxのpkgは通常ユーザーで実行してください"
+  local package
+  local -a missing=()
+  for package in "$@"; do
+    if ! termux_package_installed "$package"; then
+      missing+=("$package")
+    fi
+  done
+  if ((${#missing[@]} == 0)); then
+    log "Termuxパッケージは導入済みです"
+    return
+  fi
+  # Linux向け公式インストーラーにはフォールバックしない。
+  if [[ "$TERMUX_INDEX_UPDATED" != 1 ]]; then
+    "${PREFIX}/bin/pkg" update -y || die "Termuxのパッケージ一覧更新に失敗しました"
+    TERMUX_INDEX_UPDATED=1
+  fi
+  "${PREFIX}/bin/pkg" install -y "${missing[@]}" || die "Termuxパッケージの導入に失敗しました"
+  for package in "${missing[@]}"; do
+    termux_package_installed "$package" || die "Termuxパッケージを確認できません: $package"
+  done
+}
+
+# ------------------------------------------------------------
+# 基礎パッケージ
 # ------------------------------------------------------------
 
 install_base_tools() {
+  if [[ "$IS_TERMUX" == true ]]; then
+    install_termux_packages ca-certificates curl git age chezmoi python make \
+      openssl-tool wget util-linux procps file coreutils
+    return
+  fi
   local -a packages=(
     ca-certificates
     curl
@@ -225,6 +301,10 @@ install_base_tools() {
 # ------------------------------------------------------------
 
 install_chezmoi() {
+  if [[ "$IS_TERMUX" == true ]]; then
+    has_tool chezmoi || die "Termuxのchezmoiが見つかりません"
+    return
+  fi
   if has_tool chezmoi; then
     log "chezmoi: インストール済み"
     return
@@ -246,6 +326,10 @@ install_chezmoi() {
 # ------------------------------------------------------------
 
 install_proton_pass() {
+  if [[ "$IS_TERMUX" == true ]]; then
+    warn "TermuxのProton Pass CLIは手動準備・実行確認が必要です。認証準備は未完了です"
+    return
+  fi
   if has_tool pass-cli; then
     log "Proton Pass CLI: インストール済み"
     return
@@ -272,6 +356,11 @@ install_proton_pass() {
 # ------------------------------------------------------------
 
 install_mise() {
+  if [[ "$IS_TERMUX" == true ]]; then
+    install_termux_packages mise
+    has_tool mise || die "Termuxのmiseが見つかりません"
+    return
+  fi
   if has_tool mise; then
     log "mise: インストール済み"
     return
@@ -296,6 +385,10 @@ install_mise() {
 # ------------------------------------------------------------
 
 install_homebrew() {
+  if [[ "$IS_TERMUX" == true ]]; then
+    log "TermuxではHomebrewを対象外とします"
+    return
+  fi
   if get_brew_path >/dev/null; then
     log "Homebrew: インストール済み"
     return
@@ -348,14 +441,20 @@ main() {
   parse_args "$@"
   check_environment
 
-  mkdir -p "$BIN_DIR"
-  export PATH="${BIN_DIR}:${PATH}"
+  if [[ "$IS_TERMUX" == true ]]; then
+    export PATH="${PREFIX}/bin:${BIN_DIR}:${PATH}"
+  else
+    export PATH="${BIN_DIR}:${PATH}"
+  fi
 
   if [[ "$MODE" == "check" ]]; then
     check_tools
     return
   fi
 
+  if [[ "$IS_TERMUX" != true ]]; then
+    mkdir -p "$BIN_DIR"
+  fi
   install_base_tools
   install_chezmoi
   install_proton_pass
@@ -368,10 +467,10 @@ main() {
     die "一部のツールを確認できませんでした"
   fi
 
-  log "初期ツールのセットアップが完了しました"
+  log "基礎ツールの導入が完了しました（認証・dotfiles適用は含みません）"
   log "次にdotfilesの初期化を行ってください"
 }
 
-if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+if [[ "${BASH_SOURCE[0]:-$0}" == "$0" ]]; then
   main "$@"
 fi
