@@ -9,7 +9,9 @@
 | 初期設定・環境フラグ・ignore・tmux・スキルの展開範囲 | `tests/test_environment_policy.py` |
 | Bash・Zshの共通環境・PATH・エイリアス・起動設定 | `tests/test_shell_config.py` |
 | Zshプラグイン・Yazi初期化・textlintの任意依存 | `tests/test_optional_dependencies.py` |
+| YaziのTOML互換性・キー定義 | `tests/test_yazi_config.py` |
 | 基礎ツールbootstrap | `tests/test_bootstrap_tools.py` |
+| bootstrapのTermux・Ubuntu判定、pkg導入、リモート起動形式 | `tests/test_bootstrap_platforms.py` |
 | APT導入 | `tests/test_install_apt.py` |
 | Homebrew導入 | `tests/test_install_brew.py` |
 | mise導入・Rust・LuaRocks・nimlsp | `tests/test_mise_helpers.py` |
@@ -25,9 +27,11 @@ python3 -B -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
 既存テストはダミーコマンドやモックを使用するが、新規・変更されたテストは実行前に確認する。秘密情報取得、外部通信、実パッケージ操作が残っていれば実行を止める。
+bootstrapの環境別テストでは、OS情報とpkg・dpkg-query・APT・sudo・ダウンロード処理をモック化する。PREFIXとHOMEは一時領域へ置き、実インストールを行わない。
 Python 3.11以上とBashを前提とする。chezmoiやmakeがない場合にskipするケースもあるため、終了コードだけで成功と判断しない。
 シェル起動テストはBash・Zsh・chezmoi・mkdirを必要とし、欠けていればskipする。システム補完・Homebrewの固定パス・プラグインはfixtureに置き換え、実際の初期化を避ける。
 任意依存テストはZsh・Bash・Luaの利用状況に応じてskipする。Yaziのrequireと通知をモック化し、実プラグインや私的設定は読み込まない。実YaziのAPI互換性は別途確認する。
+Yazi設定テストはPythonのtomllibで管理対象TOMLを解析し、キー・コマンド・引数・説明を確認する。POSIX環境でYaziが利用可能なら、疑似端末でkeymapの読み込みも確認する。HOME・XDGディレクトリとPATHを隔離し、init.luaは終了用fixtureに置き換える。実プラグインや私的設定は読み込まない。Yaziがない場合や疑似端末を作成できない場合は、その起動確認だけskipする。
 
 ## 配置と静的確認
 

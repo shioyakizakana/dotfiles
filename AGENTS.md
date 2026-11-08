@@ -18,7 +18,7 @@
 ├── README.md                       # 構築・適用・通常運用の案内
 ├── Makefile                        # 確認・認証bootstrap・限定展開・適用
 ├── bootstrap/
-│   ├── bootstrap-tools.sh          # Ubuntu向け基礎ツールの確認・導入
+│   ├── bootstrap-tools.sh          # Ubuntu・Termux向け基礎ツールの確認・導入
 │   └── setup-proton-pass.sh        # 秘密情報の初期構築・認証
 ├── docs/
 │   ├── reviews/dotfiles-audit.md   # 調査結果とDF項目の対応状況

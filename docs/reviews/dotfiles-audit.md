@@ -92,7 +92,7 @@ systemdの起動は共通前提ではない。`systemd-detect-virt`は存在時�
 | DF-07 | 信頼性 | providerの選択・受け渡し・事前検証 | Medium | Medium | 初期設定、bootstrap、Makefile、認証ラッパー | 修正済み・未適用 |
 | DF-08 | 不具合 | 欠落した共通シェルスクリプト参照の解消 | Medium | Small | Bash・Zsh設定、共通シェル設定 | 修正済み・未適用 |
 | DF-09 | 信頼性 | 利用設定と導入依存の整合 | Medium | Medium | Yazi、tmux、ツール導入設定 | コード修正済み・手動準備と実機確認は残件 |
-| DF-10 | 互換性 | Yazi keymapのTOML互換性確認 | Medium | Small | `yazi/keymap.toml` | 未着手 |
+| DF-10 | 互換性 | Yazi keymapのTOML互換性確認 | Medium | Small | `yazi/keymap.toml` | 修正済み・未適用（キー操作の実機確認は残件） |
 | DF-11 | テスト | 古い期待値の更新と重要処理の回帰検証 | Medium | Medium | `tests/smoke.bats`、テスト基盤 | 対応中（配置期待値は修正済み、回帰拡充・CIは残件） |
 | DF-12 | ドキュメント・保守性 | 構築手順・配置説明・管理状態の整合 | Low | Small | README、AGENTS、Git除外設定 | 未着手 |
 
@@ -196,23 +196,32 @@ systemdの起動は共通前提ではない。`systemd-detect-virt`は存在時�
 
 ### DF-09：設定と導入依存の不一致
 
-- 根拠：`bootstrap/bootstrap-tools.sh:197-206`の基礎導入一覧にPython・LuaRocks・Zshがない。`home/.chezmoiexternal.toml.tmpl:29-33`はfzfのGit取得のみ。初回調査時のYazi初期化は追加プラグインとbunny-privateを無条件に要求していた。現行のtmuxソースは`home/dot_config/tmux/tmux.conf.tmpl`で、補助コマンド3本の提供元は未確定。textlintのnpm依存は従来から手動準備の設計。
+- 根拠：`bootstrap/bootstrap-tools.sh:275-283`のUbuntu側の基礎導入一覧にPython・LuaRocks・Zshがない。`home/.chezmoiexternal.toml.tmpl:29-33`はfzfのGit取得のみ。初回調査時のYazi初期化は追加プラグインとbunny-privateを無条件に要求していた。現行のtmuxソースは`home/dot_config/tmux/tmux.conf.tmpl`で、補助コマンド3本の提供元は未確定。textlintのnpm依存は従来から手動準備の設計。
 - 判断・影響：初回調査では新規環境での潜在的リスクとして記録した。今回、依存欠落時の失敗を隔離テストで再現した。既存の実環境の不足状況は未確認。
 - 対応方針：必須の自動導入、手動準備、任意機能を分けて設定と対応させる。私的設定は公開せず、欠落時の安全な省略か案内を実装する。
 - 注意・検証：外部依存の追加は事前承認が必要。空のHOMEと不足コマンドのモックで診断と起動を確認する。変更リスクはMedium。
 - DF-03後の確認対象：Brewfileに並ぶCLI・フォント・Go・npm関連の項目を、対象環境と導入担当に分けて確認する。Homebrewを省く環境ではchafa・resvgなどの必要性と代替手段を検討する。Bundleのモック成功を実パッケージの導入保証として扱わない。
 - 対応状況：コード修正済み・未適用。`home/dot_config/shell/aliases.sh:4-27`でコマンドの存在を確認してからエイリアスを定義する。Zsh外部プラグインは読み取り可能なものだけ読み込み、fzfは実行ファイルとシェル設定、zenoはそれらとdenoが準備できた場合だけ連携する。`home/dot_config/yazi/init.lua:10-22`は追加プラグインの読み込み失敗を名前だけ通知して続行し、setupの失敗は隠さない。`home/dot_config/tmux/tmux.conf.tmpl:55-73`は補助コマンドがある場合だけキーを定義する。textlintとLuaRocksの不足時には準備方法を案内する。
 - 依存の整理：[依存一覧と手動準備](../setup/dependencies.md)へ導入担当・環境差・任意機能を記録した。新しい自動導入や提供元の推測は行っていない。利用者によるchafaのmise設定削除を保持し、古い説明を修正した。
+- 追加対応：`bootstrap/bootstrap-tools.sh`の確認表示にPython・Zsh・fzf・LuaRocksなどを追加した。`--check`で行っていた`.local/bin`の作成を導入モードへ移し、確認だけならHOME内のファイルを作成しない。Ubuntuの自動導入対象と認証方式は維持している。存在確認だけなので、バージョン・Lua 5.1向けビルド・実機での互換性確認は必要。
+- Termux対応：APT/dpkg方式のTermuxを判定し、基礎パッケージ・chezmoi・Python・miseなどをpkgで導入する。ローカルの導入状態から不足分だけを選び、一覧更新の重複を避ける。Ubuntuゲストを先に判定するため、PREFIXを引き継いだprootでもAPTを選ぶ。Homebrewは対象外、pass-cliは手動準備・動作未確認として表示し、認証準備完了とは案内しない。Ubuntu用mise設定の除外は維持する。bash -c・標準入力による起動にも対応した。
 - 検証：修正前にエイリアス失敗、Zshの欠落参照、Yazi初期化中断、textlintの案内不足を隔離環境で再現した。修正後はunittest全128件とBats全18件が成功。任意依存の欠落・存在、空白を含むHOME、Yaziのsetup失敗、textlintの引数と終了状態、Termux・prootでのtmuxキー生成をダミーで検証した。実プラグイン・実認証・実インストールは実行していない。
-- 残件：初期認証前のPython、Zsh・fzf・LuaRocksの手動準備、Yazi追加プラグインの提供元と互換性、tmux補助コマンドの提供元、Brewfileを使わない環境のプレビュー機能を実機で確認する。Yaziのキー操作には未導入プラグインが残り得る。TOML記法はDF-10で扱い、DF-09を全機能の動作確認済みとはしない。
+- 追加検証：依存不足と、`--check`によるHOME内のディレクトリ作成を修正前に再現した。空のHOME・既存ファイルのあるHOMEを用いた回帰テストで、不足の表示とファイルを作成・変更しないことを確認した。環境判定と導入関数はモック化し、実インストールを防ぐ。
+- Termux対応の検証：`tests/test_bootstrap_platforms.py`で環境判定、不足分のpkg導入、再実行時の省略、失敗時の停止、導入後確認、確認モード、リモート起動形式をダミーで検証する。実インストール・外部インストーラー・実認証は使わない。既存テストとあわせunittest全147件・Bats全18件が成功し、skipはなかった。ShellCheck・shfmtも成功した。
+- コミット：確認モードの改善とTermux対応、関連する回帰テストを`010d6b0`へコミットした。
+- 残件：Ubuntuでの初期認証前のPython、Zsh・fzf・LuaRocksの手動準備、Yazi追加プラグインの提供元と互換性、tmux補助コマンドの提供元、Brewfileを使わない環境のプレビュー機能を実機で確認する。Termuxのパッケージ候補・実バイナリの動作・Proton Pass CLIの準備も[実機確認手順](../setup/dependencies.md#termuxでの導入と実機確認)に沿って確認する。Yaziのキー操作には未導入プラグインが残り得る。TOML記法はDF-10で修正済みだが、DF-09を全機能の動作確認済みとはしない。
 
 ### DF-10：Yazi keymapのTOML互換性
 
-- 根拠：`home/dot_config/yazi/keymap.toml:8`以降の改行を含むインラインテーブルが、標準tomllibで`Invalid initial character for a key part (at line 8, column 5)`になる。
-- 判断・影響：パーサーエラーは確認済み。TOML仕様の対応差があるため、現行Yaziが拒否するとは断定しない。Yazi本体は未実行。
+- 根拠：修正前の`home/dot_config/yazi/keymap.toml:8`以降の改行を含むインラインテーブルは、標準tomllibで`Invalid initial character for a key part (at line 8, column 5)`となった。
+- 判断・影響：標準tomllibのパーサーエラーは修正前の回帰テストでも確認した。TOML仕様の対応差があるため、修正前の設定を現行Yaziが拒否するとまでは断定しない。
 - 対応方針：インラインテーブルを1行にするなど、TOML 1.0互換の記法を優先。複数行ならアプリが対応する配列テーブル形式も候補。
 - 注意・検証：キーバインドの意味は変えない。標準解析と、採用バージョンでの隔離起動を確認する。
-- 対応状況：未着手。
+- 対応状況：修正済み・未適用。`home/dot_config/yazi/keymap.toml:8-15`のインラインテーブルを1行にそろえ、TOML 1.0互換の記法にした。mgrの13件とinputの1件について、キー・コマンド・引数・説明・順序を維持している。
+- 検証：`tests/test_yazi_config.py`で管理対象の全TOMLを標準解析し、キー定義を確認する。POSIX環境でYaziが利用可能な場合は疑似端末でもkeymapを読み込む。今回のYazi 26.9.1（linux-aarch64）では、読み込み後の初期化到達と正常終了を確認した。HOME・XDGディレクトリ・PATH・作業ディレクトリを一時領域へ隔離し、init.luaは終了用fixtureだけを使う。
+- 検証の限界：実際のinit.lua・テーマ・追加プラグインを含む構成全体の起動、個々のキー操作、各対象環境での動作は未確認。Yaziや疑似端末がない環境では、実起動テストだけskipする。DF-09の手動準備は引き続き必要。
+- 全体確認：DF-09追加対応とあわせ、unittest全134件・Bats全18件が成功し、skipはなかった。ShellCheck・shfmt・差分確認も成功した。textlintの既存指摘23件とnatural-japaneseの文体に関する参考指摘は、今回の機能修正とは分けて維持する。
+- コミット：TOML互換性修正と回帰テストを`d4be53f`へコミットした。
 
 ### DF-11：古いテストと重要処理の検証不足
 
@@ -242,7 +251,7 @@ systemdの起動は共通前提ではない。`systemd-detect-virt`は存在時�
 
 ## E. 最初に着手する改善
 
-初回調査の推奨順は以下のとおり。DF-01〜DF-05・DF-07・DF-08と、DF-11の古い配置期待値はコード修正済み。次はDF-09の導入依存を整理する。DF-06の固定方針、DF-11の回帰拡充・CI、実機確認も残る。
+初回調査の推奨順は以下のとおり。DF-01〜DF-05・DF-07・DF-08・DF-10と、DF-11の古い配置期待値はコード修正済み。DF-09は欠落時の保護と依存の案内を追加済みで、手動準備・実機確認が残る。次はDF-06の固定方針、DF-11の回帰拡充・CIを検討する。
 
 1. DF-01：PATの保持範囲を縮小する。常駐側の環境を分離し、ダミー値で検証する。
 2. DF-02：初期chezmoi導入を成立させる。インストーラーの引数とcleanupをモックで確認する。

@@ -19,12 +19,17 @@ python3 -B -m unittest discover -s tests -p test_install_brew.py -v
 # miseの導入済み判定・再適用・失敗後の再試行
 python3 -B -m unittest discover -s tests -p test_mise_helpers.py -v
 
+# 初期bootstrapのTermux・Ubuntu判定、pkgの不足分導入と失敗、bash -c起動
+python3 -B -m unittest discover -s tests -p test_bootstrap_platforms.py -v
+
 # 明示的なAPT更新のroot・sudo処理
 python3 -B -m unittest discover -s tests -p test_update_apps.py -v
 
 # 上記と既存のPython回帰テスト
 python3 -B -m unittest discover -s tests -p 'test_*.py' -v
 ```
+
+Yazi設定は`python3 -B -m unittest discover -s tests -p test_yazi_config.py -v`で確認する。標準TOML解析と既存のキー定義を検証し、Yaziが利用可能なPOSIX環境では疑似端末でkeymapを読み込む。HOME・XDGディレクトリ・PATHを隔離し、init.luaは初期化到達を記録して終了するfixtureへ置き換える。実テーマ・実プラグイン・私的設定は使わない。Yaziがない場合や疑似端末を作成できない場合は、実起動の確認だけskipする。
 
 chezmoiがない場合、環境選択のテストは明示的にskipされる。成功件数だけでなく、skipの有無も確認する。
 
@@ -47,7 +52,15 @@ APTはrootなら直接実行し、非rootならsudoを必要とする。導入�
 - Android版chezmoiを使うproot・QEMUも既存の初期設定が想定している。OS名だけでTermuxと判断せず、ゲスト環境のフラグを確認する。
 - termuxフラグがtrueの場合は、Ubuntuフラグが混在していても導入対象にしない。
 - prootへPREFIXが引き継がれていても、prootUbuntuフラグでAPT・miseを選ぶ。
-- TermuxではUbuntu用mise設定も対象外にする。既存のTermux側設定は取り込まず、上書きしない。Termux向けツール選定と導入手順はDF-09で検討する。
+- TermuxではUbuntu用mise設定も対象外にする。既存のTermux側設定は取り込まず、上書きしない。独立したbootstrap-tools.shはTermux用pkgによる基礎導入に対応するが、chezmoi適用時の除外条件は維持する。
+
+## 初期bootstrapのTermux対応
+
+`tests/test_bootstrap_platforms.py`は、Ubuntu・TermuxのOS情報、空白を含むHOME、Termux相当のPREFIX、pkg・dpkg-query・APT・sudoをダミーで用意する。ダウンロードやHomebrewなどの予想外の呼び出しもダミーで停止させ、実コマンドへ渡さない。
+
+Termuxの基礎パッケージ・mise導入、導入済みの省略、pkg一覧更新の重複防止、更新失敗・導入失敗・導入後確認失敗、root・未対応パッケージマネージャーの拒否を検証する。UbuntuゲストはPREFIXを引き継いでもTermuxと誤認しないこと、UbuntuのAPT引数とprootのHomebrew新規導入省略も確認する。
+
+`--check`ではpkg・ダウンロード・pass-cliを実行せず、HOME内のファイルを作成しない。ファイル・bash -c・標準入力からの起動は`--help`で検証する。Termuxの実パッケージ候補、Android上でのバイナリ実行、ミラーへの接続、Proton Pass認証は未実施であり、[実機確認手順](../setup/dependencies.md#termuxでの導入と実機確認)に沿って利用者が確認する。
 
 ## テストで再現している内容
 

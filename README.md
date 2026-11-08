@@ -111,21 +111,11 @@ reload、プロンプト、補完、キー操作、mise・zoxide・atuinなど�
 - Python 3.11以上（env方式の鍵キャッシュに使用）
 
 鍵キャッシュのシバンは`#!/usr/bin/env python3`なので、PATH上のPythonを使う。OS標準のPythonに固定されているわけではない。
-`make require`の確認対象は主要コマンドと`~/.local/bin/chezmoi`。Pythonやflockなどは別途用意する。
+`make require`の確認対象は主要コマンドと`~/.local/bin/chezmoi`。Pythonやflockなどは、このターゲットでは確認しない。基礎導入後も必要なコマンドとPythonのバージョンを確認する。
 
 #### 3.1.1 基礎ツールのインストール
 
-以下はsudoを利用できるUbuntuの通常ユーザー向けの例。Pythonのバージョンも別途確認する。
-
-```shell
-sudo apt-get update
-sudo apt-get install -y age build-essential ca-certificates curl git make openssl python3 wget
-```
-
-rootで基礎パッケージを準備する場合はsudoを外す。ただし、Proton Passの認証bootstrapはrootを拒否するため、通常ユーザーで実行する。
-TermuxではこのUbuntu用コマンドを使わず、Termux側で必要なコマンドを準備する。
-
-リポジトリを取得済みのUbuntuでは、`bootstrap/bootstrap-tools.sh`も利用できる。
+UbuntuとTermux（APT/dpkg方式）の基礎導入には`bootstrap/bootstrap-tools.sh`を使う。リポジトリを取得済みの場合は、リポジトリのルートで次を実行する。
 
 ```shell
 bash bootstrap/bootstrap-tools.sh --check
@@ -133,13 +123,54 @@ bash bootstrap/bootstrap-tools.sh --check
 bash bootstrap/bootstrap-tools.sh --install
 ```
 
-`--check`は導入状況を表示するが、`~/.local/bin`の作成も行う。`--install`はAPTの基礎パッケージと、未導入のchezmoi・pass-cli・mise・Homebrewを導入する。
-APTの導入は既存パッケージを更新する場合がある。Python・wget・opensslなど、別途準備が必要な依存も残る。
+`--check`はディレクトリを作成せずにコマンドの存在を表示する。Python・Zsh・fzf・LuaRocksなども確認するが、バージョンや動作の互換性は別途確認する。
+
+| 実行環境 | `--install`の導入範囲 |
+| --- | --- |
+| Ubuntu系 | APTの基礎パッケージと、未導入のchezmoi・pass-cli・mise・Homebrew。Python・wget・opensslなどは別途準備 |
+| proot Ubuntu | Ubuntuと同じ。ただしHomebrewの新規導入は省略 |
+| Termux本体 | pkgによる基礎パッケージ・chezmoi・Python・make・OpenSSLコマンド・wget・util-linux・miseなど。Homebrewは対象外、pass-cliは手動準備 |
+
+Termuxでは通常ユーザーで実行する。導入済みパッケージは省き、不足がある場合だけ一覧更新と導入を行う。APT・pkgとも、依存解決によって既存パッケージが更新される場合がある。一括upgradeは実行しない。詳細と実機での確認手順は[依存一覧](docs/setup/dependencies.md#termuxでの導入と実機確認)を参照する。
 prootで自動判定が難しい場合は`BOOTSTRAP_PROOT=1`を付ける。prootのHomebrew新規導入は省く。
 
-#### 3.1.2 chezmoiとProton Pass CLIをインストール
+リポジトリを取得する前でも、GitHubからスクリプトを取得して起動できる。取得にBash・curlと有効なCA証明書が必要になる。次のコマンドは取得に成功した場合だけ確認処理を実行する。
 
-`chezmoi`とProton Pass CLIは公式のインストールスクリプトを使ってインストール。
+```shell
+bootstrap_script="$(curl -fsLS https://raw.githubusercontent.com/shioyakizakana/dotfiles/refs/heads/main/bootstrap/bootstrap-tools.sh)" &&
+  bash -c "$bootstrap_script" bootstrap-tools.sh --check
+```
+
+取得と確認が成功し、内容と導入対象を確認したら、同じシェルで次を実行する。
+
+```shell
+bash -c "$bootstrap_script" bootstrap-tools.sh --install
+```
+
+実行する内容を固定したい場合は、取得URLの`refs/heads/main`を対象コミットのSHAへ置き換える。
+
+基礎導入にはProton Passの認証、dotfilesの初期化・適用、mise管理ツール一式の導入は含まれない。Termuxのpass-cliは未導入なら`[MANUAL]`、存在しても`[UNVERIFIED]`と表示する。基礎導入の成功を認証準備の完了とは扱わない。
+
+Termuxではchezmoiが`$PREFIX/bin/chezmoi`へ配置されるため、後続のMake操作に`CHEZMOI_BIN`を指定する。以下の確認はpass-cliが未準備なら失敗する。以降の手順でMakeを使う場合にも、同じ引数を付ける。
+
+```shell
+make CHEZMOI_BIN="$PREFIX/bin/chezmoi" require
+```
+
+#### 3.1.2 Ubuntuで個別に導入する場合
+
+bootstrap-tools.shで導入済みのツールは、この手順を繰り返す必要はない。以下はUbuntu向けの手動準備例であり、Termux本体では実行しない。Termuxのpass-cliは[実機確認手順](docs/setup/dependencies.md#termuxでの導入と実機確認)を参照する。
+
+sudoを利用できるUbuntuの通常ユーザーは、必要な基礎パッケージを次のように準備する。
+
+```shell
+sudo apt-get update
+sudo apt-get install -y age build-essential ca-certificates curl git make openssl python3 wget
+```
+
+rootで基礎パッケージを準備する場合はsudoを外す。ただし、Proton Passの認証bootstrapはrootを拒否するため、認証は通常ユーザーで実行する。
+
+chezmoiとProton Pass CLIを個別に導入する場合は、公式のインストールスクリプトを使う。
 
 ```shell
 mkdir -p ~/.local/bin
