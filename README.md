@@ -52,6 +52,9 @@ chezmoiを中心に、Linux環境の設定ファイル、開発ツール、初�
 │   ├── dot_agents/skills/
 │   ├── dot_codex/symlink_AGENTS.md.tmpl
 │   ├── dot_config/
+│   │   └── shell/
+│   │       ├── env.sh
+│   │       └── aliases.sh
 │   ├── dot_local/
 │   │   ├── bin/
 │   │   │   ├── executable_init-proton-pass.tmpl
@@ -74,6 +77,22 @@ chezmoiを中心に、Linux環境の設定ファイル、開発ツール、初�
 
 プロジェクト専用スキルはルートの`.agents/skills/`で直接管理する。このディレクトリもホームへの展開対象には含まれず、共通スキルは従来どおり`home/dot_agents/skills/`で管理する。
 Codex CLIではこのリポジトリ内から`/skills`や`$スキル名`で選択できる。新しいスキルが表示されない場合はCodexを再起動して確認する。用途は[AGENTS.mdのスキル一覧](AGENTS.md#81-プロジェクト固有スキル)を参照する。
+
+### 2.1 BashとZshの共通設定
+
+`home/dot_config/shell/`を`~/.config/shell/`へ展開し、BashとZshの両方から読み込む。
+
+| ファイル | 共通化する内容 |
+| --- | --- |
+| `env.sh` | TMPDIR、Go・pnpm・fzfのパス、EDITOR、LANG・LANGUAGE、既存ディレクトリのPATH追加 |
+| `aliases.sh` | コマンド置換、eza、ホーム・chezmoiへの移動、LazyGit起動、upd |
+
+BashもZshと同じ共通設定を使う。PATHは存在するディレクトリだけを末尾へ追加し、再読み込みで同じ項目を増やさない。
+`upd`は管理対象の`~/.local/bin/update_apps`を呼ぶ。例えば`upd apt`のように更新対象を指定する。必要なツールの導入状況は別途確認する。
+reload、プロンプト、補完、キー操作、mise・zoxide・atuinなどのシェル別初期化は各シェルの設定に残す。SSH_AUTH_SOCKも既存どおりZsh側だけで設定する。
+
+旧構成の`~/scripts/shell/funciton.sh`は、読み取り可能な場合だけ任意拡張として読み込む。既存端末の手動配置を引き続き利用できるが、その内容はリポジトリで管理・検証していない。
+共通モジュール自体は必須の管理対象なので、適用時は新しい2ファイルと読み込み側のBash・Zsh設定をまとめて反映する。`.bashrc`や`.zshrc`だけを先に反映すると共通ファイルを読み込めない。
 
 ## 3. セットアップ前の準備
 
