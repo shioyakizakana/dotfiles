@@ -58,7 +58,7 @@ install_luarock() {
   local installed name details
 
   if ! command -v luarocks >/dev/null 2>&1; then
-    log "luarocksが見つかりません。"
+    log "luarocksが見つかりません。Lua 5.1向けの準備手順はdocs/setup/dependencies.mdを参照してください。"
     return 1
   fi
 

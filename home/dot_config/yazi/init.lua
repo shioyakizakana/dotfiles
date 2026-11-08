@@ -7,8 +7,19 @@ require("session"):setup({
 })
 
 -- 公式プラグイン
-require("git"):setup()
-require("full-border"):setup({
+local function setup_optional(name, options)
+	local ok, plugin = pcall(require, name)
+	if not ok then
+		-- 私的設定の例外にはパスなどが含まれ得るため、その内容は出力しない。
+		ya.err("Optional plugin could not be loaded: " .. name .. "; see docs/setup/dependencies.md")
+		return
+	end
+	-- 導入済みプラグインのsetup失敗は隠さない。
+	plugin:setup(options)
+end
+
+setup_optional("git")
+setup_optional("full-border", {
   type = ui.Border.ROUNDED,
 })
 
@@ -30,5 +41,5 @@ require("full-border"):setup({
 --
 -- return { setup = setup }
 -- ```
-require("bunny-private"):setup()
+setup_optional("bunny-private")
 

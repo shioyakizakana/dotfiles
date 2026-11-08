@@ -71,22 +71,29 @@ export FZF_ALT_C_COMMAND=''
 # lazy load
 # ------------------------------------------------------------
 function _fzf_lazy_load() {
-  [[ -n $_FZF_LAZY_LOADED ]] && return
+  [[ -n $_FZF_LAZY_LOADED ]] && return 0
+  command -v fzf >/dev/null 2>&1 || return 1
+  [[ -r "$ZDIR/plugin/plugins/fzf/shell/key-bindings.zsh" &&
+     -r "$ZDIR/plugin/plugins/fzf/shell/completion.zsh" ]] || return 1
 
-  _FZF_LAZY_LOADED=1
   # キーバインドと候補を有効化
-  source "$ZDIR/plugin/plugins/fzf/shell/key-bindings.zsh"
-  source "$ZDIR/plugin/plugins/fzf/shell/completion.zsh"
+  source "$ZDIR/plugin/plugins/fzf/shell/key-bindings.zsh" || return
+  source "$ZDIR/plugin/plugins/fzf/shell/completion.zsh" || return
+  _FZF_LAZY_LOADED=1
 
   # zeno completionとの循環を防ぐ
   fzf_default_completion='expand-or-complete'
 }
 
 function _fzf_stub_file() {
-  _fzf_lazy_load
+  _fzf_lazy_load || return
   zle fzf-file-widget
 }
 
-zle -N _fzf_stub_file
-
-bindkey '^T' _fzf_stub_file
+if command -v fzf >/dev/null 2>&1 &&
+   [[ -r "$ZDIR/plugin/plugins/fzf/shell/key-bindings.zsh" &&
+      -r "$ZDIR/plugin/plugins/fzf/shell/completion.zsh" ]]; then
+  zle -N _fzf_stub_file
+  bindkey '^T' _fzf_stub_file
+fi
+:

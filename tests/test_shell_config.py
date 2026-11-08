@@ -165,6 +165,8 @@ class ShellConfigTests(unittest.TestCase):
                 self.assertTrue(tmpdir.is_dir())
 
     def test_common_aliases_use_managed_update_command_and_keep_shell_reload(self):
+        self.stub("chezmoi", ":\n")
+        self.stub("nvim", ":\n")
         for shell in ("bash", "zsh"):
             with self.subTest(shell=shell):
                 self.trace.write_text("")
@@ -173,6 +175,29 @@ class ShellConfigTests(unittest.TestCase):
                 self.assertIn("update_apps apt\n", self.trace.read_text())
                 self.assertIn(f"~/.{shell}rc", result.stdout)
                 self.assertIn("nvim +LazyGit", result.stdout)
+
+    def test_missing_replacement_tools_leave_standard_commands_available(self):
+        for name in ("cat", "rm", "grep", "man", "find", "ls"):
+            self.stub(name, f'printf "standard-{name}\\n"\n')
+        for shell in ("bash", "zsh"):
+            with self.subTest(shell=shell):
+                result = self.run_shell(shell, "cat\nrm\ngrep\nman\nfind\nls")
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout.splitlines(), [
+                    f"standard-{name}" for name in ("cat", "rm", "grep", "man", "find", "ls")
+                ])
+
+    def test_available_replacement_tools_receive_alias_arguments(self):
+        for name in ("bat", "gomi", "rg", "tldr", "fd", "eza"):
+            self.stub(name, f'printf "{name} %s\\n" "$*"\n')
+        for shell in ("bash", "zsh"):
+            with self.subTest(shell=shell):
+                result = self.run_shell(shell, "cat sample\nrm sample\ngrep word\nman topic\nfind dir\nls\nlt")
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout.splitlines(), [
+                    "bat --paging=never sample", "gomi sample", "rg word", "tldr topic",
+                    "fd dir", "eza --group-directories-first", "eza --tree --level=2 --group-directories-first",
+                ])
 
     def test_tool_initializers_receive_the_matching_shell(self):
         for shell in ("bash", "zsh"):

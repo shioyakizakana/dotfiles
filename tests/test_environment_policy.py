@@ -279,6 +279,24 @@ class EnvironmentPolicyTests(unittest.TestCase):
         rendered = self.render_tmux({"termux": True}, "android")
         self.assertNotIn("set-option -g default-shell", rendered)
 
+    def test_tmux_optional_bindings_follow_available_helper_commands(self):
+        helpers = {"m": "tmux-session-manager", "M": "tmux-move-window", "w": "tmux-ghq"}
+        for flags, os_name in (({"termux": True}, "android"), ({"prootUbuntu": True}, "linux")):
+            with self.subTest(flags=flags):
+                rendered = self.render_tmux(flags, os_name)
+                for key in helpers:
+                    self.assertNotIn(f"bind-key {key} ", rendered)
+                for key, helper in helpers.items():
+                    path = self.prefix / "bin" / helper
+                    # lookPathで存在のみ確認し、補助コマンドを実行しない。
+                    path.write_text("not executed: helper fixture\n")
+                    path.chmod(0o755)
+                    rendered = self.render_tmux(flags, os_name)
+                    self.assertIn(f"bind-key {key} ", rendered)
+                    self.assertIn(helper, rendered)
+                for helper in helpers.values():
+                    (self.prefix / "bin" / helper).unlink()
+
 
 if __name__ == "__main__":
     unittest.main()

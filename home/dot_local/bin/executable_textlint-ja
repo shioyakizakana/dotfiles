@@ -7,6 +7,7 @@ readonly CONFIG="${TOOL_DIR}/.textlintrc.json"
 
 if [[ ! -x "$TEXTLINT" ]]; then
   printf 'Error: textlintがインストールされていません。\n' >&2
+  printf 'Node.jsとnpmを準備し、次のディレクトリで npm ci を実行してください: %s\n' "$TOOL_DIR" >&2
   exit 1
 fi
 
