@@ -102,8 +102,8 @@ alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo
 # ~/.bash_aliases, instead of adding them here directly.
 # See /usr/share/doc/bash-doc/examples in the bash-doc package.
 
-if [ -f ~/.bash_aliases ]; then
-    . ~/.bash_aliases
+if [ -f "$HOME/.bash_aliases" ]; then
+    . "$HOME/.bash_aliases"
 fi
 
 # enable programmable completion features (you don't need to enable
@@ -120,42 +120,11 @@ fi
 # ------------------------------------------------------------
 # user setting
 # ------------------------------------------------------------
-# シェルに依存しない汎用関数
-export SCRIPTS_DIR=$HOME/scripts
-source $SCRIPTS_DIR/shell/funciton.sh
-
-# ------------------------------------------------------------
-# PATH
-# ------------------------------------------------------------
-export TMPDIR="${TMPDIR:-$HOME/tmp}"
-if [[ ! -d "$TMPDIR" ]]; then
-  mkdir -p "$TMPDIR"
-fi
-
-for dir in \
-  "$HOME/.local/bin" \
-  "$HOME/bin" \
-  "/snap/bin" \
-  "$HOME/.cargo/bin"; do
-  if [[ -d "$dir" ]]; then
-    case ":$PATH:" in
-      *":$dir:"*) ;;
-      *) PATH="$PATH:$dir" ;;
-    esac
-  fi
-done
-export PATH
+. "$HOME/.config/shell/env.sh"
 
 # ------------------------------------------------------------
 # Tools
 # ------------------------------------------------------------
-# Editor
-if command -v nvim >/dev/null; then
-  export EDITOR=nvim
-else
-  export EDITOR=vim
-fi
-
 # homebrew
 if [[ -r "/home/linuxbrew/.linuxbrew/bin/brew" ]]; then
   eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"
@@ -184,8 +153,7 @@ if type atuin >/dev/null; then
   eval "$(atuin init bash)"
 fi
 
-[ -f ~/.fzf.bash ] && source ~/.fzf.bash
-
-export LANG=ja_JP.UTF-8
-export LANGUAGE=ja_JP:ja
+if [ -r "$HOME/.fzf.bash" ]; then
+  . "$HOME/.fzf.bash"
+fi
 

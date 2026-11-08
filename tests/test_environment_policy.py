@@ -142,6 +142,38 @@ class EnvironmentPolicyTests(unittest.TestCase):
                     for path in targets
                 ))
 
+    def test_shared_shell_configuration_is_managed_across_environments(self):
+        for source, destination in (
+            ("dot_config/shell/env.sh", "dot_config/shell/env.sh"),
+            ("dot_config/shell/aliases.sh", "dot_config/shell/aliases.sh"),
+            ("dot_bashrc", "dot_bashrc"),
+            ("dot_bash_aliases", "dot_bash_aliases"),
+            ("dot_zshrc.tmpl", "dot_zshrc.tmpl"),
+            ("dot_zsh/path.zsh", "dot_zsh/path.zsh"),
+            ("dot_zsh/alias.zsh", "dot_zsh/alias.zsh"),
+        ):
+            target = self.source / destination
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(ROOT / "home" / source, target)
+        expected = {
+            ".config/shell/env.sh", ".config/shell/aliases.sh", ".bashrc",
+            ".bash_aliases", ".zshrc", ".zsh/path.zsh", ".zsh/alias.zsh",
+        }
+        for flag, os_name in (
+            ("termux", "linux"), ("termux", "android"),
+            ("prootUbuntu", "linux"), ("prootUbuntu", "android"),
+            ("nativeUbuntu", "linux"), ("wslUbuntu", "linux"),
+            ("qemuUbuntu", "linux"), ("qemuUbuntu", "android"),
+        ):
+            with self.subTest(flag=flag, os_name=os_name):
+                result = self.run_chezmoi(
+                    ["managed", "--path-style=absolute"],
+                    {"prootUbuntu": False, flag: True}, os_name,
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                targets = set(result.stdout.splitlines())
+                self.assertTrue({str(self.base / "home" / path) for path in expected} <= targets)
+
     def test_init_data_selects_termux_and_proot_policies(self):
         for linux_env, os_name, expected in (
             ("termux", "linux", set()),
