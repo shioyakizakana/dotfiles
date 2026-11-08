@@ -8,6 +8,10 @@
 
 ```text
 .
+├── .agents/skills/                 # このリポジトリ専用スキルの正本
+│   ├── chezmoi-template-validation/
+│   ├── dotfiles-test-runner/
+│   └── secret-management-review/
 ├── .chezmoiroot                     # source stateのルートにhomeを指定
 ├── .chezmoi.toml.tmpl               # chezmoi初期設定・環境フラグ・provider
 ├── AGENTS.md                       # このリポジトリの作業規約
@@ -40,7 +44,8 @@
 └── tests/                          # BatsとPython unittest
 ```
 
-構造図は主要なファイルを抜粋している。`home/dot_codex/symlink_AGENTS.md.tmpl`は、展開先の`~/.config/ai-agents/AGENTS.md`を参照するリンク定義であり、Codex用skillsディレクトリはこのリポジトリに含まれない。
+構造図は主要なファイルを抜粋している。プロジェクト専用スキルはルートの`.agents/skills/`、ホームへ展開する共通スキルは`home/dot_agents/skills/`で管理する。
+`home/dot_codex/symlink_AGENTS.md.tmpl`は、展開先の`~/.config/ai-agents/AGENTS.md`を参照するリンク定義。プロジェクト専用スキルはCodexの探索場所へ直接置き、ホームへのリンクやchezmoiの除外設定は追加しない。
 
 ### 主な構成要素
 
@@ -203,32 +208,28 @@ chezmoiのソースディレクトリを設定管理の正本とする。
 
 ## 8. 検証とテスト
 
-変更に応じて、実行可能で安全な検証を選択する。
-
-### 8.1 静的検証
-
-- Bash：`bash -n`
-- ShellCheck：`shellcheck`
-- shfmt：`shfmt -d`
-- Python：`unittest`
-- Bats：`bats`
-- Makefile：必要に応じてdry-run
-
-### 8.2 chezmoiの検証
-
-- テンプレートの構文と変数参照を確認する。
-- 秘密情報を含まない範囲でレンダリングを検証する。
-- 実環境への適用前に差分を確認する。
-- テンプレート構文を含むファイルを、そのままShellCheckやshfmtに渡さない。
-- テンプレートの検証と展開後の構文検証を区別する。
-
-### 8.3 回帰テスト
+変更内容に応じて、実行可能で安全な検証を選択する。
 
 - 既存のテストがあれば優先して実行する。
 - バグ修正時は可能な限り再現テストを追加する。
 - OSや環境に依存する処理はモックを活用する。
 - 実環境に副作用を与えるテストは自動実行しない。
-- テスト未実施の場合は、その理由を報告する。
+- 秘密情報を含まない範囲でテンプレートを検証する。
+- Go template構文が残るファイルを、そのままShellCheckやshfmtに渡さない。
+- 実環境への適用前に、安全性を確認した範囲で差分を確認する。
+- 成功・失敗・skip・未実施を区別し、未実施やskipの理由を報告する。
+
+### 8.1 プロジェクト固有スキル
+
+具体的な手順とコマンドは、作業内容に合うスキルを参照する。
+
+| 用途 | スキル |
+| --- | --- |
+| chezmoiテンプレートと環境別対象の検証 | [chezmoi-template-validation](.agents/skills/chezmoi-template-validation/SKILL.md) |
+| 既存テストと静的検証の選択・実行 | [dotfiles-test-runner](.agents/skills/dotfiles-test-runner/SKILL.md) |
+| 秘密情報管理の静的レビュー | [secret-management-review](.agents/skills/secret-management-review/SKILL.md) |
+
+スキルはこの文書の作業規約を補足する。スキルの選択や参照は、操作の承認や依頼範囲の拡大を意味しない。
 
 ## 9. Git運用
 

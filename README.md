@@ -29,6 +29,10 @@ chezmoiを中心に、Linux環境の設定ファイル、開発ツール、初�
 
 ```text
 .
+├── .agents/skills/
+│   ├── chezmoi-template-validation/
+│   ├── dotfiles-test-runner/
+│   └── secret-management-review/
 ├── .chezmoiroot
 ├── .chezmoi.toml.tmpl
 ├── AGENTS.md
@@ -67,6 +71,9 @@ chezmoiを中心に、Linux環境の設定ファイル、開発ツール、初�
 `.chezmoiroot`は`home`をsource stateのルートに指定する。初期設定の`.chezmoi.toml.tmpl`はリポジトリ直下に置く。
 管理対象はソース側を編集し、`dot_`、`executable_`、`private_`、`symlink_`、`.tmpl`などの属性に従ってホームへ展開する。
 たとえば`home/dot_local/bin/executable_proton-pass.tmpl`は`~/.local/bin/proton-pass`になる。初期構築や文書用の`bootstrap/`、`docs/`、`tests/`はホームへ展開しない。
+
+プロジェクト専用スキルはルートの`.agents/skills/`で直接管理する。このディレクトリもホームへの展開対象には含まれず、共通スキルは従来どおり`home/dot_agents/skills/`で管理する。
+Codex CLIではこのリポジトリ内から`/skills`や`$スキル名`で選択できる。新しいスキルが表示されない場合はCodexを再起動して確認する。用途は[AGENTS.mdのスキル一覧](AGENTS.md#81-プロジェクト固有スキル)を参照する。
 
 ## 3. セットアップ前の準備
 
