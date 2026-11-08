@@ -26,6 +26,7 @@ require() {
 resolve_provider() {
   local configured_provider={{ .protonPassProvider | quote }}
   local requested="${PROTON_PASS_KEY_PROVIDER:-$configured_provider}"
+  [[ "$requested" == "$configured_provider" ]] || die 'PROTON_PASS_KEY_PROVIDERとchezmoiのproviderが一致しません'
   case "$requested" in
   env | keyring) printf '%s\n' "$requested" ;;
   *) die '未対応のprovider: %s' "$requested" ;;

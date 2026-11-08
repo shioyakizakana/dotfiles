@@ -19,6 +19,7 @@ CHEZMOI := "$(CHEZMOI_BIN)" --source "$(REPO_ROOT)"
 
 # ラッパースクリプトの展開先
 PROTON_PASS_WRAPPER := $(HOME)/.local/bin/proton-pass
+PROTON_PASS_CACHE := $(HOME)/.local/bin/proton-pass-key-cache.py
 
 .PHONY: help diff apply status require require-bootstrap wrapper bootstrap
 
@@ -32,8 +33,8 @@ help:
 		'  apply   : chezmoiの設定を反映' \
 		'  status  : chezmoi管理ファイルの状態確認' \
 		'  require  : セットアップ実行環境の診断' \
-		'  wrapper  : Proton Passラッパーを展開' \
-		'  bootstrap   : 初期セットアップを実行'
+		'  wrapper  : Proton Passラッパーと鍵キャッシュを限定展開' \
+		'  bootstrap   : chezmoi設定に従って認証の初期セットアップを実行'
 
 # ========================================
 # chezmoi
@@ -80,15 +81,19 @@ require:
 # ========================================
 wrapper: require
 	@echo "==> Proton Passラッパーを展開"
-	@$(CHEZMOI) apply "$(PROTON_PASS_WRAPPER)"
+	@$(CHEZMOI) apply --include=files --refresh-externals=never "$(PROTON_PASS_WRAPPER)" "$(PROTON_PASS_CACHE)"
 	@test -x "$(PROTON_PASS_WRAPPER)" || { \
 		echo "ERROR: ラッパーが実行可能ではありません" >&2; \
+		exit 1; \
+	}
+	@test -x "$(PROTON_PASS_CACHE)" || { \
+		echo "ERROR: 鍵キャッシュが実行可能ではありません" >&2; \
 		exit 1; \
 	}
 
 # ========================================
 # 初期セットアップ
 # ========================================
-bootstrap: wrapper
+bootstrap: require
 	@echo "==> Proton Pass初期セットアップ"
-	@bash "$(BOOTSTRAP)"
+	@CHEZMOI_SOURCE_DIR="$(REPO_ROOT)" CHEZMOI_BIN="$(CHEZMOI_BIN)" bash "$(BOOTSTRAP)"

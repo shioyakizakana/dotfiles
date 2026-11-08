@@ -23,6 +23,7 @@ require() {
 resolve_provider() {
   local configured_provider={{ .protonPassProvider | quote }}
   local requested="${PROTON_PASS_KEY_PROVIDER:-$configured_provider}"
+  [[ "$requested" == "$configured_provider" ]] || die 'PROTON_PASS_KEY_PROVIDERとchezmoiのproviderが一致しません'
 
   case "$requested" in
   env | keyring) printf '%s\n' "$requested" ;;
@@ -42,8 +43,6 @@ require_secret_file() {
 main() {
   (($# == 0)) ||
     die '引数は受け付けません（使用方法: %s）' "$0"
-
-  provider="$(resolve_provider)"
 
   local provider
 

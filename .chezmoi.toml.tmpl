@@ -1,28 +1,34 @@
 {{- $machineType := promptStringOnce . "machineType" "Machine type (personal/work)" -}}
 
+{{/* linuxEnvはboolで保存されるため、再初期化では既存フラグから選択値を復元する。 */}}
+{{- $environmentData := dict -}}
+{{- range $flag, $name := dict "nativeUbuntu" "native-ubuntu" "wslUbuntu" "wsl-ubuntu" "qemuUbuntu" "qemu-ubuntu" "prootUbuntu" "proot-ubuntu" "termux" "termux" -}}
+  {{- if get $ $flag -}}
+    {{- $_ := set $environmentData "linuxEnv" $name -}}
+  {{- end -}}
+{{- end -}}
+{{- if get . "termux" -}}
+  {{- $_ := set $environmentData "linuxEnv" "termux" -}}
+{{- end -}}
 {{- $linuxEnv := "false" -}}
 {{- if eq .chezmoi.os "linux" -}}
-  {{- $linuxEnv = promptStringOnce . "linuxEnv" "Execute Linux Environment (native-ubuntu/wsl-ubuntu/qemu-ubuntu/proot-ubuntu/termux)" -}}
+  {{- $linuxEnv = promptStringOnce $environmentData "linuxEnv" "Execute Linux Environment (native-ubuntu/wsl-ubuntu/qemu-ubuntu/proot-ubuntu/termux)" -}}
 {{- else if eq .chezmoi.os "android" -}}
-  {{- $linuxEnv = promptStringOnce . "linuxEnv" "Execute Linux Environment (termux/qemu-ubuntu/proot-ubuntu)" -}}
+  {{- $linuxEnv = promptStringOnce $environmentData "linuxEnv" "Execute Linux Environment (termux/qemu-ubuntu/proot-ubuntu)" -}}
 {{- end -}}
 {{- $provider := "keyring" -}}
 {{- if or (eq $linuxEnv "termux") (eq $linuxEnv "proot-ubuntu") -}}
   {{- $provider = "env" -}}
+{{- else -}}
+  {{- $provider = promptStringOnce . "protonPassProvider" "Proton Pass provider (env/keyring)" -}}
+{{- end -}}
+{{- if not (or (eq $provider "env") (eq $provider "keyring")) -}}
+  {{- fail "Proton Pass providerにはenvまたはkeyringを指定してください" -}}
 {{- end -}}
 
-{{- $command := "pass-cli" -}}
-{{- $wrapper := "proton-pass" -}}
+{{/* 初回も展開先を参照する。make wrapperで先に展開し、生のテンプレートは実行しない。 */}}
+{{- $command := joinPath .chezmoi.homeDir ".local/bin/proton-pass" -}}
 
-{{- $path := lookPath $wrapper -}}
-{{- if $path -}}
-  {{- $command = $path -}}
-{{- else -}}
-  {{- $source := joinPath .chezmoi.sourceDir "dot_local/bin/executable_proton-pass" -}}
-  {{- if stat $source -}}
-    {{- $command = $source -}}
-  {{- end -}}
-{{- end }}
 [data]
   personal = {{ eq $machineType "personal" }}
   work = {{ eq $machineType "work" }}

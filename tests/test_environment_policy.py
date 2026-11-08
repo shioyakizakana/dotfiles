@@ -148,6 +148,59 @@ class EnvironmentPolicyTests(unittest.TestCase):
                 entries = self.managed(data, os_name)
                 self.assertEqual(self.installer_names(entries), expected)
 
+    def render_init(self, linux_env, provider="env", flags=None):
+        return self.run_chezmoi(
+            ["execute-template", "--init",
+             "--promptString", "Machine type (personal/work)=personal",
+             "--promptString",
+             "Execute Linux Environment (native-ubuntu/wsl-ubuntu/qemu-ubuntu/proot-ubuntu/termux)=" + linux_env,
+             "--promptString", "Proton Pass provider (env/keyring)=" + provider],
+            flags=flags, text=(ROOT / ".chezmoi.toml.tmpl").read_text(),
+        )
+
+    def test_ubuntu_init_accepts_both_providers(self):
+        for linux_env in ("native-ubuntu", "wsl-ubuntu", "qemu-ubuntu"):
+            for provider in ("env", "keyring"):
+                with self.subTest(linux_env=linux_env, provider=provider):
+                    result = self.render_init(linux_env, provider)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(tomllib.loads(result.stdout)["data"]["protonPassProvider"], provider)
+
+    def test_init_rejects_invalid_provider(self):
+        result = self.render_init("native-ubuntu", "invalid")
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_reinit_retains_environment_and_provider(self):
+        result = self.render_init("native-ubuntu", "keyring", {
+            "linuxEnv": True, "wslUbuntu": True, "protonPassProvider": "env",
+        })
+        self.assertEqual(result.returncode, 0, result.stderr)
+        data = tomllib.loads(result.stdout)["data"]
+        self.assertTrue(data["wslUbuntu"])
+        self.assertEqual(data["protonPassProvider"], "env")
+
+    def test_first_init_uses_wrapper_destination_without_path_entry(self):
+        result = self.render_init("termux")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(tomllib.loads(result.stdout)["protonPass"]["command"],
+                         str(self.base / "home/.local/bin/proton-pass"))
+
+    def test_init_keeps_managed_wrapper_destination_with_other_wrapper_on_path(self):
+        wrapper = self.prefix / "bin/proton-pass"
+        wrapper.write_text("not executed: foreign wrapper\n")
+        wrapper.chmod(0o755)
+        self.test_first_init_uses_wrapper_destination_without_path_entry()
+
+    def test_reinit_termux_flag_takes_priority(self):
+        result = self.render_init("wsl-ubuntu", "keyring", {
+            "linuxEnv": True, "wslUbuntu": True, "termux": True,
+        })
+        self.assertEqual(result.returncode, 0, result.stderr)
+        data = tomllib.loads(result.stdout)["data"]
+        self.assertTrue(data["termux"])
+        self.assertFalse(data["wslUbuntu"])
+        self.assertEqual(data["protonPassProvider"], "env")
+
     def render_tmux(self, flags=None, os_name="linux"):
         source = ROOT / "home/dot_config/tmux/tmux.conf.tmpl"
         if not source.exists():

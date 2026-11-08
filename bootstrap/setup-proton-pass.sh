@@ -61,52 +61,6 @@ confirm_setup() {
   }
 }
 
-detect_linux_env() {
-  local release virt os_id
-  if [[ -n "${LINUX_ENV:-}" ]]; then
-    case "$LINUX_ENV" in
-    termux | proot-ubuntu | wsl-ubuntu | qemu-ubuntu | native-ubuntu)
-      printf '%s\n' "$LINUX_ENV"
-      return 0
-      ;;
-    *)
-      error '不正なLINUX_ENV: %s' "$LINUX_ENV"
-      return 1
-      ;;
-    esac
-  fi
-  if [[ "${PREFIX:-}" == /data/data/com.termux/files/usr ]]; then
-    printf 'termux\n'
-    return 0
-  fi
-  release="$(cat /proc/sys/kernel/osrelease 2>/dev/null || true)"
-  if [[ -n "${WSL_DISTRO_NAME:-}" || "${release,,}" == *microsoft* ]]; then
-    printf 'wsl-ubuntu\n'
-    return 0
-  fi
-  if has systemd-detect-virt; then
-    virt="$(systemd-detect-virt 2>/dev/null || true)"
-    case "$virt" in
-    qemu | kvm)
-      printf 'qemu-ubuntu\n'
-      return 0
-      ;;
-    none | '') ;;
-    *)
-      error '自動識別できない仮想環境です (%s)。LINUX_ENVを指定してください' "$virt"
-      return 1
-      ;;
-    esac
-  fi
-  os_id="$(. /etc/os-release 2>/dev/null && printf '%s' "${ID:-}")" || os_id=''
-  if [[ "$os_id" == ubuntu ]]; then
-    printf 'native-ubuntu\n'
-    return 0
-  fi
-  error '実行環境を識別できません。LINUX_ENVを指定してください'
-  return 1
-}
-
 resolve_provider() {
   local linux_env="$1" requested="${2:-}"
   case "$linux_env" in
@@ -157,10 +111,21 @@ initialize_environment() {
     die '引数とPROTON_PASS_KEY_PROVIDERが一致しません'
   fi
 
-  readonly REPO_ROOT="${CHEZMOI_SOURCE_DIR:-$HOME/.local/share/chezmoi}"
+  readonly REPO_ROOT="${CHEZMOI_SOURCE_DIR:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)}"
+  readonly CHEZMOI_COMMAND="${CHEZMOI_BIN:-chezmoi}"
   [[ -f "$REPO_ROOT/.chezmoiroot" ]] || die '.chezmoiroot が見つかりません: %s' "$REPO_ROOT"
-  linux_env="$(detect_linux_env)" || die '実行環境の識別に失敗しました'
-  provider="$(resolve_provider "$linux_env" "${cli_provider:-$env_provider}")" || die 'プロバイダーの決定に失敗しました'
+  local configured_env configured_provider settings
+  # 固定の非秘密データだけを参照する。PREFIXを引き継いだprootでも設定を優先する。
+  settings="$("$CHEZMOI_COMMAND" --source "$REPO_ROOT" --refresh-externals=never execute-template \
+    '{{ if .termux }}termux{{ else if .prootUbuntu }}proot-ubuntu{{ else if .wslUbuntu }}wsl-ubuntu{{ else if .qemuUbuntu }}qemu-ubuntu{{ else if .nativeUbuntu }}native-ubuntu{{ else }}unknown{{ end }} {{ .protonPassProvider }}')" ||
+    die 'chezmoiの環境・providerを取得できません。初期設定を確認してください'
+  read -r configured_env configured_provider <<<"$settings"
+  [[ "$configured_env" != unknown ]] || die 'chezmoiの実行環境が未設定です'
+  [[ "$configured_provider" == env || "$configured_provider" == keyring ]] || die 'chezmoiのproviderが不正です'
+  linux_env="${LINUX_ENV:-$configured_env}"
+  [[ "$linux_env" == "$configured_env" ]] || die 'LINUX_ENVとchezmoiの実行環境が一致しません'
+  provider="$(resolve_provider "$linux_env" "${cli_provider:-${env_provider:-$configured_provider}}")" || die 'プロバイダーの決定に失敗しました'
+  [[ "$provider" == "$configured_provider" ]] || die 'プロバイダー不一致: Bootstrap=%s、chezmoi=%s' "$provider" "$configured_provider"
   if [[ "$provider" == keyring ]]; then
     check_keyring_environment || die 'Keyringの利用条件を満たしていません'
   fi
@@ -313,28 +278,22 @@ run_authenticated_setup() (
   pass-cli info || die 'Proton Passの認証状態を確認できませんでした'
 )
 
-verify_chezmoi_provider() {
-  local actual
-  actual="$(chezmoi --source "$REPO_ROOT" execute-template '{{ .protonPassProvider }}')" ||
-    die 'chezmoiのprotonPassProviderを取得できません。テンプレート設定を確認してください'
-  [[ "$actual" == env || "$actual" == keyring ]] || die 'chezmoiのprotonPassProviderが不正です: %s' "$actual"
-  [[ "$actual" == "$provider" ]] || die 'プロバイダー不一致: Bootstrap=%s、chezmoi=%s' "$provider" "$actual"
-  info 'chezmoiのプロバイダー設定との一致を確認しました'
-}
 print_next_steps() {
-  info '差分確認: chezmoi --source %s diff' "$REPO_ROOT"
-  info '適用:     chezmoi --source %s apply' "$REPO_ROOT"
+  info '先にラッパーと鍵キャッシュを展開: make -C "%s" wrapper' "$REPO_ROOT"
+  info '差分確認: "%s" --source "%s" diff' "$CHEZMOI_COMMAND" "$REPO_ROOT"
+  info '適用:     "%s" --source "%s" apply' "$CHEZMOI_COMMAND" "$REPO_ROOT"
 }
 main() {
   init_colors
   confirm_setup
-  require age age-keygen pass-cli chezmoi openssl mktemp ln chmod install dirname rm flock cat
+  require age age-keygen pass-cli "${CHEZMOI_BIN:-chezmoi}" openssl mktemp ln chmod install dirname rm flock cat
   initialize_environment "$@"
   acquire_setup_lock
   initialize_age_identity
   initialize_secrets
   run_authenticated_setup
-  verify_chezmoi_provider
   print_next_steps
 }
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
+fi
