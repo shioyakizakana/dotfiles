@@ -36,8 +36,8 @@ ZDIR="$REPO_ROOT/home/dot_zsh"
   [ -f "$REPO_ROOT/home/dot_gitconfig.tmpl" ]
 }
 
-@test "home/dot_Brewfile.tmpl exists" {
-  [ -f "$REPO_ROOT/home/dot_Brewfile.tmpl" ]
+@test "home/dot_Brewfile exists" {
+  [ -f "$REPO_ROOT/home/dot_Brewfile" ]
 }
 
 @test "home/dot_config/tmux/tmux.conf.tmpl exists" {
@@ -60,7 +60,7 @@ ZDIR="$REPO_ROOT/home/dot_zsh"
   [ -f "$ZDIR/operation.zsh" ]
 }
 
-@test "home/dot_zsh/complesion.zsh exists" {
+@test "home/dot_zsh/completion.zsh exists" {
   [ -f "$ZDIR/completion.zsh" ]
 }
 
@@ -78,7 +78,7 @@ ZDIR="$REPO_ROOT/home/dot_zsh"
 
 CHEZMOI_SCRIPTS_DIR="$REPO_ROOT/home/.chezmoiscripts"
 
-@test "home/.chezmoiscriots dir is exists" {
+@test "home/.chezmoiscripts directory exists" {
   [ -d "$CHEZMOI_SCRIPTS_DIR" ]
 }
 
