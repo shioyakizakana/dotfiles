@@ -15,6 +15,7 @@
 | 基礎ツールbootstrap | `tests/test_bootstrap_tools.py` |
 | bootstrapのTermux・Ubuntu判定、pkg導入、リモート起動形式 | `tests/test_bootstrap_platforms.py` |
 | 検証コマンドの依存不足・skip・失敗判定 | `tests/test_quality_gate.py` |
+| lefthook定義・stage差分・失敗伝播・生成hook | `tests/test_git_hooks.py` |
 | APT導入 | `tests/test_install_apt.py` |
 | Homebrew導入 | `tests/test_install_brew.py` |
 | mise導入・Rust・LuaRocks・nimlsp | `tests/test_mise_helpers.py` |

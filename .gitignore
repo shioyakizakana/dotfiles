@@ -21,3 +21,6 @@
 !/README.md
 !/.gitignore
 
+# 端末固有のlefthook設定は共有しない。
+/lefthook-local.yml
+

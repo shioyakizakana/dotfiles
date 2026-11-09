@@ -10,7 +10,7 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-UNIT_TOOLS = ("bash", "zsh", "chezmoi", "lua", "make", "mkdir", "cat", "chmod", "dirname")
+UNIT_TOOLS = ("bash", "zsh", "chezmoi", "lua", "make", "mkdir", "cat", "chmod", "dirname", "git", "lefthook")
 OPTIONAL_SKIPS = {
     "test_yazi_config.YaziConfigTests.test_yazi_loads_keymap_in_isolated_terminal",
 }
@@ -68,7 +68,8 @@ def run_smoke():
 def run_lint():
     import tomllib
 
-    require_tools(("bash", "zsh", "shellcheck", "shfmt", "git"))
+    require_tools(("bash", "zsh", "shellcheck", "shfmt", "git", "lefthook"))
+    run_command(["lefthook", "validate"])
     for name in (*BASH_FILES, "home/dot_bashrc", "home/dot_bash_aliases"):
         run_command(["bash", "-n", name])
     for path in sorted((ROOT / "home/dot_zsh").rglob("*.zsh")):

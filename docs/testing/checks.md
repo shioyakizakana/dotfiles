@@ -8,9 +8,9 @@
 | --- | --- | --- |
 | `make check` | 静的検証と全テスト | 以下の全ツール |
 | `make test` | unittestとBats | 下記2行のツール |
-| `make test-unit` | 依存確認とskip判定を含むunittest | Python 3.11以上、Bash、Zsh、chezmoi、Lua、make、mkdir、cat、chmod、dirname |
+| `make test-unit` | 依存確認とskip判定を含むunittest | Python 3.11以上、Bash、Zsh、chezmoi、Lua、make、mkdir、cat、chmod、dirname、Git、lefthook |
 | `make test-smoke` | ファイル配置のBatsテスト | Python 3.11以上、Bats、Bash、cat |
-| `make lint` | 対象を限定した構文・静的検証 | Python 3.11以上、Bash、Zsh、ShellCheck、shfmt、Git |
+| `make lint` | 対象を限定した構文・静的検証 | Python 3.11以上、Bash、Zsh、ShellCheck、shfmt、Git、lefthook |
 
 通常のPOSIX基本コマンドも必要になる。検証中に依存を自動導入する処理はなく、不足時は失敗する。Pythonを変える場合は`make TEST_PYTHON=/path/to/python3 check`と指定する。設定適用用の`CHEZMOI_BIN`とは独立して、テストはPATH上のchezmoiを使う。
 
@@ -30,6 +30,8 @@
 
 Go templateを含むファイルは直接ShellCheck・shfmtへ渡さない。既存unittestが、確認済みのテンプレートをダミーデータと隔離したchezmoi設定で評価する。実ソース全体や実HOMEを使ったテンプレート評価は行わない。
 
+lefthook.ymlは`lefthook validate`で確認する。hookの回帰テストは一時リポジトリ内だけでインストール・実行し、pre-pushのmakeはダミーを使う。実作業コピーへのhook導入は[別の操作手順](git-hooks.md)で行う。
+
 | 対象 | 例外と理由 |
 | --- | --- |
 | `bootstrap/setup-proton-pass.sh` | ShellCheckのSC2059だけ除外する。ログ関数が呼び出し側の固定書式を受け取り、printfへ渡す仕様のため。ほかの警告は有効 |
@@ -48,12 +50,13 @@ CIジョブの準備段階には、検証用依存の取得・導入が含まれ
 | --- | --- |
 | GitHub checkout | [actions/checkout v6.0.2](https://github.com/actions/checkout/releases/tag/v6.0.2)のコミットSHAを指定 |
 | chezmoi | [公式v2.73.0リリース](https://github.com/twpayne/chezmoi/releases/tag/v2.73.0)のlinux_amd64アーカイブ。公開されたSHA256と一致することを確認してから展開 |
+| lefthook | [公式v2.2.2リリース](https://github.com/evilmartians/lefthook/releases/tag/v2.2.2)のLinux_x86_64.gz。公開SHA256を確認し、RUNNER_TEMP配下へ展開 |
 | Bats、Zsh、Lua 5.1、ShellCheck、shfmt | Ubuntu 24.04のAPT。導入バージョンをログへ出力。パッケージの修正版まで固定する構成ではない |
 | Python・make・Git・curlなど | Ubuntu 24.04のGitHubホストランナーに備わる基本ツール。Pythonのバージョンをログへ出力 |
 
 chezmoiとLuaへのパスはRUNNER_TEMP配下に作成する。dotfiles用のbootstrapやmise installは実行しない。Yaziは追加導入せず、利用できなければ実起動1件だけを任意skipとして報告する。
 
-checkoutやchezmoiを更新する場合は、リリースとコミットSHA・チェックサムの対応を確認し、固定値とこの文書を一緒に更新する。CI依存の固定は、利用者のmise設定のバージョン方針を変更しない。
+checkout・chezmoi・lefthookを更新する場合は、リリースとコミットSHA・チェックサムの対応を確認し、固定値とこの文書を一緒に更新する。lefthookはmise設定とCIを2.2.2へそろえる。その他のツールのバージョン方針は変更しない。
 
 ## GitHub上で利用者が確認すること
 

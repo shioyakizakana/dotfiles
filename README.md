@@ -39,6 +39,7 @@ chezmoiを中心に、Linux環境の設定ファイル、開発ツール、初�
 ├── AGENTS.md
 ├── README.md
 ├── Makefile
+├── lefthook.yml
 ├── bootstrap/
 │   ├── bootstrap-tools.sh
 │   └── setup-proton-pass.sh
@@ -47,6 +48,7 @@ chezmoiを中心に、Linux環境の設定ファイル、開発ツール、初�
 │   ├── setup/proton-pass.md
 │   └── testing/
 │       ├── checks.md
+│       ├── git-hooks.md
 │       └── environment-matrix.md
 ├── home/
 │   ├── .chezmoiignore
@@ -530,5 +532,7 @@ make lint        # 静的検査のみ
 実サービスへの認証、パッケージ導入、AndroidのBionicなどはモックの成功だけでは確認できない。環境ごとの手動確認範囲は[環境別テストの説明](docs/testing/environment-matrix.md)に記載している。
 
 GitHub ActionsもUbuntu 24.04上で同じ`make check`を実行する。検証用依存の導入はCIジョブの準備段階だけで行い、ローカルの検証ターゲットからは実行しない。GitHub上での初回実行結果と、必須チェックへの登録は別途確認する。
+
+Git hooksはルートの`lefthook.yml`で管理し、pre-commitでステージ済み差分の空白エラー、pre-pushで`make check`を実行する。lefthook 2.2.2を使い、既存hookとcore.hooksPathを確認した後、各作業コピーで`lefthook install pre-commit pre-push`を実行する。Termuxのシバン補正とPATH、個別確認の手順は[Git hooksの説明](docs/testing/git-hooks.md)を参照する。
 
 未解決の依存関係、バージョン固定、CIの実行状況などは[監査記録](docs/reviews/dotfiles-audit.md)で管理する。コード上の対応状況と実機への適用状況を分けて確認する。

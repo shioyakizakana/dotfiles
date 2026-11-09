@@ -18,6 +18,7 @@
 ├── AGENTS.md                       # このリポジトリの作業規約
 ├── README.md                       # 構築・適用・通常運用の案内
 ├── Makefile                        # 検証・確認・認証bootstrap・限定展開・適用
+├── lefthook.yml                   # pre-commit・pre-pushの共通定義
 ├── bootstrap/
 │   ├── bootstrap-tools.sh          # Ubuntu・Termux向け基礎ツールの確認・導入
 │   └── setup-proton-pass.sh        # 秘密情報の初期構築・認証
@@ -26,6 +27,7 @@
 │   ├── setup/proton-pass.md        # 認証構築・既存環境の手動確認手順
 │   └── testing/
 │       ├── checks.md              # ローカル・CI共通の検証手順
+│       ├── git-hooks.md           # Git hooksとTermuxでの再現手順
 │       └── environment-matrix.md  # 環境別テストと実機確認の範囲
 ├── home/                           # ホームへ展開するsource state
 │   ├── .chezmoiignore              # 環境別の導入対象・管理除外

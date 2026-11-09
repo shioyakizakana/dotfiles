@@ -168,6 +168,7 @@ systemdの起動は共通前提ではない。`systemd-detect-virt`は存在時�
 - 注意・検証：全ツールの厳密固定は更新負担を増やす。DF-09で依存を確定後、新規導入・再導入・更新・失敗後再開と設定差分を検証する。変更リスクはMedium。
 - 前提の追加：DF-04で環境別の導入対象を決め、DF-05で導入済み判定を直してから集約する。Homebrewを省く環境の代替ツールはDF-09で決める。
 - 対応状況：対応中。一覧集約を`6505297`へコミットした。通常導入をmise installへ変更し、Python 3.13・3.12をTOML側で維持した。chafaはその後、導入失敗のため利用者がmise一覧から除外している。Brewfileの指定は残る。Rust・LuaRocks・nimlspの補助処理は一覧取得後に不足だけを導入する。ツール別の固定・更新方針と実機の互換性確認は残件。
+- Git hooks導入時の追加対応：lefthookだけは検証版2.2.2へ固定し、mise設定とCIの取得版をそろえた。その他のツールの固定方針は変更していない。Termux本体では共通mise設定を展開しないため、ネイティブ実行できる版の手動準備と実機確認を必要とする。
 
 ### DF-07：providerの整合性
 
@@ -231,9 +232,13 @@ systemdの起動は共通前提ではない。`systemd-detect-virt`は存在時�
 - 注意・検証：DF-01用テスト追加はこの項目の一部にすぎない。実認証・インストール・実HOMEに依存しないこと、テンプレート検査で秘密取得を実行しないことを確認する。
 - 対応状況：検証コマンド・CI定義を追加済み。Brewfileの配置期待値とテスト名は修正済みで、認証周辺、環境分岐、導入失敗・再試行、シェル起動などのunittestも追加している。Makefileにcheck・test・test-unit・test-smoke・lintを追加し、`tests/check.py`へ検証処理をまとめた。認証用requireやchezmoi適用を呼ばず、必須ツール不足と予期しないskipを失敗にする。任意skipはYazi実起動の1件に限定し、識別子と理由を表示する。全件skipも成功扱いしない。
 - CI定義：`.github/workflows/check.yml`でmainへのpush・pull request・手動実行を対象に、Ubuntu 24.04上で同じmake checkを呼ぶ。checkoutはコミットSHA、chezmoiはv2.73.0と公開SHA256を固定。検証ツールのAPT導入はCI準備段階だけで行う。contents権限はread、checkoutの認証情報保存とリポジトリ秘密情報の利用はしない。
+- Git hooks：`lefthook.yml`でpre-commitのステージ済み空白確認と、pre-pushのmake checkを定義した。現在の作業コピーには既存hookとの競合がないことを確認してインストールした。core.hooksPathは変更せず、forceによる上書きも行っていない。PATHのlefthookがなければ失敗する設定とし、別のパッケージ管理ツールによる探索・導入を防ぐ。個別設定はlefthook-local.ymlとしてGitから除外する。
+- hook検証：`tests/test_git_hooks.py`で一時Gitリポジトリを使い、stage差分、部分stage保持、make失敗の伝播、実行ファイル不足時の停止、Termux相当シバンを検証する。実作業コピーのhookはcommit・pushせずに直接起動し、送信対象のないpre-pushはforce指定でジョブを実行して確認する。Termuxの実行ファイル準備・シバン補正は[再現手順](../testing/git-hooks.md)へ記録した。
+- hook導入後の結果：インストール済みpre-pushのforce実行からunittest全165件・Bats全18件・静的検証が成功し、skipはなかった。空stageでのpre-commitはジョブskipとなり、生成hookの起動は正常終了した。ステージ済み差分の検証は一時リポジトリの回帰テストで確認した。core.hooksPathは未設定のまま、実indexにも差分はない。CI定義のYAML解析・埋め込みBashの構文とShellCheckも成功した。
 - 静的検証：対象一覧を`tests/check.py`で管理する。認証bootstrapのログ書式に限るSC2059除外と、update-agent-skillsの既存整形差分の保留を[検証手順](../testing/checks.md)へ明記した。テンプレートを直接ShellCheck・shfmtへ渡さず、既存の隔離展開テストで扱う。
 - 今回の検証：make checkからunittest全158件・Bats全18件と静的検証が成功し、skipはなかった。依存不足時のCLI異常終了、予期しないskip、任意skip、全件skip、検証コマンド失敗を確認した。ワークフローのYAML解析と埋め込みBashの構文・ShellCheckも成功した。GitHub上のCI実行は未実施。
-- 残件：GitHubホストランナーでの初回実行と、必要に応じた必須チェック登録。実インストール・認証・Termux/Android実機の確認はCIのモック成功とは区別する。重要処理の回帰テストは、今後の変更と不具合に応じて拡充する。
+- 利用者確認：従来のdotfiles checks成功と、main-ci rulesetへのcheck登録・PR必須化の報告を受けた。lefthook追加後のCI結果と、次のPRでの必須判定は別途確認する。
+- 残件：lefthook追加後のGitHub上のCI実行確認、Termuxネイティブのビルド・生成hookの起動確認。実インストール・認証・Termux/Android実機の確認はCIのモック成功とは区別する。重要処理の回帰テストは、今後の変更と不具合に応じて拡充する。
 - 配置期待値の修正時の検証：修正前はBats17件成功・Brewfile期待パスで1件失敗。修正後はBats全18件とunittest全116件が成功した。パッケージ導入や実環境への適用は行っていない。
 - コミット：配置テストの期待パスと名称の修正を`e62489f`へコミットした。
 

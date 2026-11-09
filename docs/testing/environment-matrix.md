@@ -24,6 +24,9 @@ python3 -B -m unittest discover -s tests -p test_mise_helpers.py -v
 # 初期bootstrapのTermux・Ubuntu判定、pkgの不足分導入と失敗、bash -c起動
 python3 -B -m unittest discover -s tests -p test_bootstrap_platforms.py -v
 
+# Git hooksのstage差分、失敗伝播、Termux相当のシバン
+python3 -B -m unittest discover -s tests -p test_git_hooks.py -v
+
 # 明示的なAPT更新のroot・sudo処理
 python3 -B -m unittest discover -s tests -p test_update_apps.py -v
 
@@ -63,6 +66,8 @@ APTはrootなら直接実行し、非rootならsudoを必要とする。導入�
 Termuxの基礎パッケージ・mise導入、導入済みの省略、pkg一覧更新の重複防止、更新失敗・導入失敗・導入後確認失敗、root・未対応パッケージマネージャーの拒否を検証する。UbuntuゲストはPREFIXを引き継いでもTermuxと誤認しないこと、UbuntuのAPT引数とprootのHomebrew新規導入省略も確認する。
 
 `--check`ではpkg・ダウンロード・pass-cliを実行せず、HOME内のファイルを作成しない。ファイル・bash -c・標準入力からの起動は`--help`で検証する。Termuxの実パッケージ候補、Android上でのバイナリ実行、ミラーへの接続、Proton Pass認証は未実施であり、[実機確認手順](../setup/dependencies.md#termuxでの導入と実機確認)に沿って利用者が確認する。
+
+Git hooksのテストでは、一時リポジトリとダミーmakeを使う。ステージ済み空白エラー、部分stageの保持、make失敗時の異常終了、lefthook不足時に別の導入処理を起動しないことを確認する。Termux相当のPREFIX内のshで生成hookを起動するが、Android/Bionicや実機でのビルド・実行保証とは区別する。対応版と導入手順は[Git hooksの説明](git-hooks.md)を参照する。
 
 ## テストで再現している内容
 

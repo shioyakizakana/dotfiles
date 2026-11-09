@@ -9,6 +9,7 @@
 | 初期認証のPython 3.11以上、make、openssl、wget、flockなど | [READMEの初期準備](../../README.md#31-必要なコマンド)。認証前にOS側で準備する | miseの適用後処理では初期認証に間に合わない。`make require`だけですべての前提を確認したことにはならない |
 | 基礎ツール | Ubuntu・Termux向け`bootstrap/bootstrap-tools.sh`。環境別のパッケージ一覧を同スクリプトで管理 | Ubuntuの基礎導入一覧にはPythonが含まれない。Zsh・LuaRocks・fzfは両環境で手動準備 |
 | 開発CLI・ランタイム | `home/dot_config/mise/config.toml`とmiseの適用後処理 | 一覧の不足を導入する。個別の導入失敗は解決が必要 |
+| lefthook | miseとCIは2.2.2へ固定。各作業コピーでGit hooksをインストール | bootstrap-tools.shの自動導入対象には含めない。Termux向けの準備は[Git hooksの手順](../testing/git-hooks.md)を参照 |
 | Zsh本体・fzf実行ファイル | 利用環境のパッケージなどで手動準備 | Zsh設定のGit外部取得はfzf実行ファイルを導入しない |
 | luacheck・vuseted | mise処理の後半でLuaRocksを使う | LuaRocksがなければ処理は失敗する。Lua 5.1向けのLuaRocksとビルド環境を先に用意する |
 | Rust補助ツール・nimlsp | 同じmise処理の後半でrustup・nimbleを使う | 各処理の失敗を終了状態で伝える |
