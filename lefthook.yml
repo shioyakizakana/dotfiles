@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=https://lefthook.dev/schema.json
+min_version: 2.2.2
+# PATH上の実行ファイルを使い、不足時に別のパッケージ管理ツールを起動しない。
+lefthook: lefthook
+
+pre-commit:
+  jobs:
+    - name: staged-whitespace
+      run: git diff --cached --check
+
+pre-push:
+  jobs:
+    - name: dotfiles-check
+      run: make check
