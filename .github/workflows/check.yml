@@ -1,0 +1,46 @@
+name: dotfiles checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Prepare verification tools
+        shell: bash
+        env:
+          CHEZMOI_VERSION: 2.73.0
+          CHEZMOI_SHA256: b597729b687af4488a848240134cb633de8ca0f04e0d26d48f400ee2ac338ffa
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends bats zsh lua5.1 shellcheck shfmt
+          tool_dir="$RUNNER_TEMP/dotfiles-check-tools"
+          mkdir -p "$tool_dir"
+          curl -fsSL --retry 3 \
+            "https://github.com/twpayne/chezmoi/releases/download/v${CHEZMOI_VERSION}/chezmoi_${CHEZMOI_VERSION}_linux_amd64.tar.gz" \
+            -o "$RUNNER_TEMP/chezmoi.tar.gz"
+          printf '%s  %s\n' "$CHEZMOI_SHA256" "$RUNNER_TEMP/chezmoi.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/chezmoi.tar.gz" -C "$tool_dir" chezmoi
+          ln -s /usr/bin/lua5.1 "$tool_dir/lua"
+          printf '%s\n' "$tool_dir" >> "$GITHUB_PATH"
+          python3 --version
+          dpkg-query -W bats zsh lua5.1 shellcheck shfmt
+          "$tool_dir/chezmoi" --version
+      - name: Run the same checks as local development
+        run: make check
