@@ -16,12 +16,14 @@ BOOTSTRAP := $(REPO_ROOT)/bootstrap/setup-proton-pass.sh
 # 実行ファイルと引数
 CHEZMOI_BIN := $(HOME)/.local/bin/chezmoi
 CHEZMOI := "$(CHEZMOI_BIN)" --source "$(REPO_ROOT)"
+TEST_PYTHON ?= python3
 
 # ラッパースクリプトの展開先
 PROTON_PASS_WRAPPER := $(HOME)/.local/bin/proton-pass
 PROTON_PASS_CACHE := $(HOME)/.local/bin/proton-pass-key-cache.py
 
 .PHONY: help diff apply status require require-bootstrap wrapper bootstrap
+.PHONY: check test test-unit test-smoke lint
 
 # ========================================
 # help
@@ -34,7 +36,26 @@ help:
 		'  status  : chezmoi管理ファイルの状態確認' \
 		'  require  : セットアップ実行環境の診断' \
 		'  wrapper  : Proton Passラッパーと鍵キャッシュを限定展開' \
-		'  bootstrap   : chezmoi設定に従って認証の初期セットアップを実行'
+		'  bootstrap   : chezmoi設定に従って認証の初期セットアップを実行' \
+		'  check       : 静的検査・単体テスト・配置テストを実行' \
+		'  test        : 単体テストと配置テストを実行' \
+		'  test-unit   : 必須依存とskipを確認してunittestを実行' \
+		'  test-smoke  : Batsの配置テストを実行' \
+		'  lint        : 対象を限定した構文・静的検査を実行'
+
+# 設定適用・認証用のrequireには依存させない。
+check: lint test
+
+test: test-unit test-smoke
+
+test-unit:
+	@"$(TEST_PYTHON)" -B "$(REPO_ROOT)/tests/check.py" unit
+
+test-smoke:
+	@"$(TEST_PYTHON)" -B "$(REPO_ROOT)/tests/check.py" smoke
+
+lint:
+	@"$(TEST_PYTHON)" -B "$(REPO_ROOT)/tests/check.py" lint
 
 # ========================================
 # chezmoi
