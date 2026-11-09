@@ -26,6 +26,8 @@ jobs:
         env:
           CHEZMOI_VERSION: 2.73.0
           CHEZMOI_SHA256: b597729b687af4488a848240134cb633de8ca0f04e0d26d48f400ee2ac338ffa
+          LEFTHOOK_VERSION: 2.2.2
+          LEFTHOOK_SHA256: 2b8d7fd52771f26d7a50260ef10cd6fe704d66f60102e566362b84da09884ab7
         run: |
           set -euo pipefail
           sudo apt-get update
@@ -37,10 +39,17 @@ jobs:
             -o "$RUNNER_TEMP/chezmoi.tar.gz"
           printf '%s  %s\n' "$CHEZMOI_SHA256" "$RUNNER_TEMP/chezmoi.tar.gz" | sha256sum -c -
           tar -xzf "$RUNNER_TEMP/chezmoi.tar.gz" -C "$tool_dir" chezmoi
+          curl -fsSL --retry 3 \
+            "https://github.com/evilmartians/lefthook/releases/download/v${LEFTHOOK_VERSION}/lefthook_${LEFTHOOK_VERSION}_Linux_x86_64.gz" \
+            -o "$RUNNER_TEMP/lefthook.gz"
+          printf '%s  %s\n' "$LEFTHOOK_SHA256" "$RUNNER_TEMP/lefthook.gz" | sha256sum -c -
+          gzip -dc "$RUNNER_TEMP/lefthook.gz" > "$tool_dir/lefthook"
+          chmod +x "$tool_dir/lefthook"
           ln -s /usr/bin/lua5.1 "$tool_dir/lua"
           printf '%s\n' "$tool_dir" >> "$GITHUB_PATH"
           python3 --version
           dpkg-query -W bats zsh lua5.1 shellcheck shfmt
           "$tool_dir/chezmoi" --version
+          "$tool_dir/lefthook" version
       - name: Run the same checks as local development
         run: make check
