@@ -6,6 +6,8 @@ DF-04の環境別制御は、実際のインストールをせずに再現でき
 
 Python 3.11以上、Bash、chezmoiを利用できる検証環境で、リポジトリのルートから実行する。依存のインストールはこれらのテストに含まない。
 
+最終確認には`make check`を使う。必須依存の不足や予期しないskipを失敗として扱う。以下は対象を絞って調査するためのコマンドであり、直接実行時はskipを自分で確認する。CIでの取得元・固定方法と静的検証の対象は[共通検証手順](checks.md)を参照する。
+
 ```shell
 # 環境選択、初期設定データ、tmuxのシェル選択
 python3 -B -m unittest discover -s tests -p test_environment_policy.py -v

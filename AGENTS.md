@@ -12,18 +12,21 @@
 │   ├── chezmoi-template-validation/
 │   ├── dotfiles-test-runner/
 │   └── secret-management-review/
+├── .github/workflows/check.yml     # GitHub Actionsの検証ジョブ
 ├── .chezmoiroot                     # source stateのルートにhomeを指定
 ├── .chezmoi.toml.tmpl               # chezmoi初期設定・環境フラグ・provider
 ├── AGENTS.md                       # このリポジトリの作業規約
 ├── README.md                       # 構築・適用・通常運用の案内
-├── Makefile                        # 確認・認証bootstrap・限定展開・適用
+├── Makefile                        # 検証・確認・認証bootstrap・限定展開・適用
 ├── bootstrap/
 │   ├── bootstrap-tools.sh          # Ubuntu・Termux向け基礎ツールの確認・導入
 │   └── setup-proton-pass.sh        # 秘密情報の初期構築・認証
 ├── docs/
 │   ├── reviews/dotfiles-audit.md   # 調査結果とDF項目の対応状況
 │   ├── setup/proton-pass.md        # 認証構築・既存環境の手動確認手順
-│   └── testing/environment-matrix.md  # 環境別テストと実機確認の範囲
+│   └── testing/
+│       ├── checks.md              # ローカル・CI共通の検証手順
+│       └── environment-matrix.md  # 環境別テストと実機確認の範囲
 ├── home/                           # ホームへ展開するsource state
 │   ├── .chezmoiignore              # 環境別の導入対象・管理除外
 │   ├── .chezmoiexternal.toml.tmpl   # プラグイン・外部スキルのGit取得

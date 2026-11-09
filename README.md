@@ -33,6 +33,7 @@ chezmoiを中心に、Linux環境の設定ファイル、開発ツール、初�
 │   ├── chezmoi-template-validation/
 │   ├── dotfiles-test-runner/
 │   └── secret-management-review/
+├── .github/workflows/check.yml
 ├── .chezmoiroot
 ├── .chezmoi.toml.tmpl
 ├── AGENTS.md
@@ -44,7 +45,9 @@ chezmoiを中心に、Linux環境の設定ファイル、開発ツール、初�
 ├── docs/
 │   ├── reviews/dotfiles-audit.md
 │   ├── setup/proton-pass.md
-│   └── testing/environment-matrix.md
+│   └── testing/
+│       ├── checks.md
+│       └── environment-matrix.md
 ├── home/
 │   ├── .chezmoiignore
 │   ├── .chezmoiexternal.toml.tmpl
@@ -518,11 +521,14 @@ D-BusセッションおよびSecret Serviceが利用可能か確認する。
 Python unittestは、隔離したHOME・ダミーコマンド・モックで認証周辺、環境分岐、導入失敗、再試行などを検証する。Batsは主にファイル配置を確認する。
 
 ```shell
-python3 -B -m unittest discover -s tests -p 'test_*.py'
-bats tests/smoke.bats
+make check       # 静的検査・単体テスト・配置テスト
+make test        # 単体テストと配置テスト
+make lint        # 静的検査のみ
 ```
 
-一部のテストはchezmoiがなければskipするため、終了状態とskipの有無を確認する。BatsのBrewfile期待パスは実体の`home/dot_Brewfile`に合わせて修正済み。
+検証ターゲットは必須ツールを事前確認し、予期しないskipや全件skipを失敗として扱う。Yazi実起動の1件だけは任意検証で、skipした理由を明示する。必要なツール、個別実行、対象を限定した静的検証の範囲は[検証手順](docs/testing/checks.md)を参照する。
 実サービスへの認証、パッケージ導入、AndroidのBionicなどはモックの成功だけでは確認できない。環境ごとの手動確認範囲は[環境別テストの説明](docs/testing/environment-matrix.md)に記載している。
 
-未解決の依存関係、シェル起動時の参照、バージョン固定、CIなどは[監査記録](docs/reviews/dotfiles-audit.md)で管理する。コード上の対応状況と実機への適用状況を分けて確認する。
+GitHub ActionsもUbuntu 24.04上で同じ`make check`を実行する。検証用依存の導入はCIジョブの準備段階だけで行い、ローカルの検証ターゲットからは実行しない。GitHub上での初回実行結果と、必須チェックへの登録は別途確認する。
+
+未解決の依存関係、バージョン固定、CIの実行状況などは[監査記録](docs/reviews/dotfiles-audit.md)で管理する。コード上の対応状況と実機への適用状況を分けて確認する。

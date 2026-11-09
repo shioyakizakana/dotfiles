@@ -2,6 +2,8 @@
 
 対象リポジトリの`.chezmoiroot`が`home`で、以下のテストがあることを確認する。コマンドはリポジトリルートから実行する。
 
+最終確認には`make check`を使う。`make test`・`make test-unit`・`make test-smoke`・`make lint`で範囲を絞れる。必須依存とskipの扱い、静的検証の対象、CIの取得元は[共通検証手順](../../../../docs/testing/checks.md)を参照する。検証ターゲットは実認証・適用用ターゲットを呼ばない。
+
 ## Python unittest
 
 | 変更対象 | 対応するテストファイル |
@@ -12,6 +14,7 @@
 | YaziのTOML互換性・キー定義 | `tests/test_yazi_config.py` |
 | 基礎ツールbootstrap | `tests/test_bootstrap_tools.py` |
 | bootstrapのTermux・Ubuntu判定、pkg導入、リモート起動形式 | `tests/test_bootstrap_platforms.py` |
+| 検証コマンドの依存不足・skip・失敗判定 | `tests/test_quality_gate.py` |
 | APT導入 | `tests/test_install_apt.py` |
 | Homebrew導入 | `tests/test_install_brew.py` |
 | mise導入・Rust・LuaRocks・nimlsp | `tests/test_mise_helpers.py` |
@@ -23,7 +26,7 @@
 # 対象に応じてファイル名を選ぶ。
 python3 -B -m unittest discover -s tests -p test_environment_policy.py -v
 # 複数の処理へ影響する変更や、コミット前の全体確認。
-python3 -B -m unittest discover -s tests -p 'test_*.py' -v
+make check
 ```
 
 既存テストはダミーコマンドやモックを使用するが、新規・変更されたテストは実行前に確認する。秘密情報取得、外部通信、実パッケージ操作が残っていれば実行を止める。
@@ -52,6 +55,7 @@ Batsは主に配置を確認し、Brewfileの期待パスは`home/dot_Brewfile`�
 | Makefile | レシピを読んでから必要なターゲットだけをdry-runで確認 |
 
 ShellCheckのSC2059は既存の固定書式ログで報告されることがある。除外する場合は該当コードと理由を確認して報告し、他の警告まで抑制しない。
+`make lint`では認証bootstrapに限ってSC2059を除外する。update-agent-skillsの既存整形差分は保留し、構文とShellCheckだけを対象にする。Go templateを直接静的検証へ渡さない。
 Makeのdry-runでも、変数展開中のshell関数や再帰makeなどが動く場合がある。コマンド名だけで安全と判断しない。
 現在のMakefileのbootstrapは実認証、wrapperとapplyはchezmoi適用を伴うため、テスト用ターゲットとして使わない。インストールスクリプトの直接実行やupdate_appsも、検証コマンドの代わりには使わない。
 
