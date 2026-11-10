@@ -535,4 +535,6 @@ GitHub ActionsもUbuntu 24.04上で同じ`make check`を実行する。検証用
 
 Git hooksはルートの`lefthook.yml`で管理し、pre-commitでステージ済み差分の空白エラー、pre-pushで`make check`を実行する。lefthook 2.2.2を使い、既存hookとcore.hooksPathを確認した後、各作業コピーで`lefthook install pre-commit pre-push`を実行する。Termuxのシバン補正とPATH、個別確認の手順は[Git hooksの説明](docs/testing/git-hooks.md)を参照する。
 
+変更は作業ブランチからPRを作成し、必須チェック`check`の成功を確認して`main`へ取り込む。GitHub CLIでのPR作成・自動マージ予約・ブランチ整理は[PRの運用手順](docs/testing/pull-requests.md)を参照する。
+
 未解決の依存関係、バージョン固定、CIの実行状況などは[監査記録](docs/reviews/dotfiles-audit.md)で管理する。コード上の対応状況と実機への適用状況を分けて確認する。
