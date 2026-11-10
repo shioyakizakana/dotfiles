@@ -18,7 +18,7 @@ chezmoiを中心に、Linux環境の設定ファイル、開発ツール、初�
 | WSL版Ubuntu | `wsl-ubuntu` | `keyring` / `env` |
 | ネイティブUbuntu | `native-ubuntu` | `keyring` / `env` |
 
-`keyring`を利用する場合は、D-Busセッション、`busctl`、Secret Serviceが必要になる。Termuxのツール導入は手動で準備する。Ubuntu向けの一括導入やmise設定はTermuxには適用しない。
+`keyring`を利用する場合は、D-Busセッション、`busctl`、Secret Serviceが必要になる。Termuxの基礎ツールはbootstrap-tools.shで導入できるが、pass-cliや追加ツールには手動準備が残る。Ubuntu向けの一括導入やmise設定はTermuxには適用しない。
 
 > [!Note]
 > 認証bootstrapはchezmoiに保存した環境フラグを使用する。`LINUX_ENV`を明示する場合も、保存した環境との一致を要求する。
@@ -412,6 +412,8 @@ update_apps all
 APTは一覧更新・upgrade・autoremove・autoclean、Homebrewはupdate・upgrade・cleanup、miseはoutdatedの表示とupgradeを実行する。
 PATHに該当するパッケージマネージャーがなければ省略する。これはchezmoiの環境別除外とは独立した処理なので、`all`を指定する前に実行環境と対象を確認する。
 miseのツール一覧は`home/dot_config/mise/config.toml`で管理し、多くは`latest`を指定している。全ツールのバージョンを厳密に固定した構成ではない。
+
+現在の固定値、追加固定の候補、更新処理の制約は[バージョン管理方針](docs/setup/tool-version-policy.md)を参照する。Termuxでの確認は[実機チェックリスト](docs/testing/termux-checklist.md)に沿って段階ごとに記録する。
 
 ### 7.2 キャッシュスクリプトの仕様
 
