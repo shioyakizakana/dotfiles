@@ -410,6 +410,8 @@ update_apps all
 ```
 
 APTは一覧更新・upgrade・autoremove・autoclean、Homebrewはupdate・upgrade・cleanup、miseはoutdatedの表示とupgradeを実行する。
+
+miseの確認・更新はHOMEを対象にする。outdatedが非0で終了した場合はupgradeへ進まず、更新失敗として集計する。HOME配下の追加設定や環境変数の上書きはmiseの仕様に従う。
 PATHに該当するパッケージマネージャーがなければ省略する。これはchezmoiの環境別除外とは独立した処理なので、`all`を指定する前に実行環境と対象を確認する。
 miseのツール一覧は`home/dot_config/mise/config.toml`で管理し、多くは`latest`を指定している。全ツールのバージョンを厳密に固定した構成ではない。
 

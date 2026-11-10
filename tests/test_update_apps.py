@@ -1,4 +1,4 @@
-"""明示的なAPT更新を、実際の更新なしで検証する。"""
+"""明示的なAPT・mise更新を、実際の更新なしで検証する。"""
 
 from pathlib import Path
 import shutil
@@ -18,6 +18,9 @@ class UpdateAppsTests(unittest.TestCase):
         self.base = Path(directory.name)
         self.bin = self.base / "bin"
         self.bin.mkdir()
+        self.project = self.base / "project"
+        self.project.mkdir()
+        (self.project / "mise.toml").write_text('[tools]\nnode = "20"\n')
         self.trace = self.base / "trace"
         self.trace.write_text("")
         for name, body in {
@@ -25,6 +28,23 @@ class UpdateAppsTests(unittest.TestCase):
             "apt-get": 'printf "%s\\n" "apt-get $*" >> "$TRACE"\n'
                        '[[ "$1" != update ]] || exit "${UPDATE_EXIT:-0}"\n',
             "sudo": 'printf "%s\\n" "sudo $*" >> "$TRACE"\n"$@"\n',
+            "mise": '''printf 'mise' >> "$TRACE"
+printf ' <%s>' "$@" >> "$TRACE"
+printf '\\n' >> "$TRACE"
+if [[ "${1:-}" == --cd ]]; then
+  cd -- "$2" || exit 1
+  shift 2
+fi
+printf 'mise-target <%s> <%s>\\n' "$PWD" "$1" >> "$TRACE"
+case "$1" in
+  outdated)
+    printf '%s\\n' "${OUTDATED_OUTPUT:-All tools are up to date}"
+    exit "${OUTDATED_EXIT:-0}"
+    ;;
+  upgrade) exit "${UPGRADE_EXIT:-0}" ;;
+  *) exit 2 ;;
+esac
+''',
         }.items():
             executable = self.bin / name
             executable.write_text(f"#!{BASH}\n" + body)
@@ -37,8 +57,60 @@ class UpdateAppsTests(unittest.TestCase):
     def run_command(self, *arguments, **environment):
         return subprocess.run(
             [BASH, str(SOURCE), *arguments], capture_output=True, text=True,
-            env={**self.environment, **environment}, timeout=10,
+            env={**self.environment, **environment}, cwd=self.project, timeout=10,
         )
+
+    def mise_calls(self, *commands):
+        return [line for command in commands for line in (
+            f"mise <--cd> <{self.base}> <{command}>",
+            f"mise-target <{self.base}> <{command}>",
+        )]
+
+    def test_mise_updates_home_tools_from_another_project(self):
+        result = self.run_command("mise")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.trace.read_text().splitlines(),
+                         self.mise_calls("outdated", "upgrade"))
+
+    def test_mise_outdated_candidates_allow_upgrade(self):
+        result = self.run_command("mise", OUTDATED_OUTPUT="node 24.0.0 24.1.0")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("node 24.0.0 24.1.0", result.stdout)
+        self.assertEqual(self.trace.read_text().splitlines(),
+                         self.mise_calls("outdated", "upgrade"))
+
+    def test_mise_outdated_failure_stops_before_upgrade(self):
+        for status in (1, 17):
+            with self.subTest(status=status):
+                self.trace.write_text("")
+                result = self.run_command("mise", OUTDATED_EXIT=str(status))
+                self.assertEqual(result.returncode, 1, result.stderr)
+                self.assertIn("FAILED: mise", result.stdout)
+                self.assertEqual(self.trace.read_text().splitlines(),
+                                 self.mise_calls("outdated"))
+
+    def test_mise_upgrade_failure_is_reported(self):
+        result = self.run_command("mise", UPGRADE_EXIT="23")
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn("FAILED: mise", result.stdout)
+        self.assertNotIn("SUCCESS: mise", result.stdout)
+        self.assertEqual(self.trace.read_text().splitlines(),
+                         self.mise_calls("outdated", "upgrade"))
+
+    def test_mise_failure_keeps_other_targets_and_final_failure(self):
+        result = self.run_command("mise", "apt", OUTDATED_EXIT="17")
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn("SUCCESS: apt", result.stdout)
+        trace = self.trace.read_text().splitlines()
+        self.assertEqual(trace[:2], self.mise_calls("outdated"))
+        self.assertIn("apt-get upgrade -y", trace)
+        self.assertIn("1 update target(s) failed.", result.stdout)
+
+    def test_missing_mise_is_skipped_without_updates(self):
+        (self.bin / "mise").unlink()
+        result = self.run_command("mise")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.trace.read_text(), "")
 
     def test_root_can_explicitly_update_without_sudo(self):
         (self.bin / "sudo").unlink()

@@ -1,4 +1,4 @@
-"""Yazi設定のTOML互換性と既存のキー操作を検証する。"""
+"""Yazi設定のTOML互換性、fetcher登録、既存のキー操作を検証する。"""
 
 from pathlib import Path
 import os
@@ -18,6 +18,13 @@ class YaziConfigTests(unittest.TestCase):
         for path in sorted(CONFIG.glob("*.toml")):
             with self.subTest(file=path.name):
                 tomllib.loads(path.read_text())
+
+    def test_git_fetchers_cover_files_and_directories(self):
+        config = tomllib.loads((CONFIG / "yazi.toml").read_text())
+        self.assertEqual(config["plugin"]["prepend_fetchers"], [
+            {"group": "git", "url": "*", "run": "git"},
+            {"group": "git", "url": "*/", "run": "git"},
+        ])
 
     def test_manager_keybindings_keep_actions_arguments_and_descriptions(self):
         bindings = tomllib.loads((CONFIG / "keymap.toml").read_text())["mgr"]["prepend_keymap"]

@@ -2,12 +2,12 @@
 show_hidden = true
 linemode = "mtime"
 
-[[plugin.prepend_feachers]]
+[[plugin.prepend_fetchers]]
 group = "git"
 url = "*"
 run = "git"
 
-[[plugin.prepend_feachers]]
+[[plugin.prepend_fetchers]]
 group = "git"
 url = "*/"
 run = "git"
