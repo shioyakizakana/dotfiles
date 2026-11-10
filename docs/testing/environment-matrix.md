@@ -27,7 +27,7 @@ python3 -B -m unittest discover -s tests -p test_bootstrap_platforms.py -v
 # Git hooksのstage差分、失敗伝播、Termux相当のシバン
 python3 -B -m unittest discover -s tests -p test_git_hooks.py -v
 
-# 明示的なAPT更新のroot・sudo処理
+# 明示的なAPT更新のroot・sudo処理、mise更新の対象・失敗集計
 python3 -B -m unittest discover -s tests -p test_update_apps.py -v
 
 # 上記と既存のPython回帰テスト
@@ -127,6 +127,8 @@ update_apps mise
 ```
 
 update_apps aptはrootならsudoを使わず、非rootならsudoを必要とする。既存のautoremove・autocleanも含むため、実行前に処理内容を確認する。
+
+update_apps miseは確認・更新の両方に`--cd "$HOME"`を指定する。確認が非0で終了した場合は更新へ進まず、失敗を最終結果へ反映する。テストではダミーmiseだけをPATHへ置き、実際の更新・通信は行わない。警告だけで終了コード0となる場合の制約は[更新方針](../setup/tool-version-policy.md)を参照する。
 
 ## 再適用と中止の扱い
 

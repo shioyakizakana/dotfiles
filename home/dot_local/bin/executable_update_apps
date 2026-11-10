@@ -41,8 +41,8 @@ update_mise() {
 
   log "Updating mise..."
 
-  mise outdated || true
-  mise upgrade
+  mise --cd "$HOME" outdated &&
+    mise --cd "$HOME" upgrade
 }
 
 run_update() {
