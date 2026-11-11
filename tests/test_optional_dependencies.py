@@ -120,7 +120,7 @@ require = function(name)
   return { setup = function(self, opts)
     if name == "zoxide" then assert(opts.update_db == true) end
     if name == "session" then assert(opts.sync_yanked == true) end
-    if name == "full-border" then assert(opts.type == "rounded") end
+    if name == "full-border" then assert(opts.set == "rounded") end
     print("setup:" .. name)
   end }
 end

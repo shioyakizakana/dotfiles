@@ -20,7 +20,7 @@ end
 
 setup_optional("git")
 setup_optional("full-border", {
-  type = ui.Border.ROUNDED,
+  set = "rounded",
 })
 
 -- サードパーテイープラグイン
