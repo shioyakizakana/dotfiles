@@ -11,7 +11,7 @@
 | 初期設定・環境フラグ・ignore・tmux・スキルの展開範囲 | `tests/test_environment_policy.py` |
 | Bash・Zshの共通環境・PATH・エイリアス・起動設定 | `tests/test_shell_config.py` |
 | Zshプラグイン・Yazi初期化・textlintの任意依存 | `tests/test_optional_dependencies.py` |
-| YaziのTOML互換性・キー定義 | `tests/test_yazi_config.py` |
+| YaziのTOML互換性・キー定義・公開依存manifestの固定と対応 | `tests/test_yazi_config.py` |
 | 基礎ツールbootstrap | `tests/test_bootstrap_tools.py` |
 | bootstrapのTermux・Ubuntu判定、pkg導入、リモート起動形式 | `tests/test_bootstrap_platforms.py` |
 | 検証コマンドの依存不足・skip・失敗判定 | `tests/test_quality_gate.py` |
