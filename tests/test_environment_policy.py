@@ -102,6 +102,26 @@ class EnvironmentPolicyTests(unittest.TestCase):
                 self.assertEqual(self.installer_names(entries), set())
                 self.assertNotIn("dot_config/mise/config.toml", entries)
 
+    def test_yazi_manifest_is_managed_without_public_or_private_package_bodies(self):
+        yazi = self.source / "dot_config/yazi"
+        yazi.mkdir(parents=True)
+        shutil.copyfile(ROOT / "home/dot_config/yazi/package.toml", yazi / "package.toml")
+        for name in ("plugins/git.yazi/main.lua", "plugins/bunny-private.yazi/main.lua",
+                     "flavors/catppuccin-mocha.yazi/flavor.toml"):
+            path = yazi / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("dummy\n")
+        for flags, os_name in (({"nativeUbuntu": True}, "linux"),
+                               ({"wslUbuntu": True}, "linux"),
+                               ({"prootUbuntu": True}, "android"),
+                               ({"termux": True}, "android"), ({}, "linux")):
+            with self.subTest(flags=flags, os_name=os_name):
+                entries = self.managed(flags, os_name)
+                self.assertIn("dot_config/yazi/package.toml", entries)
+                self.assertFalse(any(entry.startswith(("dot_config/yazi/plugins/",
+                                                       "dot_config/yazi/flavors/"))
+                                     for entry in entries))
+
     def test_unknown_environment_excludes_installers(self):
         entries = self.managed({})
         self.assertEqual(self.installer_names(entries), set())

@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import os
+import re
 import shutil
 import tempfile
 import time
@@ -25,6 +26,37 @@ class YaziConfigTests(unittest.TestCase):
             {"group": "git", "url": "*", "run": "git"},
             {"group": "git", "url": "*/", "run": "git"},
         ])
+
+    def test_public_packages_cover_configured_plugins_and_flavors(self):
+        packages = tomllib.loads((CONFIG / "package.toml").read_text())
+        keys = tomllib.loads((CONFIG / "keymap.toml").read_text())["mgr"]["prepend_keymap"]
+        configured = {binding["run"].split()[1] for binding in keys
+                      if binding["run"].startswith("plugin ")}
+        configured.update(re.findall(r'setup_optional\("([^"\n]+)"',
+                                     (CONFIG / "init.lua").read_text()))
+        configured -= {"zoxide", "fzf", "bunny-private"}
+        plugins = packages["plugin"]["deps"]
+        self.assertEqual({entry["use"] for entry in plugins}, {
+            "stelcodes/bunny" if name == "bunny" else f"yazi-rs/plugins:{name}"
+            for name in configured
+        })
+        self.assertEqual(len(plugins), len(configured))
+        flavors = tomllib.loads((CONFIG / "theme.toml").read_text())["flavor"]
+        entries = packages["flavor"]["deps"]
+        self.assertEqual({entry["use"] for entry in entries},
+                         {f"yazi-rs/flavors:{name}" for name in flavors.values()})
+        self.assertEqual(len(entries), len(set(flavors.values())))
+
+    def test_public_packages_pin_revisions_and_record_content_hashes(self):
+        mise = tomllib.loads((CONFIG.parent / "mise/config.toml").read_text())
+        self.assertRegex(mise["tools"]["yazi"], r"^\d+\.\d+\.\d+$")
+        packages = tomllib.loads((CONFIG / "package.toml").read_text())
+        for kind in ("plugin", "flavor"):
+            for entry in packages[kind]["deps"]:
+                with self.subTest(package=entry["use"]):
+                    self.assertEqual(set(entry), {"use", "rev", "hash"})
+                    self.assertRegex(entry["rev"], r"^=[0-9a-f]{40}$")
+                    self.assertRegex(entry["hash"], r"^[0-9a-f]{1,32}$")
 
     def test_manager_keybindings_keep_actions_arguments_and_descriptions(self):
         bindings = tomllib.loads((CONFIG / "keymap.toml").read_text())["mgr"]["prepend_keymap"]

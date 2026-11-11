@@ -3,6 +3,7 @@
 
 .zsh/plugin/plugins/
 .config/yazi/plugins/
+.config/yazi/flavors/
 .config/nvim/lazy-lock.json
 
 # 自作以外のパッケージを除外
