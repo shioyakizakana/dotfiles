@@ -417,6 +417,8 @@ miseのツール一覧は`home/dot_config/mise/config.toml`で管理し、多く
 
 現在の固定値、追加固定の候補、更新処理の制約は[バージョン管理方針](docs/setup/tool-version-policy.md)を参照する。Termuxでの確認は[実機チェックリスト](docs/testing/termux-checklist.md)に沿って段階ごとに記録する。
 
+Yaziは26.9.1へ固定し、公開プラグイン・flavorを`home/dot_config/yazi/package.toml`で管理する。自動導入は行わない。既存manifestの統合確認と`ya pkg install`の手順は[Yazi依存一覧](docs/setup/yazi-dependencies.md)を参照する。
+
 ### 7.2 キャッシュスクリプトの仕様
 
 env方式では、通常のCLI操作にも暗号化鍵を渡す必要がある。`proton-pass-key-cache.py`はCLI暗号化鍵だけを常駐プロセスのメモリに保持し、有効期限内は復号結果を再利用する。

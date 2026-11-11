@@ -48,13 +48,16 @@ LuaRocksの準備では、OS側のLuaとmiseのLua 5.1を混同しない。`--lu
 
 `keymap.toml`も`smart-enter`・`toggle-pane`・`bunny`・`chmod`を参照する。これらは自動導入しておらず、未導入のキー操作は利用できない。fzf・zoxideのキー操作にも対応する実行ファイルが必要になる。キー設定はDF-10でTOML 1.0互換の記法へ修正したが、追加プラグインの導入やキー操作の動作保証とは別である。
 
-公開プラグインは、提供元と利用中Yaziとの互換性を確認してから準備する。例えば公式のgitプラグインには次の導入方法がある。`ya`と`yazi`は同じバージョンを使う。[Yazi公式CLIドキュメント](https://yazi-rs.github.io/docs/cli/)
+公開プラグイン6件とflavor 2件は`home/dot_config/yazi/package.toml`でrevisionを固定する。`ya`と`yazi`は26.9.1へそろえる。既存環境では、manifestの適用前に利用者が既存のpackage.tomlを退避し、個人用の依存との統合を確認する。既存manifestを無条件に上書きしたり、私的な取得元を共有ソースへ取り込んだりしない。[Yazi公式CLIドキュメント](https://yazi-rs.github.io/docs/cli/)
 
 ```shell
-ya pkg add yazi-rs/plugins:git
+ya --version
+yazi --version
+# 共有manifestを確認・配置した後、公開依存を復元する。
+ya pkg install
 ```
 
-この操作はネットワーク接続と展開先の変更を伴い、`package.toml`も生成・更新する。新たな管理ファイルをchezmoiへ取り込む場合は、私的設定を含まないことを確認し、取り込み操作を別途承認する。
+installは利用者が選択して実行する操作で、通信とプラグイン・flavorの配置を伴う。chezmoiの適用後スクリプトやテストから自動実行しない。manifestだけをchezmoiで管理し、本体ディレクトリは除外する。新しい依存やrevisionの変更は共有ソースのPRで行う。
 
 `bunny-private`は利用者の任意設定。必要な場合だけbunny本体を準備し、`~/.config/yazi/plugins/bunny-private.yazi/main.lua`をローカルで用意する。既存の私的設定を調査・公開せず、Gitにも追加しない。不要なら未配置のままでよい。
 
