@@ -22,6 +22,7 @@
 | provider・認証前の停止・ラッパー | `tests/test_proton_pass_setup.py` |
 | PAT継承・鍵キャッシュ | `tests/test_proton_pass_key_cache.py` |
 | 明示的なAPT更新・mise更新の対象・失敗集計 | `tests/test_update_apps.py` |
+| 規約のUnicode文字数・リンク・フォルダごとの上限 | `tests/test_instruction_budget.py` |
 
 ```shell
 # 対象に応じてファイル名を選ぶ。

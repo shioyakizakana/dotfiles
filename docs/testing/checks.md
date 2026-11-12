@@ -26,6 +26,8 @@
 
 ## 静的検証の対象と例外
 
+`tests/check_instruction_budget.py --global-source`でAGENTS.md・自作SKILL.mdの字数と、フォルダごとの常時読込合計を確認する。CIは配布元を使い、個人の展開済み規約には依存しない。現在のGLOBALを含む確認は[字数管理](../agents/instruction-budget.md)を参照する。
+
 対象一覧は`tests/check.py`で管理する。bootstrap、3本の適用後スクリプト、共通シェル設定、更新・textlint用コマンドをBash構文とShellCheckで確認する。Bashの起動設定は構文確認、`home/dot_zsh/`の`.zsh`ファイルは`zsh -dfn`で確認する。Pythonはtests内の構文、TOMLは管理対象のmise設定とYazi設定を解析する。
 
 Go templateを含むファイルは直接ShellCheck・shfmtへ渡さない。既存unittestが、確認済みのテンプレートをダミーデータと隔離したchezmoi設定で評価する。実ソース全体や実HOMEを使ったテンプレート評価は行わない。

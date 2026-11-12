@@ -25,12 +25,13 @@ chezmoiを中心に、Linux環境の設定ファイル、開発ツール、初�
 
 ## 2. ディレクトリ構成
 
-主要なファイルを示す。詳細な配置と作業規約は[AGENTS.md](AGENTS.md)を参照する。
+主要なファイルを示す。作業規約は[AGENTS.md](AGENTS.md)、規約と手順の配置は[移動対応表](docs/agents/rule-mapping.md)を参照する。
 
 ```text
 .
 ├── .agents/skills/
 │   ├── chezmoi-template-validation/
+│   ├── dotfiles-script-maintenance/
 │   ├── dotfiles-test-runner/
 │   └── secret-management-review/
 ├── .github/workflows/check.yml
@@ -41,6 +42,7 @@ chezmoiを中心に、Linux環境の設定ファイル、開発ツール、初�
 ├── Makefile
 ├── lefthook.yml
 ├── bootstrap/
+│   ├── AGENTS.md
 │   ├── bootstrap-tools.sh
 │   └── setup-proton-pass.sh
 ├── docs/
@@ -51,6 +53,7 @@ chezmoiを中心に、Linux環境の設定ファイル、開発ツール、初�
 │       ├── git-hooks.md
 │       └── environment-matrix.md
 ├── home/
+│   ├── AGENTS.md                  # 展開ソース用の局所規約（配布しない）
 │   ├── .chezmoiignore
 │   ├── .chezmoiexternal.toml.tmpl
 │   ├── .chezmoiscripts/
@@ -542,5 +545,7 @@ GitHub ActionsもUbuntu 24.04上で同じ`make check`を実行する。検証用
 Git hooksはルートの`lefthook.yml`で管理し、pre-commitでステージ済み差分の空白エラー、pre-pushで`make check`を実行する。lefthook 2.2.2を使い、既存hookとcore.hooksPathを確認した後、各作業コピーで`lefthook install pre-commit pre-push`を実行する。Termuxのシバン補正とPATH、個別確認の手順は[Git hooksの説明](docs/testing/git-hooks.md)を参照する。
 
 変更は作業ブランチからPRを作成し、必須チェック`check`の成功を確認して`main`へ取り込む。GitHub CLIでのPR作成・自動マージ予約・ブランチ整理は[PRの運用手順](docs/testing/pull-requests.md)を参照する。
+
+規約はルート・対象フォルダのAGENTS.mdと作業別スキルへ分けて管理する。make lintは配布元の規則を1本1000字・常時合計8000字以内か確認する。展開済み規約を含む確認と変更前後の比較は[字数管理](docs/agents/instruction-budget.md)を参照する。
 
 未解決の依存関係、バージョン固定、CIの実行状況などは[監査記録](docs/reviews/dotfiles-audit.md)で管理する。コード上の対応状況と実機への適用状況を分けて確認する。
