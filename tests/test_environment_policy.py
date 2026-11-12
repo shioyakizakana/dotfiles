@@ -126,6 +126,17 @@ class EnvironmentPolicyTests(unittest.TestCase):
         entries = self.managed({})
         self.assertEqual(self.installer_names(entries), set())
 
+    def test_source_local_rules_are_not_deployed_but_shared_rules_are(self):
+        shutil.copyfile(ROOT / "home/AGENTS.md", self.source / "AGENTS.md")
+        shared = self.source / "dot_config/ai-agents/AGENTS.md"
+        shared.parent.mkdir(parents=True)
+        shared.write_text("shared instruction fixture\n")
+        for flags in ({"termux": True}, {"prootUbuntu": True}, {"nativeUbuntu": True}):
+            with self.subTest(flags=flags):
+                entries = self.managed(flags)
+                self.assertNotIn("AGENTS.md", entries)
+                self.assertIn("dot_config/ai-agents/AGENTS.md", entries)
+
     def test_android_without_guest_flag_excludes_ubuntu_installers(self):
         entries = self.managed({"nativeUbuntu": True}, "android")
         self.assertEqual(self.installer_names(entries), set())
