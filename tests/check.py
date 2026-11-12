@@ -69,6 +69,7 @@ def run_lint():
     import tomllib
 
     require_tools(("bash", "zsh", "shellcheck", "shfmt", "git", "lefthook"))
+    run_command([sys.executable, "-B", "tests/check_instruction_budget.py", "--global-source"])
     run_command(["lefthook", "validate"])
     for name in (*BASH_FILES, "home/dot_bashrc", "home/dot_bash_aliases"):
         run_command(["bash", "-n", name])

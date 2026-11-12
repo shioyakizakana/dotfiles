@@ -1,0 +1,21 @@
+{
+  "measured_on": "2026-11-12",
+  "counting": "UTF-8 Unicode code points including whitespace and newlines",
+  "files": {
+    ".agents/skills/chezmoi-template-validation/SKILL.md": 500,
+    ".agents/skills/dotfiles-test-runner/SKILL.md": 468,
+    ".agents/skills/secret-management-review/SKILL.md": 494,
+    "AGENTS.md": 6895,
+    "home/dot_agents/skills/code-review/SKILL.md": 506,
+    "home/dot_agents/skills/implementation-planning/SKILL.md": 542,
+    "home/dot_agents/skills/systematic-debugging/SKILL.md": 932,
+    "home/dot_config/ai-agents/AGENTS.md": 3316
+  },
+  "global_characters": 3316,
+  "root_total": 10211,
+  "max_total": 13527,
+  "source_sha256": {
+    "AGENTS.md": "cd76f530e0b5c1ff2de56e25c6c82015463191ace134c77c547412f9e784e6e6",
+    "home/dot_config/ai-agents/AGENTS.md": "7a673cf366073dca1ff8305b23735f796ab030072df45b62049ee40b1c9aceaa"
+  }
+}

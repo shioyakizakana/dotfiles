@@ -1,6 +1,9 @@
 # リポジトリ専用ファイル(ホームディレクトリに展開しない)
 # chezmoiで管理しないファイルやディレクトリもここに記載
 
+# 展開ソース用の局所規約はホームへ配布しない。
+AGENTS.md
+
 .zsh/plugin/plugins/
 .config/yazi/plugins/
 .config/yazi/flavors/
