@@ -237,6 +237,26 @@ systemdの起動は共通前提ではない。`systemd-detect-virt`は存在時�
 - コミット：確認モードの改善とTermux対応、関連する回帰テストを`010d6b0`へコミットした。
 - 残件：Ubuntuでの初期認証前のPython、Zsh・fzf・LuaRocksの手動準備、Yazi追加プラグインの提供元と互換性、tmux補助コマンドの提供元、Brewfileを使わない環境のプレビュー機能を実機で確認する。Termuxのパッケージ候補・実バイナリの動作・Proton Pass CLIの準備も[実機確認手順](../setup/dependencies.md#termuxでの導入と実機確認)に沿って確認する。Yaziのキー操作には未導入プラグインが残り得る。TOML記法はDF-10で修正済みだが、DF-09を全機能の動作確認済みとはしない。
 
+- 2026-11-13のNeovim依存整理：[依存一覧とMason移行条件](../setup/neovim-dependencies.md)を追加。有効LSP23件をmise定義・補助導入・プロジェクト依存・担当未確定へ整理した。Masonは利用者の方針に従い移行完了まで維持する。導入定義の不足候補、初回取得の失敗処理、DAP、固定・復元、旧設定の整理をNV-01〜NV-06として記録した。設定変更・実導入・通常起動は行っておらず、各項目は未実装。
+
+- Neovim後続のNV-01を修正。lazy.nvimの取得失敗をダミーで再現し、一時領域への取得・成功後の配置・非対話の失敗終了を実装した。回帰テスト10件とmake checkのunittest全198件・Bats全18件が成功、skipなし。NV-02はその後、明示承認に基づきmise定義5件とVue連携を追加した。Masonは維持。実環境への適用・通信・導入は未実施。
+
+- NV-02：公式資料で提供元を確認し、vtsls・Vue・Svelte・oxlint・goimportsのmise定義を追加。vtslsはVueのTypeScriptプラグインを実行ファイルの実体から解決し、Masonの固定パスを参照しない。ダミーの回帰テスト8件とmake checkのunittest全206件・Bats全18件が成功、skipなし。実導入・実接続・Termux互換性は未確認。
+
+- NV-03は対応中。指定がなければMasonを維持し、明示した検証起動だけMasonの依存宣言と初期化を無効化する切替を追加した。3モードでLSP全23件の登録をダミー確認し、関連テスト11件とmake checkのunittest全209件・Bats全18件が成功、skipなし。実機での接続確認とMason完全削除は残件。比較・復帰手順を依存一覧へ記録した。
+
+- 利用者の実適用でSvelteだけがaubeの依存解決に失敗。明示承認後、Codexがmise管理下でnpmを指定し、svelte-language-server 0.18.6の実導入に成功した。Svelteのpeer dependency警告は残るが、隔離HOME・検証用ファイルでLSP初期化・整形・正常終了を確認した。復旧コマンドと検証範囲は[依存一覧](../setup/neovim-dependencies.md#svelteのaube依存解決失敗と復旧2026-11-13)へ記録。Mason完全削除と全言語の実機確認は残件。
+
+- 2026-11-14：Mason無効化時のVue警告を調査し、aubeの.binランチャーをJavaScript本体へのリンクとして扱っていた探索の不一致を修正。関連15件の回帰テストと、隔離Neovimによる実導入パッケージ3.3.14の探索が成功した。make checkもunittest全213件・Bats全18件が成功、skipなし。通常設定の起動・Vue操作・実環境への適用は未実施。
+
+- NV-03の継続確認：Vueの利用者確認とVue 3.5.45追加後の型診断解消を記録。Linux aarch64の隔離環境で主力7サーバーの期待診断、うち6件の補完・定義ジャンプ、SvelteのLSP整形と5整形CLIを確認した。23サーバーの確認ではNimのPATH不足とpyright名でbasedpyrightが選ばれる状態が残る。Rustは導入済みcomponentと実バイナリの版を確認し、接続は未検証。結果と未検証範囲は[実機確認記録](../testing/neovim-lsp-verification.md)へ整理し、Mason完全削除は保留。
+- Nim更新失敗への対応：利用者による~/.nimble/binのPATH追加後、Linux ARM64の2.4.0取得で404が発生した。公式配布物を確認し、miseのNimを2.4.2の環境別URL・SHA256へ固定した。回帰テスト3件と隔離設定のオフライン読み込みが成功。その後、利用者が設定の適用とNim導入成功を確認した。nimlsp接続は未確認で、Mason完全削除は保留。[版の更新・導入手順](../setup/tool-version-policy.md)を参照する。
+- Luaテストツールの見直し：利用者がNimの適用・導入成功を確認した後、vusetedの取得で停止した。開発用にはmini.testを採用し、誤記したLuaRocks対象を通常導入から除外。既存mini.test定義のoptsを修正し、v0.18.0のコミットへ固定した。通常導入と再適用をモック検証し、実mini.testの成功・失敗・依存不足も隔離Neovimで確認。[開発用の手順](../testing/neovim-plugin-tests.md)へ記録した。その後、利用者が実適用とMiniTestのtable表示を確認した。通常UIでのテスト実行とTermuxでの確認は残件。
+- Nim・Rustの利用者確認：Termux + proot Ubuntu、Neovim v0.12.6でRustの接続・補完・定義ジャンプ・診断が成功した。Nimは接続・補完・定義ジャンプが成功したが診断は失敗し、2.4.2とNimLSPのビルド時2.2.12の不一致が表示された。Nimの再ビルド方法と診断、別途ハイライトを調査する。実再導入とMason削除は未実施。[手動結果](../testing/neovim-lsp-verification.md#nimrustの手動確認結果2026-11-14)を参照。
+- Nim診断の復旧：NimLSP 0.4.7をNim 2.4.2で隔離ビルドし、利用者の承認後、既存バイナリを永続退避して実体だけを切り替えた。実バイナリの隔離検証で型エラー2件、修正後0件、定義ジャンプ、版警告なしを確認。通常導入には版一致の確認と失敗時の案内を追加した。その後、利用者がPATH明示起動で通常UIの保存時診断5件、フロート表示、修正後の診断解消を確認した。通常起動時のPATH確認とハイライトは残件。[再ビルド・復元手順](../setup/nimlsp-recovery.md)を参照する。
+- NimのPATH・表示対応：nimls.luaへNIMBLE_DIRと既定配置の補助探索を追加し、既存Tree-sitter一覧へnimを追加した。修正前の回帰テスト失敗を確認し、修正後は関連22件・make checkのunittest 232件とBats 18件が成功、skipなし。PATHにNimbleを含めない実LSPの隔離起動・診断と、必須依存を含むNimパーサーの隔離ビルド・ハイライトも成功した。設定適用と実HOMEのパーサー導入は未実施。[利用者の確認手順](../testing/neovim-nim-rust.md#pathの補助探索とハイライトの適用)を参照する。
+- Nim対応の完了確認：利用者が設定適用後、PATHを明示しない通常起動でNimLSP接続・ハイライト、保存時の診断5件・フロート表示、修正後の診断解消を確認した。今回のNim対応は完了。NV-03全体はPythonの提供元と未確認言語の整理が残るため継続する。
+
 ### DF-10：Yazi keymapのTOML互換性
 
 - 根拠：修正前の`home/dot_config/yazi/keymap.toml:8`以降の改行を含むインラインテーブルは、標準tomllibで`Invalid initial character for a key part (at line 8, column 5)`となった。
@@ -287,7 +307,7 @@ systemdの起動は共通前提ではない。`systemd-detect-virt`は存在時�
 
 ## E. 最初に着手する改善
 
-以下は初回調査時の推奨順として保持する。現在はDF-11の必須CIとDF-12の初回文書整備が完了し、DF-06の更新処理とYaziのYZ-01〜YZ-03もコードで対応可能な範囲を実装済み。次は既存manifestの統合と各キー操作の実機確認を進める。Neovimの依存整理は別途行う。
+以下は初回調査時の推奨順として保持する。現在はDF-11の必須CIとDF-12の初回文書整備が完了し、DF-06の更新処理とYaziのYZ-01〜YZ-03もコードで対応可能な範囲を実装済み。次は既存manifestの統合と各キー操作の実機確認を進める。Neovimの依存整理は[専用一覧](../setup/neovim-dependencies.md)に記録した。NV-01の失敗処理は修正済み。NV-02は導入定義とVue連携を追加済み。次は実機の導入・接続確認を経てNV-03のMason削除を進める。
 
 1. DF-01：PATの保持範囲を縮小する。常駐側の環境を分離し、ダミー値で検証する。
 2. DF-02：初期chezmoi導入を成立させる。インストーラーの引数とcleanupをモックで確認する。
