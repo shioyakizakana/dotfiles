@@ -25,19 +25,9 @@ local lsp_list = {
   "yamlls",
 }
 
-require("mason").setup({
-  -- ui = {
-  --     icons = {
-  --     package_installed = "✓",
-  --     package_pending = "➜",
-  --     package_uninstalled = "✗"
-  --   }
-  -- }
-})
-
--- require("mason-lspconfig").setup({
---  ensure_installed = lsp_list
--- })
+if vim.g.dotfiles_use_mason ~= false then
+  require("mason").setup({})
+end
 
 for _, server_name in pairs(lsp_list) do
   vim.lsp.enable(server_name)
