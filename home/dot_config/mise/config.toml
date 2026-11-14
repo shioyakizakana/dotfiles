@@ -13,6 +13,7 @@ age = "latest"
 atuin = "latest"
 bat = "latest"
 bats = "latest"
+biome = "latest"
 bun = "latest"
 "cargo:sleek" = "latest"
 delta = "latest"
@@ -27,6 +28,7 @@ go = "latest"
 "go:github.com/babarot/gomi" = "latest"
 "go:github.com/nametake/golangci-lint-langserver" = "latest"
 "go:github.com/sqls-server/sqls" = "latest"
+"go:golang.org/x/tools/cmd/goimports" = "latest"
 "go:golang.org/x/tools/gopls" = "latest"
 gofumpt = "latest"
 golangci-lint = "latest"
@@ -39,7 +41,6 @@ lua = "5.1" # NeoVim0.12に合わせる
 lua-language-server = "latest"
 marksman = "latest"
 neovim = "latest"
-nim = { version = "latest", platforms = { linux-arm64 = { checksum_url = "https://nim-lang.org/download/nim-{{ version }}-linux_arm64.tar.xz.sha256", url = "https://nim-lang.org/download/nim-{{ version }}-linux_arm64.tar.xz" }, linux-x64 = { checksum_url = "https://nim-lang.org/download/nim-{{ version }}-linux_x64.tar.xz.sha256", url = "https://nim-lang.org/download/nim-{{ version }}-linux_x64.tar.xz" }, macos-arm64 = { checksum_url = "https://nim-lang.org/download/nim-{{ version }}-macosx_arm64.tar.xz.sha256", url = "https://nim-lang.org/download/nim-{{ version }}-macosx_arm64.tar.xz" }, macos-x64 = { checksum_url = "https://nim-lang.org/download/nim-{{ version }}-macosx_x64.tar.xz.sha256", url = "https://nim-lang.org/download/nim-{{ version }}-macosx_x64.tar.xz" }, windows-arm64 = { checksum_url = "https://nim-lang.org/download/nim-{{ version }}_x64.zip.sha256", url = "https://nim-lang.org/download/nim-{{ version }}_x64.zip" }, windows-x64 = { checksum_url = "https://nim-lang.org/download/nim-{{ version }}_x64.zip.sha256", url = "https://nim-lang.org/download/nim-{{ version }}_x64.zip" } }, strip_components = "1", version_date_expr = 'map(filter(split(body, "nightlies/releases/download/"), { # contains "/nim-" && # contains "-linux_x64.tar.xz" }), { [split(split(#, "/nim-")[1], "-linux_x64")[0], #[:10]] })', version_list_url = "https://nim-lang.org/install.html", version_regex = 'nim-(\d+\.\d+\.\d+)-linux_x64\.tar\.xz' }
 node = "24"
 npm = "latest"
 "npm:@astrojs/language-server" = "latest"
@@ -47,11 +48,15 @@ npm = "latest"
 "npm:@olrtg/emmet-language-server" = "latest"
 "npm:@openai/codex" = "latest"
 "npm:@tailwindcss/language-server" = "latest"
+"npm:@vtsls/language-server" = "latest"
+"npm:@vue/language-server" = "latest"
 "npm:basedpyright" = "latest"
 "npm:bash-language-server" = "latest"
 "npm:editprompt" = "latest"
+"npm:oxlint" = "latest"
 "npm:prettier" = "latest"
 "npm:pyright" = "latest"
+"npm:svelte-language-server" = "latest"
 "npm:typescript" = "latest"
 "npm:vscode-langservers-extracted" = "latest"
 "npm:yaml-language-server" = "latest"
@@ -76,3 +81,32 @@ uv = "latest"
 yazi = "26.9.1"
 yq = "latest"
 zoxide = "latest"
+
+# 公式配布物とSHA256の確認・更新手順: docs/setup/tool-version-policy.md
+[tools.nim]
+version = "2.4.2"
+strip_components = "1"
+
+[tools.nim.platforms.linux-arm64]
+url = "https://github.com/nim-lang/nightlies/releases/download/2026-11-13-version-2-4-b27dcb4f70883978e984e427cc24b64eeb7c875f/nim-2.4.2-linux_arm64.tar.xz"
+checksum = "sha256:58e86d84e679d003ec04320b2411cd10aefd942132f9eaf6c583012b22be3595"
+
+[tools.nim.platforms.linux-x64]
+url = "https://github.com/nim-lang/nightlies/releases/download/2026-11-13-version-2-4-b27dcb4f70883978e984e427cc24b64eeb7c875f/nim-2.4.2-linux_x64.tar.xz"
+checksum = "sha256:0ee5b16e81852a956d4fddb4aa44b5958c645c992132fa43be45f489573ee325"
+
+[tools.nim.platforms.macos-arm64]
+url = "https://github.com/nim-lang/nightlies/releases/download/2026-11-13-version-2-4-b27dcb4f70883978e984e427cc24b64eeb7c875f/nim-2.4.2-macosx_arm64.tar.xz"
+checksum = "sha256:0ba92eb537755ca3bdabd5add1a3b14ab114b382debdcdf647f5152675ef62a9"
+
+[tools.nim.platforms.macos-x64]
+url = "https://github.com/nim-lang/nightlies/releases/download/2026-11-13-version-2-4-b27dcb4f70883978e984e427cc24b64eeb7c875f/nim-2.4.2-macosx_x64.tar.xz"
+checksum = "sha256:eb0486d36828027a84e36ad3747798adb1132fb42adec08cb759907c3e287d19"
+
+[tools.nim.platforms.windows-arm64]
+url = "https://github.com/nim-lang/nightlies/releases/download/2026-11-13-version-2-4-b27dcb4f70883978e984e427cc24b64eeb7c875f/nim-2.4.2-windows_x64.zip"
+checksum = "sha256:eb5345c78c989859c6642463069c1a389f83f6dc790a2283ba5931867e94daed"
+
+[tools.nim.platforms.windows-x64]
+url = "https://github.com/nim-lang/nightlies/releases/download/2026-11-13-version-2-4-b27dcb4f70883978e984e427cc24b64eeb7c875f/nim-2.4.2-windows_x64.zip"
+checksum = "sha256:eb5345c78c989859c6642463069c1a389f83f6dc790a2283ba5931867e94daed"

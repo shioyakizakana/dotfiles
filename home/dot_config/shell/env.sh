@@ -16,15 +16,19 @@ fi
 export GOPATH="$HOME/go"
 export PNPM_HOME="$HOME/.local/share/pnpm"
 export FZF_INSTALL="${ZDIR:-$HOME/.zsh}/plugin/plugins/fzf"
-
+export NPM_GLOBAL_PREFIX="$(npm prefix -g)"
+export NIMBLE_DIR="$HOME/.nimble"
 for _dotfiles_dir in \
   "$HOME/.local/bin" \
   "$HOME/bin" \
   "/snap/bin" \
   "$FZF_INSTALL/bin" \
   "$HOME/.cargo/bin" \
+  "$HOME/.nimble/bin" \
   "$GOPATH" \
   "$GOPATH/bin" \
+  "$NIMBLE_DIR/bin" \
+  "$NPM_GLOBAL_PREFIX/bin" \
   "$PNPM_HOME/bin"; do
   if [ -d "$_dotfiles_dir" ]; then
     case ":${PATH:-}:" in
