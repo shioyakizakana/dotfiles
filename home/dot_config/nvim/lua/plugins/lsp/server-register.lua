@@ -25,10 +25,6 @@ local lsp_list = {
   "yamlls",
 }
 
-if vim.g.dotfiles_use_mason ~= false then
-  require("mason").setup({})
-end
-
 for _, server_name in pairs(lsp_list) do
   vim.lsp.enable(server_name)
 end

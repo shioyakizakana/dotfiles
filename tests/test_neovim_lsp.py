@@ -43,13 +43,13 @@ class NeovimLspTests(unittest.TestCase):
         self.run_lua(r'''
 local enabled = {}
 vim = {g = {}, lsp = {enable = function(name) enabled[name] = true end}}
-package.preload.mason = function() return {setup = function() end} end
+package.preload.mason = function() error("Masonは導入担当ではない") end
 assert(loadfile(arg[1] .. "/lua/plugins/lsp/server-register.lua"))()
 for _, name in ipairs({"vtsls", "vue_ls", "svelte", "oxlint"}) do assert(enabled[name], name) end
 assert(not enabled.ts_ls, "TypeScriptサーバーを重複起動しない")
 ''')
 
-    def test_default_mode_keeps_mason_and_all_servers(self):
+    def test_default_startup_registers_all_servers_without_mason(self):
         self.run_lua(PROVIDER_HARNESS, "default")
 
     def test_nim_uses_existing_path_command_first(self):
@@ -103,11 +103,14 @@ autocmd.callback({buf = 7})
 assert(started)
 ''')
 
-    def test_explicit_mason_mode_keeps_current_dependencies(self):
+    def test_legacy_enabled_flag_keeps_external_tools_and_completion(self):
         self.run_lua(PROVIDER_HARNESS, "enabled")
 
-    def test_external_tools_mode_registers_all_servers_without_mason(self):
+    def test_legacy_disabled_flag_keeps_external_tools_and_completion(self):
         self.run_lua(PROVIDER_HARNESS, "disabled")
+
+    def test_legacy_lsp_spec_keeps_completion_without_mason(self):
+        self.run_lua(PROVIDER_HARNESS, "default", "_index.lua")
 
     def test_go_formatter_uses_goimports_and_keeps_lsp_fallback(self):
         self.run_lua(r'''
@@ -175,29 +178,30 @@ assert(#config.cmd == 1 and config.filetypes[1] == "nim")
 
 
 PROVIDER_HARNESS = r'''
-local root, mode = arg[1], arg[2]
-local mason_enabled = mode ~= "disabled"
-local setup_count = 0
+local root, mode, filename = arg[1], arg[2], arg[3] or "index.lua"
 local registered = {}
 local globals = {}
-if mode ~= "default" then globals.dotfiles_use_mason = mason_enabled end
+if mode ~= "default" then globals.dotfiles_use_mason = mode == "enabled" end
 vim = {g = globals, lsp = {enable = function(name) registered[name] = true end}}
 package.preload.mason = function()
-  assert(mason_enabled, "MasonなしモードではMasonを読み込まない")
-  return {setup = function() setup_count = setup_count + 1 end}
+  error("LSP登録にMasonを必要としない")
 end
-for _, module in ipairs({"diagnostic", "attach", "code-actions"}) do
+for _, module in ipairs({"diagnostic", "attach", "code-actions", "format"}) do
   package.preload["plugins.lsp." .. module] = function() return {} end
 end
 package.preload["plugins.lsp.server-register"] = function()
   return assert(loadfile(root .. "/lua/plugins/lsp/server-register.lua"))()
 end
-local specs = assert(loadfile(root .. "/lua/plugins/lsp/index.lua"))()
+local specs = assert(loadfile(root .. "/lua/plugins/lsp/" .. filename))()
 local lsp
+local imports = {}
 for _, spec in ipairs(specs) do
   if spec[1] == "neovim/nvim-lspconfig" then lsp = spec end
+  if spec.import then imports[spec.import] = true end
 end
 assert(lsp, "LSP設定本体を維持する")
+assert(imports["plugins.lsp.conform"], "整形連携を維持する")
+if filename == "index.lua" then assert(imports["plugins.lsp.lazydev"], "Lua補完連携を維持する") end
 local dependencies = {}
 local function collect(spec)
   if type(spec) == "string" then dependencies[spec] = true; return end
@@ -207,14 +211,13 @@ end
 for _, dependency in ipairs(lsp.dependencies) do collect(dependency) end
 assert(dependencies["saghen/blink.cmp"], "補完連携を維持する")
 for _, name in ipairs({"mason-org/mason.nvim", "mason-org/mason-lspconfig.nvim", "jay-babu/mason-null-ls.nvim"}) do
-  assert((dependencies[name] == true) == mason_enabled, name)
+  assert(not dependencies[name], name)
 end
 local commands = {}
 for _, command in ipairs(lsp.cmd) do commands[command] = true end
 assert(commands.LspInfo)
-assert((commands.LspInstall == true) == mason_enabled)
+assert(#lsp.cmd == 1)
 lsp.config()
-assert(setup_count == (mason_enabled and 1 or 0))
 local expected = {"bashls", "biome", "cssls", "denols", "emmet_language_server",
   "golangci_lint_ls", "gopls", "html", "jsonls", "lua_ls", "nimls", "oxlint",
   "marksman", "basedpyright", "ruff", "rust_analyzer", "sqls", "svelte", "tailwindcss",
