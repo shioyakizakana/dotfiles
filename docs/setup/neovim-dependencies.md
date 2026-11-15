@@ -2,10 +2,10 @@
 
 Masonからmiseへの段階的な移行を進めるため、管理ソースにある依存と導入担当を整理した。調査日は2026-11-13。
 
-Masonは移行完了まで維持する。有効なLSP23件を、miseの導入定義、補助処理、プロジェクト依存へ対応させた。環境別の実導入と実行パスの確認は残る。定義がないことから、実機でも未導入だとは判断しない。
+現在の管理ソースはMasonに依存せず、LSPの実行ファイルをmise・補助導入・プロジェクト依存で用意する。23サーバーの登録を維持し、Mason依存宣言・setup・移行用切替を除去した。利用者の各確認用プロジェクトで、適用後の通常起動とMason未読み込みを確認済み。過去の切替検証は履歴として保持する。
 
-1. 切替を指定しなければMasonの初期化と依存宣言を維持し、明示的に無効化できる切替を追加した。
-2. TypeScript・Vue・Svelte・oxlintとGo整形のmise定義を追加した。実導入とMasonなしでの動作を確認してからMasonを削除する。
+1. 既存のMasonデータと展開済み設定は直接変更しない。
+2. TypeScript・Vue・Svelte・Oxlint・Go整形を含む導入担当と、環境別の未確認事項を記録する。
 3. プラグイン取得・構文パーサー導入・ビルドが起こり得るため、通常設定の起動を自動テストとして扱わない。
 
 ## 起動と導入の担当
@@ -20,8 +20,8 @@ Masonは移行完了まで維持する。有効なLSP23件を、miseの導入定
 | プラグイン更新確認 | 同ファイル末尾の`checker = { enable = true }` | オフライン検証では実行しない |
 | LSPの設定 | `lua/plugins/lsp/index.lua`と`after/lsp/*.lua`、nvim-lspconfig | 実行ファイルの導入とNeovimへの登録を区別する |
 | LSPの有効化 | `lua/plugins/lsp/server-register.lua`の23件を`vim.lsp.enable` | リストの全件について提供元・実行パスを確認する |
-| Mason | 同ファイルで`dotfiles_use_mason`がfalseでなければ`setup`。以前コメントアウトされていた自動導入指定は整理済み | 現在のファイルから全LSPの自動導入は確認できない。既存Masonの実データは未調査 |
-| Mason関連の宣言 | `lua/plugins/lsp/index.lua`でMason有効時だけmason.nvim・mason-lspconfig.nvim・mason-null-ls.nvim・none-ls.nvimを宣言 | 移行後に参照を整理。LSP設定本体のnvim-lspconfigは別の役割 |
+| Mason | 依存宣言・setup・移行用切替を除去済み | 既存のプラグイン・ツールデータは削除しない |
+| LSPのプラグイン依存 | nvim-lspconfigとblink.cmpを維持。Mason連携と、その依存配下だったnone-ls.nvimの宣言を除去 | Conform・lazydevを維持。旧_index.luaからもMason宣言を除去 |
 | Go・npm等のツール | miseのTOML、`home/.chezmoiscripts/run_after_install-mise.sh:100-139` | Ubuntu対象でmise installと不足分の補助導入を行う |
 
 `lua/config/lazy.lua`は`plugins.lsp.index`を明示的にimportする。別ファイルの`lua/plugins/lsp/_index.lua`や、indexでimportがコメントアウトされた`none-ls.lua`を、現在の明示的なimportから読み込むとは扱わない。ただしnone-ls.nvim自体の依存宣言は残る。実際のlazy.nvimによる読み込み結果は未確認。
@@ -106,20 +106,20 @@ UbuntuのAPT定義にはbuild-essential・cmake・makeがあるが、全プラ�
 
 ## 修正候補と推奨順序
 
-NV-01はソース修正済み。利用者から設定の実適用成功報告があり、初回取得・失敗復旧の実機確認は残る。NV-02は導入定義とVue連携を修正済み。利用者から4ツールの導入成功報告があり、Svelteは下記の復旧手順で実導入と隔離起動を確認した。Vueは利用者の通常操作と依存追加後の診断確認が成功した。NV-03は主力言語・汎用LSP・追加5サーバーの段階的な確認まで対応済み。Web分岐とBiome起動は利用者が確認し、Tailwindの依存を備えた構成の通常UI確認も成功し、残件はsqlsのDB機能、未確認機能・対象環境の扱いとMason削除。NV-04〜NV-06は未実装。ソース上の事実と、ダミーで再現した不具合、通常設定での実機確認を区別する。
+NV-01はソース修正済み。利用者から設定の実適用成功報告があり、初回取得・失敗復旧の実機確認は残る。NV-02は導入定義とVue連携を修正済み。利用者から4ツールの導入成功報告があり、Svelteは下記の復旧手順で実導入と隔離起動を確認した。Vueは利用者の通常操作と依存追加後の診断確認が成功した。NV-03は主力言語・汎用LSP・追加5サーバーの段階的な確認まで対応済み。Web分岐とBiome起動は利用者が確認し、Tailwindの依存を備えた構成の通常UI確認も成功し、Mason参照の除去はソースで対応済み。NV-03は確認済みの範囲で完了し、sqlsのDB機能と未確認環境は別途の確認対象として残す。NV-04〜NV-06は未実装。ソース上の事実と、ダミーで再現した不具合、通常設定での実機確認を区別する。
 
 | ID | 重要度・工数 | 区分・現状 | 次の作業と受け入れ条件 |
 | --- | --- | --- | --- |
 | NV-01 | Medium / Small | 信頼性・ソース修正済み。利用者から設定の適用成功報告あり。修正前の取得失敗時に未定義の`out`を表示してエラーになることをダミーで再現した | 同じ親ディレクトリの一時領域へ取得し、成功後に配置する。失敗時は自分の一時領域だけを削除して非0で終了する。回帰テスト10件が成功。実通信と実機確認は未実施 |
 | NV-02 | Medium / Medium | DF-09後続・実機確認中。承認されたmise定義5件とVue/vtsls連携を追加 | 回帰テスト8件が成功。その後Svelteの実導入と隔離LSPを確認。主要言語の接続とBiomeのフォルダ内・別cwdでの起動は利用者が確認済み。残る追加サーバーと環境別の範囲はNV-03で整理する |
-| NV-03 | Medium / Medium | 対応中。既定動作を維持するMason無効化の検証モードを追加 | 既定・有効・無効の各モードで23件の登録をダミー検証し、主力7サーバーも隔離確認済み。Rust・Nim・Python・Webの手動確認を記録。追加5サーバーは下記の隔離検証を実施した。Tailwindの通常UI確認も完了。sqlsのDB機能と対象環境・未確認機能の扱いを示してからMason本体・連携プラグイン・setup参照を削除する。既存のMasonデータは自動削除しない |
+| NV-03 | Medium / Medium | 完了（確認済み環境・用途の範囲）。Mason依存宣言・setup・移行用切替を除去 | 23サーバーの登録と補完・整形を回帰検証。利用者が各確認用プロジェクトで接続・実行パス・root・補完・診断・保存時整形の維持とMason未読み込みを確認。sqlsのDB機能と他環境は未検証として残し、既存Masonデータは保持 |
 | NV-04 | Medium / Medium | 信頼性・潜在的リスク。DAPに`dap.configuration`・`tyoe`があり、Pythonのパス連結に区切り不足、fallbackが`usr/bin/python`。pythonアダプター定義もない（`lua/plugins/dap/adapters.lua:3-37`） | 採用するnvim-dap APIとPythonアダプターの担当を確定する。モックで設定登録を再現し、空白を含む仮想環境パス、未導入時の案内、Lua接続設定を検証する |
 | NV-05 | Medium / Medium | DF-06後続・再現性。Neovimはlatest、lazy.nvimはstable、lazy-lock.jsonは除外 | 実機で動く組合せを記録し、Neovim本体と公開プラグインの固定・復元を設計する。既存lockfileを無断で上書きせず、個人依存の扱いを先に決める |
 | NV-06 | Low / Small | 保守性・改善提案。現在importされない旧LSP・整形・SKK設定が残る | NV-03後に用途を確認し、維持・整理を選ぶ。現行importから未使用設定を呼ばないことを確認する |
 
 NV-01の修正後は、NV-02→NV-03の順で移行する。NV-04は別PRで並行可能。NV-05の版選定は設定と主要機能を確認した後に行う。Mason併存そのものを不具合として扱わず、移行中の状態として維持する。
 
-## Masonを削除するための確認手順
+## Mason除去前の確認手順（履歴）
 
 以下は次回以降の利用者向け手順であり、今回実行していない。通常設定の起動やcheckhealthには通信・取得・ビルドの可能性があるため、自動検証とは分ける。
 
@@ -190,7 +190,9 @@ Neovimでも`:lua print(vim.fn.exepath('vue-language-server'))`と`:lua print(vi
 
 小さなVue・TypeScript・Svelteファイルを、それぞれ依存を用意した検証用プロジェクトで開く。LspInfoで接続を確認し、Vueではvue_lsとvtslsの両方が働き、TypeScript部分の診断・補完・定義ジャンプが使えることを確認する。Oxlintは設定を置いたプロジェクトで診断を、Goは検証用ファイルの保存でgoimportsの整形を確認する。Masonを使わない状態でも同じ結果になることを確認してからNV-03の完全削除へ進む。
 
-## NV-03の検証モード（2026-11-13）
+## NV-03の検証モード（2026-11-13・履歴）
+
+以下の切替は移行中に使用した。現在の管理ソースでは不要で、最新の適用・確認手順は末尾のMason依存除去を参照する。
 
 Masonを削除する前の比較用に`vim.g.dotfiles_use_mason`を追加した。未指定とtrueでは従来のMason関連依存とsetupを維持し、falseでは両方を使わない。LSPの有効化リストとnvim-lspconfig・補完連携は維持する。無効化時のlazy.nvim起動コマンドはLspInfoだけにし、LspInstall・LspUnInstallの起動トリガーを除く。
 
@@ -292,3 +294,50 @@ Emmetの略記補完、Oxlintとgolangci-lintの診断・修正後の解消を�
 [追加LSPの用途・導入担当・検証結果・手動手順](../testing/neovim-extra-lsp-validation.md)を参照する。5件とも有効設定を維持し、依存・認証の追加やMason削除は行っていない。利用者は追加5サーバーすべての継続使用を選択し、Emmet・Oxlint・golangci-lintの通常UIとsqlsのDB接続なしの初期化を確認済み。Tailwindは接続NGとして残り、次はプロジェクト依存と起動状態を確認する。
 
 Tailwindはその後、検証用プロジェクトへ本体依存3.4.17を導入し、自動接続・クラス補完・独自設定・診断と修正後の解消を隔離確認した。元の接続NGは隔離起動で再現せず、その後、利用者も依存を備えた構成で接続・補完・診断と解消の成功を確認した。[依存・起動確認の詳細](../testing/neovim-tailwind-validation.md)を参照する。miseやLSPの設定は変更していない。
+
+## Mason依存の除去（2026-11-15）
+
+lua/plugins/lsp/index.luaからMason本体・mason-lspconfig・mason-null-lsと、その依存配下にあったnone-ls.nvimの宣言を除去した。server-register.luaのmason.setupと、移行用dotfiles_use_masonの参照も除去した。現在使わない旧_index.luaもMason宣言とインストール用コマンドを除去し、旧設定からの再導入を防いだ。旧設定全体の整理はNV-06に残す。
+
+nvim-lspconfig・blink.cmp・23サーバーの登録とConform・lazydevのimportは維持した。通常起動と旧切替フラグのtrue/false指定で同じ登録・補完連携を保つこと、Masonなしで初期化できることを回帰テストで確認した。実Neovimでも通常起動時のaugroupを用意し、隔離HOMEで23件の有効化とLspInfoの登録が成功した。外部サーバーの起動は禁止しており、通常UIや全言語の接続を再検証した結果ではない。
+
+make checkはunittest 247件・Bats 18件が成功し、skipなし。設定適用・パッケージ操作・既存Masonデータの削除・commit・pushは行っていない。sqlsのDB機能は未検証の別作業として扱い、今回のMason参照除去では接続・認証を変更しない。他環境の未確認事項も引き続き記録する。
+
+### 利用者による適用と通常起動の確認
+
+適用対象を確認後、スクリプトを実行せず3つの設定だけを展開する場合は次を使う。Codexは実行していない。
+
+```sh
+chezmoi apply --exclude=scripts \
+  "$HOME/.config/nvim/lua/plugins/lsp/index.lua" \
+  "$HOME/.config/nvim/lua/plugins/lsp/server-register.lua" \
+  "$HOME/.config/nvim/lua/plugins/lsp/_index.lua"
+```
+
+1. Neovimを終了し、切替フラグなしの`nvim <確認用ファイル>`で起動する。
+2. LspInfoで対象サーバーの接続とrootを確認し、exepathでmiseまたはプロジェクト内の実行ファイルが選ばれることを確認する。
+3. Pythonのbasedpyright・Ruff、Vueのvue_ls・vtsls、Nim、Webの接続分岐など、利用する対象の補完・診断・定義ジャンプ・保存時整形を確認する。Tailwindは依存を導入した検証用プロジェクトを使う。
+4. `:lua print(package.loaded["mason"] ~= nil)`がfalseであることを確認する。プラグイン一覧に過去のMasonディレクトリが残ることと、読み込まれることを区別する。Lazy clean等による削除は今回の手順に含めない。
+5. 環境・実行パス・成功・失敗・未確認を記録し、通常起動が成功してからNV-03を完了とする。
+
+このソースでは旧dotfiles_use_masonフラグによる復帰はできない。問題があればログと対象言語を記録し、原因を確認してからソースを修正する。既存のMasonデータやlockfileをその場で削除しない。
+
+### 通常起動の報告と展開状態（2026-11-15）
+
+利用者から、各確認用プロジェクトでLSP接続・実行パス・rootと補完・診断・保存時整形が従来どおり機能する一方、package.loaded["mason"]の確認がtrueだったと報告された。
+
+読み取り比較では、展開済みのindex.lua・server-register.lua・_index.luaがいずれも管理ソースと異なり、Mason宣言と初期化が残っていた。server-register.luaのrequire("mason").setup({})は、今回の読み込み結果と整合する。ソースの追加不具合とは判断せず、Mason除去後の通常起動確認は未完了とする。
+
+上記の適用コマンドで3ファイルを展開後、Neovimを終了して新しいプロセスで確認する。現在のプロセスのpackage.loadedだけを操作してfalseにする方法は、起動時の除去確認にならないため使わない。Codexは展開済み設定や既存Masonデータを変更していない。
+
+### 適用後の再確認完了（2026-11-15）
+
+利用者が各確認用プロジェクトで再確認し、LSP接続・実行パス・rootがMason除去前と同じで、補完・診断・保存時整形も従来どおり動作すると報告した。package.loaded["mason"]の判定もfalseだった。読み取り比較では、展開先のindex.lua・server-register.lua・_index.luaが現在の管理ソースと一致した。
+
+NV-03は、これまでに確認したTermux + proot Ubuntu・Neovim v0.12.6と利用用途の範囲で完了とする。報告は利用者の通常UI確認であり、Codexの再実行結果ではない。sqlsのDB機能、Termux単体・WSL・他のLinux、未確認の機能は引き続き別途確認する。既存Masonデータは保持し、今回の報告を受けた設定コードの追加修正は行っていない。
+
+## 本ブランチの終了範囲と引継ぎ
+
+本ブランチの作業は、依存整理・導入処理の修正と、確認済み環境・用途でのNV-03完了までとする。NV-04のDAP修正、NV-05のバージョン固定・復元設計、NV-06の旧設定整理は別の作業ブランチで再開する。
+
+sqlsのDB機能、他環境での導入・起動、NV-01の実際の初回取得・失敗復旧は未検証事項として保持する。これらを本ブランチで確認済みとは扱わず、必要な環境・依存・通信・認証の条件を決めて個別に進める。既存のMasonデータや個人のlockfileはそのまま保持する。

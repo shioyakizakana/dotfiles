@@ -50,7 +50,7 @@ chezmoi apply --exclude=scripts \
 今回作成した一時確認用プロジェクトのproject/をカレントディレクトリにし、新しいNeovimでmain.pyを開く。場所は作業完了時の案内を参照する。一時領域は再起動等で消える場合がある。
 
 ```shell
-nvim --cmd 'lua vim.g.dotfiles_use_mason = false' main.py
+nvim main.py
 ```
 
 1. LspInfoでbasedpyrightとRuffの接続を確認し、exepathでbasedpyright-langserverとruffがMason外を指すことを確認する。
@@ -65,7 +65,7 @@ nvim --cmd 'lua vim.g.dotfiles_use_mason = false' main.py
 
 別の一時プロジェクトでは、LSP側のstandardよりプロジェクトのoff設定が優先されることを確認した。主機能の検証ではroot_dirを明示した。別途、導入済みnvim-lspconfigと変更したafter設定を使い、pyproject.tomlから両サーバーのルートを自動検出して起動できることも確認した。その後、利用者が通常UIで保存時整形とimport整理の成功を確認した。
 
-自動回帰テストは実ツールを使わず、登録、起動コマンド、設定、空白を含むPythonパス変更、互換コマンド、Ruffのhover無効化、整形順序を検証する。Termux + proot Ubuntuの通常UIは利用者が確認済み。他環境は別途確認する。NV-03のMason完全削除はまだ実施しない。
+自動回帰テストは実ツールを使わず、登録、起動コマンド、設定、空白を含むPythonパス変更、互換コマンド、Ruffのhover無効化、整形順序を検証する。Termux + proot Ubuntuの通常UIは利用者が確認済み。他環境は別途確認する。現在の管理ソースからMason依存を除去した。利用者が適用後の通常起動で、従来の機能の維持とMason未読み込みを確認した。既存のMasonデータは保持する。
 
 make checkはunittest 238件・Bats 18件が成功し、skipなし。移行用の新規6件は修正前に失敗し、修正後に成功した。対象LuaのStyLua、TOML解析、git diff --checkも成功した。
 

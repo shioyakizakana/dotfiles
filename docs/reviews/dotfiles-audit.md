@@ -265,6 +265,9 @@ systemdの起動は共通前提ではない。`systemd-detect-virt`は存在時�
 - 追加LSPの通常UI確認：利用者が5サーバーすべての継続使用を選択。Emmetの補完、Oxlintとgolangci-lintの診断・修正後解消、sqlsのDB接続なしの初期化は成功した。Tailwindは接続NGで直接原因は未確定。プロジェクト依存と起動状態を次の確認対象とし、Mason削除は保留する。[手動結果](../testing/neovim-extra-lsp-validation.md#通常uiの手動確認結果2026-11-15)を参照。
 - Tailwindの依存・起動調査：元の確認用フォルダでは隔離自動接続が成功し、接続NGは再現しなかった。承認された検証用tailwindcss 3.4.17を別の一時フォルダへ導入し、依存解決・自動接続・標準クラスと独自色の補完・競合診断2件と解消を確認。LSP設定は変更せず、[通常UIの再確認](../testing/neovim-tailwind-validation.md)を残す。
 - Tailwindの通常UI再確認：利用者がTermux + proot Ubuntu・Neovim v0.12.6・Mason無効化モードで接続、root、mise管理の実行パス、標準クラスと独自色の補完、競合診断と修正・保存後の解消を確認した。検証用v3構成の確認は完了。以前の接続NGの直接原因は未特定のままとし、NV-03はMason削除の範囲とsqlsのDB機能・未確認環境の扱いを整理する。[利用者の結果](../testing/neovim-tailwind-validation.md#通常uiの手動確認結果2026-11-15)を参照。
+- NV-03のMason依存除去：有効なLSP構成と旧_index.luaからMason宣言・初期化・移行用切替・インストール用コマンドを除去し、23サーバー・補完・整形連携を維持した。関連23テストとmake checkのunittest 247件・Bats 18件が成功、skipなし。実Neovimの隔離有効化も成功。既存データは削除せず、[適用後の通常起動確認](../setup/neovim-dependencies.md#利用者による適用と通常起動の確認)を残す。
+- Mason除去の通常起動報告：利用者のLSP・補完・診断・整形は成功したが、Mason読み込み判定はtrue。読み取り比較で展開済みLSP設定3件が旧版であり、Mason宣言・初期化が残っていることを確認した。追加のソース修正や適用操作は行わず、適用後の新規プロセス確認を残す。
+- NV-03の完了確認：利用者が各確認用プロジェクトでLSP接続・実行パス・root、補完・診断・保存時整形の維持とMason読み込み判定falseを確認した。読み取り比較でも展開済みLSP設定3件がソースと一致した。確認済み環境・用途の範囲でNV-03を完了とし、sqlsのDB機能と未確認環境は別途確認、既存Masonデータは保持する。
 
 ### DF-10：Yazi keymapのTOML互換性
 
