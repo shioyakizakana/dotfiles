@@ -5,10 +5,8 @@ return {
     "neovim/nvim-lspconfig",
     cond = not vim.g.vscode,
     event = {"FileType", "BufNewFile"},
-    cmd = {"LspInfo", "LspInstall", "LspUninstall"},
+    cmd = {"LspInfo"},
     dependencies = {
-      {"mason-org/mason.nvim"},
-      {"mason-org/mason-lspconfig.nvim"},
       {"b0o/schemastre.nvim"},
       {"saghen/blink.cmp"},
     },

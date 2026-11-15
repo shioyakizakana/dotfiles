@@ -12,7 +12,7 @@ local lsp_list = {
   "nimls",
   "oxlint",
   "marksman",
-  "pyright",
+  "basedpyright",
   "ruff",
   "rust_analyzer",
   -- "sourcekit",
@@ -24,20 +24,6 @@ local lsp_list = {
   "vue_ls",
   "yamlls",
 }
-
-require("mason").setup({
-  -- ui = {
-  --     icons = {
-  --     package_installed = "✓",
-  --     package_pending = "➜",
-  --     package_uninstalled = "✗"
-  --   }
-  -- }
-})
-
--- require("mason-lspconfig").setup({
---  ensure_installed = lsp_list
--- })
 
 for _, server_name in pairs(lsp_list) do
   vim.lsp.enable(server_name)

@@ -32,16 +32,19 @@ class MiseHelperTests(unittest.TestCase):
         config.write_text('[tools]\nnode = "24"\n')
         for name, operation in (("rustup", "$2"), ("luarocks", "$2"), ("nimble", "$1")):
             command = self.bin / name
+            # LuaRocksの実在する通常導入対象だけを受け付ける。
+            package_guard = '[[ "${@: -1}" == luacheck ]] || exit 42\n' if name == "luarocks" else ''
             command.write_text(
                 f"#!{BASH}\n"
                 f'printf "%s\\n" "{name} $*" >> "$TRACE"\n'
                 f'if [[ "{operation}" == list ]]; then\n'
                 '  while IFS= read -r line; do printf "%s\\n" "$line"; done < "$LIST_FILE"\n'
-                '  for package in rust-analyzer luacheck vuseted nimlsp; do\n'
+                '  for package in rust-analyzer luacheck nimlsp; do\n'
                 '    [[ ! -f "$STATE_DIR/$package" ]] || printf "%s\\n" "$package"\n'
                 '  done\n'
                 '  exit "${LIST_EXIT:-0}"\n'
                 'fi\n'
+                f'{package_guard}'
                 '[[ "${INSTALL_EXIT:-0}" == 0 ]] && : > "$STATE_DIR/${@: -1}"\n'
                 'exit "${INSTALL_EXIT:-0}"\n'
             )
@@ -73,6 +76,19 @@ esac
         mise.chmod(0o755)
         self.mise_fixture = self.base / "mise-fixture"
         self.mise_fixture.write_text(mise.read_text())
+        for name, output, status in (
+            ("nim", 'Nim Compiler Version ${NIM_VERSION:-2.4.2} [Linux: arm64]', "NIM_VERSION_EXIT"),
+            ("nimlsp", 'nimlsp v0.4.7 - built for Nim version ${NIMLSP_BUILD_VERSION:-2.4.2}', "NIMLSP_VERSION_EXIT"),
+        ):
+            command = self.bin / name
+            command.write_text(
+                f'#!{BASH}\n'
+                f'printf "%s\\n" "{name} $*" >> "$TRACE"\n'
+                '[[ "$1" == --version ]] || exit 99\n'
+                f'printf "%s\\n" "{output}"\n'
+                f'exit "${{{status}:-0}}"\n'
+            )
+            command.chmod(0o755)
         for utility in ("bash", "mkdir", "chmod"):
             (self.bin / utility).symlink_to(shutil.which(utility))
         installer = self.base / "installer"
@@ -252,6 +268,15 @@ esac
         self.assert_no_install()
         self.assertIn(" env --paths\n", self.trace.read_text())
 
+    def test_bulk_installation_prepares_luacheck_then_nimlsp(self):
+        result = self.run_main()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        trace = self.trace.read_text().splitlines()
+        rocks = [line for line in trace if line.startswith("luarocks ") and " install " in line]
+        self.assertEqual(rocks, ["luarocks --lua-version=5.1 install luacheck"])
+        self.assertIn("nimble install -y nimlsp", trace)
+        self.assertLess(trace.index(rocks[0]), trace.index("nimble install -y nimlsp"))
+
     def test_decline_and_eof_allow_retry(self):
         declined = self.run_main("n\n")
         self.assertEqual(declined.returncode, 0, declined.stderr)
@@ -329,6 +354,57 @@ esac
         result = self.call_helper("install_nimlsp", "nimlsp", LIST_EXIT="23")
         self.assertEqual(result.returncode, 23)
         self.assert_no_install()
+
+    def test_installed_nimlsp_with_matching_compiler_needs_no_install(self):
+        self.list_file.write_text("nimlsp 0.4.7\n")
+        result = self.call_helper("install_nimlsp", "nimlsp")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("nim --version\n", self.trace.read_text())
+        self.assertIn("nimlsp --version\n", self.trace.read_text())
+        self.assert_no_install()
+
+    def test_installed_nimlsp_built_for_previous_compiler_fails_with_guidance(self):
+        self.list_file.write_text("nimlsp 0.4.7\n")
+        result = self.call_helper("install_nimlsp", "nimlsp", NIMLSP_BUILD_VERSION="2.2.12")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("2.4.2", result.stderr)
+        self.assertIn("2.2.12", result.stderr)
+        self.assertIn("docs/testing/neovim-nim-rust.md", result.stderr)
+        self.assert_no_install()
+
+    def test_missing_installed_nimlsp_binary_is_not_success(self):
+        self.list_file.write_text("nimlsp 0.4.7\n")
+        (self.bin / "nimlsp").unlink()
+        result = self.call_helper("install_nimlsp", "nimlsp")
+        self.assertNotEqual(result.returncode, 0)
+        self.assert_no_install()
+
+    def test_version_command_failure_is_not_success_even_with_output(self):
+        self.list_file.write_text("nimlsp 0.4.7\n")
+        for option in ("NIM_VERSION_EXIT", "NIMLSP_VERSION_EXIT"):
+            with self.subTest(option=option):
+                result = self.call_helper("install_nimlsp", "nimlsp", **{option: "17"})
+                self.assertNotEqual(result.returncode, 0)
+                self.assert_no_install()
+
+    def test_unknown_compiler_or_server_version_is_not_success(self):
+        self.list_file.write_text("nimlsp 0.4.7\n")
+        for option in ("NIM_VERSION", "NIMLSP_BUILD_VERSION"):
+            with self.subTest(option=option):
+                result = self.call_helper("install_nimlsp", "nimlsp", **{option: "unknown"})
+                self.assertNotEqual(result.returncode, 0)
+                self.assert_no_install()
+
+    def test_new_install_checks_build_version_before_success(self):
+        result = self.call_helper("install_nimlsp", "nimlsp", NIMLSP_BUILD_VERSION="2.2.12")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("nimble install -y nimlsp\n", self.trace.read_text())
+
+    def test_similar_nimlsp_package_name_does_not_skip_install(self):
+        self.list_file.write_text("nimlsp-extra 0.4.7\n")
+        result = self.call_helper("install_nimlsp", "nimlsp")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("nimble install -y nimlsp\n", self.trace.read_text())
 
 
 if __name__ == "__main__":

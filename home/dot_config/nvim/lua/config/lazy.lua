@@ -1,23 +1,42 @@
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
-if not vim.loop.fs_stat(lazypath) then
-	vim.fn.system({
+local uv = vim.uv or vim.loop
+local function bootstrap_error(message)
+	vim.api.nvim_echo({ { "Failed to bootstrap lazy.nvim\n", "ErrorMsg" }, { message, "WarningMsg" } }, true, {})
+	os.exit(1)
+end
+
+if not uv.fs_stat(lazypath) then
+	local parent = vim.fn.fnamemodify(lazypath, ":h")
+	vim.fn.mkdir(parent, "p")
+	-- 同じファイルシステムで取得し、失敗時に消すのは自分の一時領域だけにする。
+	local staging, staging_error = uv.fs_mkdtemp(parent .. "/lazy.nvim-XXXXXX")
+	if not staging then
+		bootstrap_error(tostring(staging_error))
+	end
+	local function fail(message)
+		if vim.fn.delete(staging, "rf") ~= 0 then
+			message = message .. "\nFailed to cleanup: " .. staging
+		end
+		bootstrap_error(message)
+	end
+	local ok, out = pcall(vim.fn.system, {
 		"git",
 		"clone",
 		"--filter=blob:none",
 		"https://github.com/folke/lazy.nvim.git",
 		"--branch=stable",
-		lazypath,
+		staging,
 	})
-
-	-- エラー処理
-	if vim.v.shell_error ~= 0 then
-		vim.api.nvim_echo({
-			{ "Failed to clone lazy.nvim\n", "ErrorMsg" },
-			{ out, "WarningMsg" },
-			{ "\nPress any key to exit..." },
-		}, true, {})
-		vim.getchar()
-		os.exit()
+	if not ok or vim.v.shell_error ~= 0 then
+		fail(tostring(out))
+	end
+	-- 別の起動や利用者が作った展開先は上書きしない。
+	if uv.fs_stat(lazypath) then
+		fail("Destination already exists: " .. lazypath)
+	end
+	local renamed, rename_error = uv.fs_rename(staging, lazypath)
+	if not renamed then
+		fail(tostring(rename_error))
 	end
 end
 vim.opt.rtp:prepend(lazypath)

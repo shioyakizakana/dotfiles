@@ -11,8 +11,9 @@
 | 開発CLI・ランタイム | `home/dot_config/mise/config.toml`とmiseの適用後処理 | 一覧の不足を導入する。個別の導入失敗は解決が必要 |
 | lefthook | miseとCIは2.2.2へ固定。各作業コピーでGit hooksをインストール | bootstrap-tools.shの自動導入対象には含めない。Termux向けの準備は[Git hooksの手順](../testing/git-hooks.md)を参照 |
 | Zsh本体・fzf実行ファイル | 利用環境のパッケージなどで手動準備 | Zsh設定のGit外部取得はfzf実行ファイルを導入しない |
-| luacheck・vuseted | mise処理の後半でLuaRocksを使う | LuaRocksがなければ処理は失敗する。Lua 5.1向けのLuaRocksとビルド環境を先に用意する |
-| Rust補助ツール・nimlsp | 同じmise処理の後半でrustup・nimbleを使う | 各処理の失敗を終了状態で伝える |
+| luacheck | mise処理の後半でLuaRocksを使う | LuaRocksがなければ処理は失敗する。Lua 5.1向けのLuaRocksとビルド環境を先に用意する |
+| mini.test | 既存のlazy.nvim定義を使用。Luaファイルで読み込み、検証済みrevisionへ固定 | LuaRocksからは導入しない。開発プロジェクトでは[最小構成のテスト手順](../testing/neovim-plugin-tests.md)に従い、開発用依存を別に管理する |
+| Rust補助ツール・nimlsp | 同じmise処理の後半でrustup・nimbleを使う | 各処理の失敗を終了状態で伝える。nimlspはNimとのビルド時版も確認し、不一致なら[復旧手順](nimlsp-recovery.md)を案内して停止する |
 | chafa・resvg・フォントなど | Homebrew対象環境では`home/dot_Brewfile` | chafaは導入失敗のためmise一覧から除外済み。復活や他方式への自動移行は行わない |
 | textlintのnpm依存 | 展開後に利用者が`npm ci`で準備 | ラッパーが不足と準備先を表示する。実行時の自動導入は行わない |
 
@@ -39,6 +40,12 @@ luarocks --lua-version=5.1 list --porcelain
 LuaRocksの準備では、OS側のLuaとmiseのLua 5.1を混同しない。`--lua-version=5.1`で一覧を取得でき、同じLua向けにビルドできることを確認する。必要なヘッダー・ライブラリ・導入先は環境によるため、一律のインストール手順にはしていない。
 
 依存を用意した後は、新しいシェルで確認する。ツールを削除した後の既存シェルには古いエイリアスが残り得るため、新しいシェルを使う。読み込み可能なプラグインの実装自体が正常であることまでは、存在確認で保証しない。
+
+## Neovim
+
+Pythonはbasedpyrightで型解析・補完・定義ジャンプ、Ruffでlint・import整理・整形を行う。[Pythonの移行と確認手順](python-lsp.md)を参照する。
+
+LSP・整形・プラグインの導入担当、Masonからmiseへの移行条件、環境別の確認範囲は[Neovim依存一覧](neovim-dependencies.md)を参照する。管理ソースからMason依存を除去済みで、移行用の切替指定は不要。設定適用後の通常起動も利用者が確認済みで、既存のMasonデータは保持している。
 
 ## Yazi
 

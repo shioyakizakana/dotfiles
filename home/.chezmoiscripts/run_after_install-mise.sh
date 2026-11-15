@@ -79,6 +79,34 @@ install_luarock() {
   luarocks --lua-version="$lua_version" install "$package"
 }
 
+check_nimlsp_version() {
+  local compiler_info server_info compiler_version server_version
+  if ! command -v nim >/dev/null 2>&1 || ! command -v nimlsp >/dev/null 2>&1; then
+    log "nimまたはnimlspが見つかりません。導入状態とPATHを確認してください。" >&2
+    return 1
+  fi
+  if ! compiler_info=$(nim --version) || ! server_info=$(nimlsp --version); then
+    log "NimまたはNimLSPのバージョン取得に失敗しました。" >&2
+    return 1
+  fi
+  if [[ "$compiler_info" =~ Nim\ Compiler\ Version\ ([0-9]+\.[0-9]+\.[0-9]+) ]]; then
+    compiler_version="${BASH_REMATCH[1]}"
+  else
+    log "Nimのバージョンを判定できません。" >&2
+    return 1
+  fi
+  if [[ "$server_info" =~ built\ for\ Nim\ version\ ([0-9]+\.[0-9]+\.[0-9]+) ]]; then
+    server_version="${BASH_REMATCH[1]}"
+  else
+    log "NimLSPのビルド時バージョンを判定できません。" >&2
+    return 1
+  fi
+  if [[ "$compiler_version" != "$server_version" ]]; then
+    log "Nim ${compiler_version}とNimLSPのビルド時${server_version}が一致しません。docs/testing/neovim-nim-rust.mdの再ビルド手順を確認してください。" >&2
+    return 1
+  fi
+}
+
 install_nimlsp() {
   local installed name details
   command -v nimble >/dev/null 2>&1 || {
@@ -87,10 +115,14 @@ install_nimlsp() {
   }
   installed="$(nimble list --installed)" || return "$?"
   while read -r name details; do
-    [[ "$name" == nimlsp ]] && return 0
+    if [[ "$name" == nimlsp ]]; then
+      check_nimlsp_version
+      return "$?"
+    fi
   done <<<"$installed"
   confirm_install || return "$?"
-  nimble install -y nimlsp
+  nimble install -y nimlsp || return "$?"
+  check_nimlsp_version
 }
 
 main() {
@@ -135,7 +167,6 @@ $remaining" >&2
   fi
   install_rustup_component rust-analyzer || return "$?"
   install_luarock luacheck || return "$?"
-  install_luarock vuseted || return "$?"
   install_nimlsp || return "$?"
   log "開発ツールの確認が完了しました。"
 }

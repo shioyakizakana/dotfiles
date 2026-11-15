@@ -32,6 +32,7 @@ return {
         "javascript",
         "lua",
         "markdown",
+        "nim",
         "python",
         "powershell",
         "query",

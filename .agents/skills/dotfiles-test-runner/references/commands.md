@@ -19,9 +19,15 @@
 | APT導入 | `tests/test_install_apt.py` |
 | Homebrew導入 | `tests/test_install_brew.py` |
 | mise導入・Rust・LuaRocks・nimlsp | `tests/test_mise_helpers.py` |
+| Nimの固定版・CPU別配布URL・公式SHA256 | `tests/test_nim_config.py` |
 | provider・認証前の停止・ラッパー | `tests/test_proton_pass_setup.py` |
 | PAT継承・鍵キャッシュ | `tests/test_proton_pass_key_cache.py` |
 | 明示的なAPT更新・mise更新の対象・失敗集計 | `tests/test_update_apps.py` |
+| NeovimのLSP導入定義・Masonなしの登録と旧フラグ互換・Nim探索・ハイライト・Vue連携・Go整形 | `tests/test_neovim_lsp.py` |
+| basedpyrightとRuffの担当・Pythonパス変更・import整理・保存時の処理順序 | `tests/test_python_lsp.py` |
+| Deno・Nodeのルート分岐・バッファごとのWeb整形・Biome起動パス | `tests/test_web_lsp.py` |
+| Neovimの初回取得・失敗終了・一時領域・再試行 | `tests/test_neovim_bootstrap.py` |
+| mini.testの読み込み・初期化用opts・固定revision | `tests/test_neovim_plugin_tests.py` |
 | 規約のUnicode文字数・リンク・フォルダごとの上限 | `tests/test_instruction_budget.py` |
 
 ```shell
@@ -32,6 +38,7 @@ make check
 ```
 
 既存テストはダミーコマンドやモックを使用するが、新規・変更されたテストは実行前に確認する。秘密情報取得、外部通信、実パッケージ操作が残っていれば実行を止める。
+nimlspは導入済み判定に加え、Nimとのビルド時バージョン一致、実体欠落、版取得失敗、新規導入後の確認をモック検証する。実再ビルドやバイナリ切り替えはテストから行わない。
 bootstrapの環境別テストでは、OS情報とpkg・dpkg-query・APT・sudo・ダウンロード処理をモック化する。PREFIXとHOMEは一時領域へ置き、実インストールを行わない。
 Python 3.11以上とBashを前提とする。chezmoiやmakeがない場合にskipするケースもあるため、終了コードだけで成功と判断しない。
 シェル起動テストはBash・Zsh・chezmoi・mkdirを必要とし、欠けていればskipする。システム補完・Homebrewの固定パス・プラグインはfixtureに置き換え、実際の初期化を避ける。

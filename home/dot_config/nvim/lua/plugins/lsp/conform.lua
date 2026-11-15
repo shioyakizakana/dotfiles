@@ -12,21 +12,15 @@ return {
       vim.b.disable_autoformat = false
     end, { desc = "[lsp]カレントバッファのオートフォーマット有効化" })
 
-    local function is_deno_project()
-      local cwd = vim.fn.getcwd()
-      return vim.fn.filereadable(cwd .. "/deno.json") == 1 or vim.fn.filereadable(cwd .. "/deno.jsonc") == 1
-    end
-    local web_formatters = function ()
-
-      if is_deno_project() then
+    local web_formatters = function (bufnr)
+      if require("config.web-project").deno_root(bufnr) then
         -- Denoの場合はLSPのFormatterを使用
         return {}
       end
-      return {
-        "biome-check",
-        "prettierd",
-        stop_after_first = true
-      }
+      if vim.fs.root(bufnr, { "biome.json", "biome.jsonc" }) then
+        return { "biome-check", "prettierd", stop_after_first = true }
+      end
+      return { "prettierd" }
     end
 
     return {
@@ -34,9 +28,9 @@ return {
         lua = { "stylua" },
         go = { "goimports" },
         python = {
-          "ruff_format",
           "ruff_fix",
-          "ruff_organize_imports"
+          "ruff_organize_imports",
+          "ruff_format"
         },
         -- shell
         bash = { "shfmt" },
