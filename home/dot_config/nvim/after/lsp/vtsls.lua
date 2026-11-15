@@ -2,6 +2,12 @@
 local config = {
   cmd = { "vtsls", "--stdio" },
   filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact", "vue" },
+  root_dir = function(bufnr, on_dir)
+    local root = require("config.web-project").typescript_root(bufnr)
+    if root then
+      on_dir(root)
+    end
+  end,
 }
 
 -- mise・Masonの固定パスを避け、PATHで選ばれた実体を基準にVueの依存を探す。

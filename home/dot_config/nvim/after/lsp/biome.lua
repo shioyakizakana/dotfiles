@@ -2,10 +2,17 @@ local util = require("lspconfig.util")
 
 ---@type vim.lsp.Config
 return {
-  cmd = {
-    "node_modules/.bin/biome",
-    "lsp-proxy",
-  },
+  cmd = function(dispatchers, config)
+    local command = "biome"
+    local root = (config or {}).root_dir
+    if root then
+      local local_command = vim.fs.joinpath(root, "node_modules/.bin/biome")
+      if vim.fn.executable(local_command) == 1 then
+        command = local_command
+      end
+    end
+    return vim.lsp.rpc.start({ command, "lsp-proxy" }, dispatchers, { cwd = root })
+  end,
   root_dir = function(bufnr, on_dir)
     local root_markers = {
       "package-lock.json",
