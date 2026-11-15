@@ -12,7 +12,7 @@ local lsp_list = {
   "nimls",
   "oxlint",
   "marksman",
-  "pyright",
+  "basedpyright",
   "ruff",
   "rust_analyzer",
   -- "sourcekit",

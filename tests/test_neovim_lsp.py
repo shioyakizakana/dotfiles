@@ -217,7 +217,7 @@ lsp.config()
 assert(setup_count == (mason_enabled and 1 or 0))
 local expected = {"bashls", "biome", "cssls", "denols", "emmet_language_server",
   "golangci_lint_ls", "gopls", "html", "jsonls", "lua_ls", "nimls", "oxlint",
-  "marksman", "pyright", "ruff", "rust_analyzer", "sqls", "svelte", "tailwindcss",
+  "marksman", "basedpyright", "ruff", "rust_analyzer", "sqls", "svelte", "tailwindcss",
   "taplo", "vtsls", "vue_ls", "yamlls"}
 local count = 0
 for name in pairs(registered) do count = count + 1 end

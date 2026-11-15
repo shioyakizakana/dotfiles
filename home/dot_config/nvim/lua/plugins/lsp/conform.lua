@@ -34,9 +34,9 @@ return {
         lua = { "stylua" },
         go = { "goimports" },
         python = {
-          "ruff_format",
           "ruff_fix",
-          "ruff_organize_imports"
+          "ruff_organize_imports",
+          "ruff_format"
         },
         -- shell
         bash = { "shfmt" },
