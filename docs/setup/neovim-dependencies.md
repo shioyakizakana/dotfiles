@@ -33,7 +33,7 @@ Masonは移行完了まで維持する。有効なLSP23件を、miseの導入定
 | 有効なLSP | 実行名・指定 | 導入担当・現状 | 設定の根拠 |
 | --- | --- | --- | --- |
 | bashls | `bash-language-server start` | mise `npm:bash-language-server` | `after/lsp/bashls.lua:3` |
-| biome | `node_modules/.bin/biome lsp-proxy` | プロジェクト側。miseのグローバル定義なし。Biome設定がなければroot処理が戻る | `after/lsp/biome.lua:5-37` |
+| biome | プロジェクト内の`node_modules/.bin/biome lsp-proxy`を優先し、なければPATHの`biome` | mise `biome`またはプロジェクト側。Biome設定がなければ起動しない | `after/lsp/biome.lua` |
 | cssls / html / jsonls | `vscode-css-language-server` / `vscode-html-language-server` / `vscode-json-language-server`、各`--stdio` | mise `npm:vscode-langservers-extracted` | 各`after/lsp/{cssls,html,jsonls}.lua:3` |
 | denols | `deno lsp` | mise `deno` | `after/lsp/denols.lua:3-6` |
 | emmet_language_server | 独自cmdなし | mise `npm:@olrtg/emmet-language-server` | `after/lsp/emmet_language_server.lua:1` |
@@ -43,7 +43,7 @@ Masonは移行完了まで維持する。有効なLSP23件を、miseの導入定
 | nimls | `nimlsp` | miseのNimを前提に、補助処理の`nimble install -y nimlsp` | `after/lsp/nimls.lua:3`、導入スクリプト82-93行 |
 | oxlint | nvim-lspconfigの`oxlint --lsp` | mise `npm:oxlint`を追加。実導入は未実施 | `server-register.lua:13` |
 | marksman | `marksman server` | mise `marksman` | `after/lsp/marksman.lua:3` |
-| pyright | `pyright-langserver --stdio` | mise `npm:pyright` | `after/lsp/pyright.lua:21` |
+| basedpyright | `basedpyright-langserver --stdio` | mise `npm:basedpyright` | `after/lsp/basedpyright.lua`。型解析・補完・定義ジャンプを担当 |
 | ruff | `ruff server` | mise `ruff` | `after/lsp/ruff.lua:3` |
 | rust_analyzer | `rust-analyzer` | miseのRustを前提に、補助処理のrustup component追加 | `after/lsp/rust_analyzer.lua:63`、導入スクリプト136行 |
 | sqls | 独自cmdなし | mise `go:github.com/sqls-server/sqls` | `after/lsp/sqls.lua:1` |
@@ -54,7 +54,7 @@ Masonは移行完了まで維持する。有効なLSP23件を、miseの導入定
 | vue_ls | nvim-lspconfigの`vue-language-server --stdio` | mise `npm:@vue/language-server`を追加。vtslsとの実接続は未確認 | `server-register.lua:24` |
 | yamlls | `yaml-language-server --stdio` | mise `npm:yaml-language-server` | `after/lsp/yamlls.lua:3` |
 
-`after/lsp/ts_ls.lua:4`は`typescript-language-server`を指定するが、有効化リストは`vtsls`で、`ts_ls`を含まない。NV-02ではvtslsを継続し、ts_lsを同時有効化しない。`eslint.lua`も有効化リストにない。miseの`npm:basedpyright`・`pipx:ty`・`npm:@astrojs/language-server`には、このリストでの同名LSP有効化がない。他用途の可能性があるため削除しない。
+`after/lsp/ts_ls.lua:4`は`typescript-language-server`を指定するが、有効化リストは`vtsls`で、`ts_ls`を含まない。NV-02ではvtslsを継続し、ts_lsを同時有効化しない。`eslint.lua`も有効化リストにない。miseの`pipx:ty`・`npm:@astrojs/language-server`には、このリストでの同名LSP有効化がない。他用途の可能性があるため削除しない。
 
 Rust設定は`rustc`と`cargo`も呼ぶ（`after/lsp/rust_analyzer.lua:22-23,84-94`）。rust-analyzerの存在だけでRustプロジェクト全体を検証済みとはしない。
 
@@ -64,8 +64,8 @@ Rust設定は`rustc`と`cargo`も呼ぶ（`after/lsp/rust_analyzer.lua:22-23,84-
 | --- | --- | --- |
 | Lua・Python・シェル整形 | miseのstylua・ruff・shfmt | `lua/plugins/lsp/conform.lua:33-43`。複数ruff処理とZsh整形の実動作は未確認 |
 | Go整形 | mise `go:golang.org/x/tools/cmd/goimports`を追加 | 同ファイル35行。goplsやgofumptの定義と区別する |
-| Web整形 | `biome-check`と`prettierd`。後者はmise `npm:@fsouza/prettierd` | 同ファイル19-33行。Conformの名前と実行ファイル名を混同しない。Biomeのプロジェクト内探索は実プラグインで未確認 |
-| Deno整形 | ConformのWebリストを空にしてLSPへfallback | 同ファイル15-23,59行。判定はカレントディレクトリのdeno.json/jsonc |
+| Web整形 | Biome設定があれば`biome-check`を優先し、なければ`prettierd` | `conform.lua`のWeb用関数。Biomeはプロジェクト内の実行ファイルによる実整形を隔離確認済み |
+| Deno整形 | ConformのWebリストを空にしてLSPへfallback | `config/web-project.lua`。編集中のファイルからdeno.json/jsonc/lockを探索し、入れ子のNode lockfileを境界にする |
 | Git・GitHub・検索 | gitはbootstrap、gh・lazygit・ripgrep・fdはmiseに定義 | `lua/plugins/utils/snacks/index.lua`、`lua/plugins/ui/toggleterm.lua:21`。rg・fd等の正確な要件は採用したプラグイン版で確認する。gh機能の認証は今回対象外 |
 | ファイラー | mise `yazi = "26.9.1"`、lazy.nvimのyazi.nvim | `lua/plugins/ui/yazi.lua`。Yazi側の公開依存は[別一覧](yazi-dependencies.md) |
 | クリップボード | `unnamedplus`。OS別providerの明示定義なし | `lua/config/ui.lua:6`。Termux・WSL・SSH・デスクトップで別確認 |
@@ -106,13 +106,13 @@ UbuntuのAPT定義にはbuild-essential・cmake・makeがあるが、全プラ�
 
 ## 修正候補と推奨順序
 
-NV-01はソース修正済み。利用者から設定の実適用成功報告があり、初回取得・失敗復旧の実機確認は残る。NV-02は導入定義とVue連携を修正済み。利用者から4ツールの導入成功報告があり、Svelteは下記の復旧手順で実導入と隔離起動を確認した。Vueは利用者の通常操作と依存追加後の診断確認が成功した。NV-03は検証用切替と主力7サーバーの隔離検証まで対応済み。未確認言語とMasonの削除は残件。NV-04〜NV-06は未実装。ソース上の事実と、ダミーで再現した不具合、通常設定での実機確認を区別する。
+NV-01はソース修正済み。利用者から設定の実適用成功報告があり、初回取得・失敗復旧の実機確認は残る。NV-02は導入定義とVue連携を修正済み。利用者から4ツールの導入成功報告があり、Svelteは下記の復旧手順で実導入と隔離起動を確認した。Vueは利用者の通常操作と依存追加後の診断確認が成功した。NV-03は主力言語・汎用LSP・追加5サーバーの段階的な確認まで対応済み。Web分岐とBiome起動は利用者が確認し、Tailwindの依存を備えた構成の通常UI確認も成功し、残件はsqlsのDB機能、未確認機能・対象環境の扱いとMason削除。NV-04〜NV-06は未実装。ソース上の事実と、ダミーで再現した不具合、通常設定での実機確認を区別する。
 
 | ID | 重要度・工数 | 区分・現状 | 次の作業と受け入れ条件 |
 | --- | --- | --- | --- |
 | NV-01 | Medium / Small | 信頼性・ソース修正済み。利用者から設定の適用成功報告あり。修正前の取得失敗時に未定義の`out`を表示してエラーになることをダミーで再現した | 同じ親ディレクトリの一時領域へ取得し、成功後に配置する。失敗時は自分の一時領域だけを削除して非0で終了する。回帰テスト10件が成功。実通信と実機確認は未実施 |
-| NV-02 | Medium / Medium | DF-09後続・実機確認中。承認されたmise定義5件とVue/vtsls連携を追加 | 回帰テスト8件が成功。その後Svelteの実導入と隔離LSPを確認。各言語の実接続・Biomeの起動ディレクトリ検証は残件。Masonを削除する前に環境別の実行パスを確認する |
-| NV-03 | Medium / Medium | 対応中。既定動作を維持するMason無効化の検証モードを追加 | 既定・有効・無効の各モードで23件の登録をダミー検証し、主力7サーバーも隔離確認済み。Rustの手動確認は成功。Pythonの提供元、未確認対象を整理してからMason本体・連携プラグイン・setup参照を削除する。既存のMasonデータは自動削除しない |
+| NV-02 | Medium / Medium | DF-09後続・実機確認中。承認されたmise定義5件とVue/vtsls連携を追加 | 回帰テスト8件が成功。その後Svelteの実導入と隔離LSPを確認。主要言語の接続とBiomeのフォルダ内・別cwdでの起動は利用者が確認済み。残る追加サーバーと環境別の範囲はNV-03で整理する |
+| NV-03 | Medium / Medium | 対応中。既定動作を維持するMason無効化の検証モードを追加 | 既定・有効・無効の各モードで23件の登録をダミー検証し、主力7サーバーも隔離確認済み。Rust・Nim・Python・Webの手動確認を記録。追加5サーバーは下記の隔離検証を実施した。Tailwindの通常UI確認も完了。sqlsのDB機能と対象環境・未確認機能の扱いを示してからMason本体・連携プラグイン・setup参照を削除する。既存のMasonデータは自動削除しない |
 | NV-04 | Medium / Medium | 信頼性・潜在的リスク。DAPに`dap.configuration`・`tyoe`があり、Pythonのパス連結に区切り不足、fallbackが`usr/bin/python`。pythonアダプター定義もない（`lua/plugins/dap/adapters.lua:3-37`） | 採用するnvim-dap APIとPythonアダプターの担当を確定する。モックで設定登録を再現し、空白を含む仮想環境パス、未導入時の案内、Lua接続設定を検証する |
 | NV-05 | Medium / Medium | DF-06後続・再現性。Neovimはlatest、lazy.nvimはstable、lazy-lock.jsonは除外 | 実機で動く組合せを記録し、Neovim本体と公開プラグインの固定・復元を設計する。既存lockfileを無断で上書きせず、個人依存の扱いを先に決める |
 | NV-06 | Low / Small | 保守性・改善提案。現在importされない旧LSP・整形・SKK設定が残る | NV-03後に用途を確認し、維持・整理を選ぶ。現行importから未使用設定を呼ばないことを確認する |
@@ -125,7 +125,7 @@ NV-01の修正後は、NV-02→NV-03の順で移行する。NV-04は別PRで並�
 
 1. 使用言語と対象環境を一覧表に追記する。各LSPを「mise・補助導入」「プロジェクト依存」「その環境の手動導入」「意図して無効化」のいずれかにする。登録だけが残るサーバーをなくす。
 2. 下記の検証モードでMasonの依存宣言とsetupを無効化し、Masonを含まないPATHで新しく起動する。Codexのダミーテストは一時HOMEと空のPATHを使う。実機で隔離HOMEを使う場合も、必要な設定・公開プラグイン・ツールは別途準備する。実環境のMasonデータやプラグインを削除しない。
-3. 必要な依存を用意した後、確認用の空プロジェクトを開く。`:lua print(vim.fn.exepath('pyright-langserver'))`等で各実行パスを確認し、`:lua print(vim.fn.exepath('node'))`も確認する。秘密情報や環境変数全体を出力しない。
+3. 必要な依存を用意した後、確認用の空プロジェクトを開く。`:lua print(vim.fn.exepath('basedpyright-langserver'))`等で各実行パスを確認し、`:lua print(vim.fn.exepath('node'))`も確認する。秘密情報や環境変数全体を出力しない。
 4. 各言語の最小ファイルでLSPの接続・診断・補完・定義ジャンプを確認する。`:LspInfo`で使用サーバーを確認し、重複起動やMason配下からの起動がないかを確認する。プロジェクト依存を使う場合は、そのパスを正しい結果として記録する。
 5. 保存整形を小さな検証用ファイルで試す。Go、Lua、Python、シェル、Web、Denoの分岐を分け、LSPのfallbackとgoimportsによる整形を区別する。
 6. Termux・proot・WSL・ネイティブLinuxの結果を別々に記録する。未確認環境は未確認のまま残し、削除PRで対象範囲を示す。
@@ -268,3 +268,27 @@ NimLSPは承認後にNim 2.4.2で再ビルドし、退避して実体を切り�
 Nimの起動とハイライトはソース修正済み。PATH上のnimlspを優先し、NIMBLE_DIRまたは既定のNimble配置を補助探索する。Tree-sitterはnimと、その必須依存nim_format_stringを既存の導入方式で準備する。隔離検証は成功し、[実環境への適用と通常UIの確認](../testing/neovim-nim-rust.md#pathの補助探索とハイライトの適用)は利用者が行う。
 
 Nimのハイライトは利用者が通常起動で適用を確認した。NIMBLE_DIRとPATH設定は共通env.shのソースにも反映済み。その後、利用者がPATHを明示しない通常起動でNimLSP接続・保存時の診断5件・フロート表示・修正後の診断解消も確認した。Nim対応は完了。次はPythonの提供元と未確認言語の整理へ進む。
+
+## Pythonの提供元統一
+
+basedpyrightとRuffの担当をソースで統一した。起動名をbasedpyright-langserverへ明示し、Pyrightの重複したmise定義を除外した。Ruffはlint・import整理・整形、basedpyrightは型解析・補完・定義ジャンプ・hoverを担当する。既存ツールだけで隔離検証が成功し、追加導入は不要だった。[設定・互換コマンド・適用手順](python-lsp.md)を参照する。NV-03は通常UIでの移行確認と未確認言語の整理を継続する。
+
+Pythonの通常UI確認も利用者が完了した。Termux + proot Ubuntuで接続・補完・定義ジャンプ・診断の解消・保存時整形・import整理が成功。[報告の詳細](../testing/neovim-lsp-verification.md#python移行の通常ui確認報告受領2026-11-15)を参照する。NV-03は未確認言語と環境別の整理を続ける。
+
+## Web分岐と汎用LSPの継続確認（2026-11-15）
+
+denolsが通常のGitプロジェクトを対象にする問題を再現し、Deno設定・lockfileを条件に変更した。vtslsとConformも同じバッファ基準で判定する。Biomeはプロジェクト内の実行ファイルを優先し、そのプロジェクトを作業ディレクトリにする。既存のmise定義を利用し、依存は追加していない。
+
+CSS・HTML・JSON・YAML・TOML・Markdownの隔離LSP確認と、実ConformによるBiome整形が成功した。詳細と手動確認は[Web・汎用LSPの検証記録](../testing/neovim-web-validation.md)を参照する。NV-03はMasonを維持したまま継続し、用途が未確定の追加サーバーと環境別の確認を先に整理する。
+
+通常UIの追加報告で、Node配下の二重接続とBiomeの起動失敗があった。対象の展開済み設定4件がソースと異なり、共通判定ファイルも未配置だった。新しいソースの適用後に再確認し、成功してからMason削除を判断する。[報告と比較結果](../testing/neovim-web-validation.md#通常uiの報告と適用状態の確認2026-11-15)を参照する。
+
+利用者が設定適用後、Node配下ではvtslsのみ接続し、Biome LSPもフォルダ内・別cwdの両方で接続することを確認した。ConformInfoの表示に加え、利用者がlist_formatters_to_run(0)の出力が`{ "biome-check" }`となることを確認した。stop_after_firstにより、実行予定はbiome-checkのみである。[再確認結果](../testing/neovim-web-validation.md#設定適用後の再確認結果2026-11-15)を参照する。NV-03全体とMason削除の判断は継続する。
+
+## 追加LSPの用途と確認状況（2026-11-15）
+
+Emmetの略記補完、Oxlintとgolangci-lintの診断・修正後の解消を、導入済みツールによる隔離環境で確認した。sqlsは空の接続設定で初期化のみ成功。Tailwindは初期化と補完候補の取得には成功したが、プロジェクト側のtailwindcssがなく、診断を含む機能確認は未完了である。
+
+[追加LSPの用途・導入担当・検証結果・手動手順](../testing/neovim-extra-lsp-validation.md)を参照する。5件とも有効設定を維持し、依存・認証の追加やMason削除は行っていない。利用者は追加5サーバーすべての継続使用を選択し、Emmet・Oxlint・golangci-lintの通常UIとsqlsのDB接続なしの初期化を確認済み。Tailwindは接続NGとして残り、次はプロジェクト依存と起動状態を確認する。
+
+Tailwindはその後、検証用プロジェクトへ本体依存3.4.17を導入し、自動接続・クラス補完・独自設定・診断と修正後の解消を隔離確認した。元の接続NGは隔離起動で再現せず、その後、利用者も依存を備えた構成で接続・補完・診断と解消の成功を確認した。[依存・起動確認の詳細](../testing/neovim-tailwind-validation.md)を参照する。miseやLSPの設定は変更していない。

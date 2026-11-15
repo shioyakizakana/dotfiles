@@ -256,6 +256,15 @@ systemdの起動は共通前提ではない。`systemd-detect-virt`は存在時�
 - Nim診断の復旧：NimLSP 0.4.7をNim 2.4.2で隔離ビルドし、利用者の承認後、既存バイナリを永続退避して実体だけを切り替えた。実バイナリの隔離検証で型エラー2件、修正後0件、定義ジャンプ、版警告なしを確認。通常導入には版一致の確認と失敗時の案内を追加した。その後、利用者がPATH明示起動で通常UIの保存時診断5件、フロート表示、修正後の診断解消を確認した。通常起動時のPATH確認とハイライトは残件。[再ビルド・復元手順](../setup/nimlsp-recovery.md)を参照する。
 - NimのPATH・表示対応：nimls.luaへNIMBLE_DIRと既定配置の補助探索を追加し、既存Tree-sitter一覧へnimを追加した。修正前の回帰テスト失敗を確認し、修正後は関連22件・make checkのunittest 232件とBats 18件が成功、skipなし。PATHにNimbleを含めない実LSPの隔離起動・診断と、必須依存を含むNimパーサーの隔離ビルド・ハイライトも成功した。設定適用と実HOMEのパーサー導入は未実施。[利用者の確認手順](../testing/neovim-nim-rust.md#pathの補助探索とハイライトの適用)を参照する。
 - Nim対応の完了確認：利用者が設定適用後、PATHを明示しない通常起動でNimLSP接続・ハイライト、保存時の診断5件・フロート表示、修正後の診断解消を確認した。今回のNim対応は完了。NV-03全体はPythonの提供元と未確認言語の整理が残るため継続する。
+- Pythonの提供元統一：basedpyrightを正式名で有効化し、Pyrightの重複したmise定義を除外。Ruffへlint・import整理・整形を集約し、既存コマンドの互換名を保持した。導入済みツールで実LSPとConformの隔離検証、プロジェクト設定の優先を確認。make checkはunittest 238件・Bats 18件成功、skipなし。追加インストールと実適用は未実施で、通常UI確認は残件。[移行手順](../setup/python-lsp.md)を参照する。
+- Python移行の実機確認：2026-11-15受領の利用者報告により、Termux + proot Ubuntuで両サーバーの接続・補完・定義ジャンプ、型エラーとlintの解消、保存時整形・import整理の成功を確認した。Python移行の通常UI確認は完了。Neovim版は利用者の訂正によりv0.12.6。報告のCLIパスとLSP起動コマンドを区別して記録。NV-03は未確認言語等の整理を継続する。
+- NV-03の継続対応：通常Gitでもdenolsが選ばれる問題を再現して修正し、Deno・Node・Web整形をバッファ基準の共通判定へ変更した。Biomeはプロジェクト内の実体を優先し、起動cwdを指定した。汎用LSP6件の隔離接続・機能と実ConformのBiome整形が成功。回帰テスト8件を追加し、make checkはunittest全246件・Bats全18件が成功、skipなし。Biome LSPのデーモン接続と通常UI、追加サーバーの用途確認は残件。[検証記録](../testing/neovim-web-validation.md)を参照。
+- Web通常UIの追加報告：汎用LSP等の成功と、Node配下での二重接続・Biome起動失敗を記録した。読み取り比較で展開済みの4設定がソースと異なり、共通判定ファイルも未配置であることを確認。修正後の実適用・再確認は残件とし、追加のソース修正や適用操作は行っていない。[報告と再確認手順](../testing/neovim-web-validation.md#通常uiの報告と適用状態の確認2026-11-15)を参照。
+- Web修正の適用後確認：利用者がNode配下でvtslsのみ接続し、Biome LSPがフォルダ内・別cwdで接続することを確認した。続報でlist_formatters_to_run(0)の出力がbiome-checkのみであることも確認し、候補表示と実行予定を区別して記録した。[再確認結果](../testing/neovim-web-validation.md#設定適用後の再確認結果2026-11-15)を参照。Mason削除とNV-03全体の残件整理は継続する。
+- NV-03の追加LSP確認：導入済み5サーバーを隔離起動した。Emmetの補完、Oxlintとgolangci-lintの診断・修正後の解消、sqlsのDB接続なしの初期化が成功。Tailwindは補完候補を取得したがプロジェクト依存不足のため部分確認とした。設定や導入担当は変更せず、通常UI・用途・対象環境とMason削除の判断を残す。[追加検証記録](../testing/neovim-extra-lsp-validation.md)に手順と残件を整理した。
+- 追加LSPの通常UI確認：利用者が5サーバーすべての継続使用を選択。Emmetの補完、Oxlintとgolangci-lintの診断・修正後解消、sqlsのDB接続なしの初期化は成功した。Tailwindは接続NGで直接原因は未確定。プロジェクト依存と起動状態を次の確認対象とし、Mason削除は保留する。[手動結果](../testing/neovim-extra-lsp-validation.md#通常uiの手動確認結果2026-11-15)を参照。
+- Tailwindの依存・起動調査：元の確認用フォルダでは隔離自動接続が成功し、接続NGは再現しなかった。承認された検証用tailwindcss 3.4.17を別の一時フォルダへ導入し、依存解決・自動接続・標準クラスと独自色の補完・競合診断2件と解消を確認。LSP設定は変更せず、[通常UIの再確認](../testing/neovim-tailwind-validation.md)を残す。
+- Tailwindの通常UI再確認：利用者がTermux + proot Ubuntu・Neovim v0.12.6・Mason無効化モードで接続、root、mise管理の実行パス、標準クラスと独自色の補完、競合診断と修正・保存後の解消を確認した。検証用v3構成の確認は完了。以前の接続NGの直接原因は未特定のままとし、NV-03はMason削除の範囲とsqlsのDB機能・未確認環境の扱いを整理する。[利用者の結果](../testing/neovim-tailwind-validation.md#通常uiの手動確認結果2026-11-15)を参照。
 
 ### DF-10：Yazi keymapのTOML互換性
 

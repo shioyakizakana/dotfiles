@@ -1,6 +1,6 @@
 # MasonなしのNeovim検証記録
 
-2026-11-14、NV-03のMason削除を判断するため、現在のLinux aarch64環境で導入済みツールを確認した。主力7サーバーの隔離検証は成功したが、Pythonの導入担当と未確認言語が残るため、Masonの完全削除は保留する。
+2026-11-14、NV-03のMason削除を判断するため、現在のLinux aarch64環境で導入済みツールを確認した。主力7サーバーの隔離検証は成功したが、未確認言語の整理が残るため、Masonの完全削除は保留する。
 
 過去の隔離検証時には環境の分類を記録していなかった。その後、利用者のNim・Rust手動確認はTermux + proot Ubuntu、Neovim v0.12.6で実施したと報告された。他の環境で同じ結果になるとは扱わない。設定一覧と作業項目は[Neovim依存一覧](../setup/neovim-dependencies.md)を参照する。
 
@@ -48,7 +48,7 @@ GoはGOPROXY・GOSUMDBをoff、GOTOOLCHAINをlocalにし、telemetryとGOENV・G
 
 ## 登録中23サーバーの実行パス
 
-初回の確認では、通常のシェルから各コマンドの所在とrealpathを確認した。20件はMason外のツールを直接選び、rust-analyzerはmiseのshim、2件はコマンドがPATH上に見つからなかった。以下の「未検証」は接続・機能を確認していない意味で、未導入とは異なる。
+初回の確認では、通常のシェルから各コマンドの所在とrealpathを確認した。20件はMason外のツールを直接選び、rust-analyzerはmiseのshim、2件はコマンドがPATH上に見つからなかった。以下は初回時点の記録で、「未検証」は未導入とは異なる。現在のPython・Nimの結果は後段、Webと汎用LSPの結果は[継続確認記録](neovim-web-validation.md)を参照する。
 
 | サーバー | PATHで選ばれた提供元・状態 | 実接続・機能の確認状況 |
 | --- | --- | --- |
@@ -86,10 +86,9 @@ Pythonは同じpyright-langserver名が複数ツールから提供される状�
 
 Nim・Rustの接続と診断の確認は完了。NimはPATHを明示しない通常起動でハイライトと保存時の診断・解消まで利用者が確認した。残件は次の順で進める。
 
-1. PythonでPyrightとbasedpyrightのどちらを使用するか決める。
-2. 未確認言語のうち実際に使用する対象を決め、プロジェクト依存を用意して確認する。未使用の設定を削除・無効化する場合も別途判断する。
-3. 未確認言語のUIと整形、Biomeのルート分岐を確認する。prettierdの明示整形とDenoのLSPによる保存時整形は、下記の利用者報告で確認済み。
-4. 対象環境ごとの未確認事項を記録した上で、Mason本体・連携プラグイン・setup・検証用切替の削除へ進む。既存のMasonインストール済みデータは自動削除しない。
+1. 未確認言語のうち実際に使用する対象を決め、プロジェクト依存を用意して確認する。未使用の設定を削除・無効化する場合も別途判断する。
+2. 未確認言語のUIと整形、Biomeのルート分岐を確認する。prettierdの明示整形とDenoのLSPによる保存時整形は、下記の利用者報告で確認済み。
+3. 対象環境ごとの未確認事項を記録した上で、Mason本体・連携プラグイン・setup・検証用切替の削除へ進む。既存のMasonインストール済みデータは自動削除しない。
 
 Codexによる隔離検証では、chezmoi apply、ツールの導入・更新、Mason削除、実プロジェクトへの適用、Gitのcommit・pushは行っていない。利用者が実施した適用と導入の報告は下記に分けて記録する。現在の実機結果は単一ホストの記録として扱い、CIのmake checkとは分ける。
 
@@ -119,7 +118,7 @@ Codexによる隔離検証では、chezmoi apply、ツールの導入・更新�
 | prettierd | vtsls/main.tsのConformInfoで利用可能と表示。formatterをprettierd、lsp_formatをneverに指定した明示整形が成功 | 他のプロジェクト・環境の確認 |
 | Deno | 別フォルダのdeno.jsonを認識してdenolsが接続。外部formatterを選ばず、保存時にLSPで整形 | 他のプロジェクト・環境の確認 |
 
-Rustの手動確認は成功した。Nimの診断確認も成功した。Pythonの提供元と未確認言語が残るため、Masonの完全削除は保留する。確認用ファイルの準備は[Nim・Rustの手順](neovim-nim-rust.md)を参照する。
+Rustの手動確認は成功した。Nimの診断確認も成功した。未確認言語の整理が残るため、Masonの完全削除は保留する。確認用ファイルの準備は[Nim・Rustの手順](neovim-nim-rust.md)を参照する。
 
 ## Nim・Rustの手動確認結果（2026-11-14）
 
@@ -165,3 +164,42 @@ nimls.luaへ既定のNimble配置とNIMBLE_DIRの補助探索を追加し、Tree
 ## 通常起動でのNimハイライト確認
 
 利用者が共通env.shへNIMBLE_DIRとPATH設定を追加し、通常のNeovim起動でNimのシンタックスハイライトが適用されたことを確認した。変数名は実ファイルでNIMBLE_DIRと記述され、管理ソースと展開先のenv.shも一致していた。続く利用者報告で、PATHを明示しない通常起動でもNimLSP接続、保存時の診断5件、フロート表示、修正・保存後の診断解消が成功した。今回のNim対応は完了とする。
+
+## basedpyrightとRuffへの統一
+
+利用者が担当分離案を採用したため、登録をpyrightからbasedpyrightへ切り替え、正式な起動名・設定を使用するよう修正した。既存のbasedpyright 1.40.2とRuff 0.17.5で隔離検証し、型診断・補完・定義ジャンプ、lint、Conformによる修正・import整理・整形を確認した。バッファ内の型エラー等を直すと両者の診断が0件になった。プロジェクト側の設定がLSPのstandardを上書きすることも確認した。
+
+自動回帰テスト6件を追加し、既存の3モードでの登録確認もbasedpyrightへ更新した。make checkはunittest 238件・Bats 18件が成功、skipなし。実環境への適用、実パッケージの導入・更新・削除は行っていない。[Python移行手順](../setup/python-lsp.md)に沿った通常UIでの確認は利用者が行う。過去のpyright名でのbasedpyright確認と区別して記録する。
+
+## Python移行の通常UI確認（報告受領：2026-11-15）
+
+利用者が/tmp/neovim-python-check-y_fbpsjc/RESULTS.mdに記入した結果を記録する。環境はTermux + proot Ubuntu、Neovim版は利用者の訂正によりv0.12.6。Codexによる再実行結果ではない。
+
+| 確認項目 | 利用者の結果 |
+| --- | --- |
+| basedpyright・Ruffへの接続 | 成功 |
+| 補完・定義ジャンプ | 成功 |
+| 型エラー・Ruffのlintと修正後の解消 | 成功 |
+| 保存時整形・import整理 | 成功 |
+
+報告されたパスは、basedpyrightが/home/shioyaki/.local/share/mise/installs/npm-basedpyright/latest/node_modules/.bin/basedpyright、Ruffが/home/shioyaki/.local/share/mise/installs/ruff/latest/.mise-bins/ruff。前者はCLI名のため、実サーバーの起動コマンドbasedpyright-langserver --stdioとは区別して記録する。今回の結果にはサーバー用実行ファイルのパスそのものは記載されていない。
+
+Pythonの担当分離と通常UIでの機能確認は完了。NV-03全体は未確認言語・Biome等の分岐・対象環境の整理を続けてからMason削除を判断する。既存のMasonデータは変更しない。
+
+## Webと汎用LSPの継続確認（2026-11-15）
+
+CSS・HTML・JSON・YAML・TOML・Markdownの6サーバーについて、隔離HOMEとダミープロジェクトで接続・機能を確認した。Deno・Nodeの選択とBiomeの起動設定を修正し、回帰テスト8件を追加した。[結果・確認範囲・残件](neovim-web-validation.md)を参照する。Masonの完全削除は未実施。
+
+通常UIの追加報告では主要な操作の成功がある一方、Node配下での二重接続とBiomeの起動失敗が報告された。展開済み設定が修正前であることを確認したため、[適用状態と再確認手順](neovim-web-validation.md#通常uiの報告と適用状態の確認2026-11-15)に記録した。修正後の分岐とBiome接続の確認は継続する。
+
+利用者が設定適用後、Node配下ではvtslsのみ接続し、Biome LSPもフォルダ内・別cwdの両方で接続することを確認した。ConformInfoの表示に加え、利用者がlist_formatters_to_run(0)の出力が`{ "biome-check" }`となることを確認した。stop_after_firstにより、実行予定はbiome-checkのみである。[再確認結果](neovim-web-validation.md#設定適用後の再確認結果2026-11-15)を参照する。NV-03全体とMason削除の判断は継続する。
+
+## 追加5サーバーの継続確認（2026-11-15）
+
+Emmet・Tailwind・Oxlint・golangci-lint・sqlsを隔離検証した。Emmetの補完、Oxlintとgolangci-lintの診断・修正後の解消が成功した。Tailwindは依存不足による部分確認、sqlsはDB接続なしの初期化だけである。[用途・結果・残件](neovim-extra-lsp-validation.md)を参照する。通常設定の自動root選択とUIは今回の検証対象ではない。
+
+利用者の通常UI確認では、追加5サーバーすべての継続使用が選択された。Emmetの補完、Oxlintとgolangci-lintの診断・修正後解消、sqlsのDB接続なしの初期化が成功した。Tailwindは接続NGで、起動ログを含む追加確認が残る。[手動結果と次の確認](neovim-extra-lsp-validation.md#通常uiの手動確認結果2026-11-15)を参照する。
+
+Tailwindについて、承認された検証用依存3.4.17の解決、自動接続・診断と解消・標準クラスと独自色の補完が隔離環境で成功した。[通常起動の再確認手順](neovim-tailwind-validation.md)を用意した。利用者が報告した接続NGは再現できておらず、通常UIの成功確認とは区別する。
+
+Tailwindの通常UI再確認も成功した。利用者がMason無効化モードでmise管理のサーバーへの接続、期待するroot、標準クラスと独自色の補完、競合診断と修正・保存後の解消を確認した。[結果の詳細](neovim-tailwind-validation.md#通常uiの手動確認結果2026-11-15)を参照する。検証用v3構成の確認は完了し、Mason削除の範囲とsqlsのDB機能・未確認環境の扱いを整理する。

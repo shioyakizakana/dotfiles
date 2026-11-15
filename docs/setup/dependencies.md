@@ -43,6 +43,8 @@ LuaRocksの準備では、OS側のLuaとmiseのLua 5.1を混同しない。`--lu
 
 ## Neovim
 
+Pythonはbasedpyrightで型解析・補完・定義ジャンプ、Ruffでlint・import整理・整形を行う。[Pythonの移行と確認手順](python-lsp.md)を参照する。
+
 LSP・整形・プラグインの導入担当、Masonからmiseへの移行条件、環境別の確認範囲は[Neovim依存一覧](neovim-dependencies.md)を参照する。Masonは移行途中のため、切替を指定しなければ維持する。依存一覧に記載した無効化モードで代替ツールの実行を確認し、削除を判断する。
 
 ## Yazi

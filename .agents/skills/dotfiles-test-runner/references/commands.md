@@ -24,6 +24,8 @@
 | PAT継承・鍵キャッシュ | `tests/test_proton_pass_key_cache.py` |
 | 明示的なAPT更新・mise更新の対象・失敗集計 | `tests/test_update_apps.py` |
 | NeovimのLSP導入定義・Mason切替・Nim探索・ハイライト・Vue連携・Go整形 | `tests/test_neovim_lsp.py` |
+| basedpyrightとRuffの担当・Pythonパス変更・import整理・保存時の処理順序 | `tests/test_python_lsp.py` |
+| Deno・Nodeのルート分岐・バッファごとのWeb整形・Biome起動パス | `tests/test_web_lsp.py` |
 | Neovimの初回取得・失敗終了・一時領域・再試行 | `tests/test_neovim_bootstrap.py` |
 | mini.testの読み込み・初期化用opts・固定revision | `tests/test_neovim_plugin_tests.py` |
 | 規約のUnicode文字数・リンク・フォルダごとの上限 | `tests/test_instruction_budget.py` |
