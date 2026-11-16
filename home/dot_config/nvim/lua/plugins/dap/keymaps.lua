@@ -2,28 +2,28 @@
 ---@type LazyKeysSpec[]
 return {
     {
-        "F5",
+        "<F5>",
         function()
             require("dap").continue()
         end,
         desc = "Debug: Continue",
     },
     {
-        "F10",
+        "<F10>",
         function()
             require("dap").step_over()
         end,
         desc = "Debug: Step Over",
     },
     {
-        "F11",
+        "<F11>",
         function()
             require("dap").step_into()
         end,
         desc = "Debug: Step Into",
     },
     {
-        "F12",
+        "<F12>",
         function()
             require("dap").step_out()
         end,
@@ -47,7 +47,7 @@ return {
         desc = "Debug: Set conditional breakpoint",
     },
     {
-        "<leader>dr",
+        "<leader>dL",
         function()
             require("dap").set_breakpoint(
                 nil, nil,
