@@ -28,21 +28,13 @@ return {
 
     dap_view.setup(opts)
 
-    dap.listeners.before.attach("dapui_config", function(session, body)
-      if session.config.name == "Attach to running Neovim instance" then
+    dap.listeners.after.event_initialized["dotfiles.dap_view"] = function(session)
+      if session.config.type == "nlua" then
         return
       end
 
       dap_view.open()
-    end)
-
-    dap.before.launch(function(session, config)
-      if config.name == "Attach to running Neovim instance" then
-        return
-      end
-
-      dap_view.open()
-    end)
+    end
 
     require("plugins.dap.adapters")
   end,

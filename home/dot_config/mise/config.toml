@@ -60,6 +60,7 @@ npm = "latest"
 "npm:vscode-langservers-extracted" = "latest"
 "npm:yaml-language-server" = "latest"
 pipx = "latest"
+"pipx:debugpy" = { version = "latest", uvx_args = "--python 3.13", pipx_args = "--python python3.13" }
 "pipx:ty" = "latest"
 pnpm = "latest"
 poppler = "latest"
