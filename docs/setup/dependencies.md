@@ -43,6 +43,8 @@ LuaRocksの準備では、OS側のLuaとmiseのLua 5.1を混同しない。`--lu
 
 ## Neovim
 
+Pythonのデバッグにはmise管理のdebugpyを使い、アダプターと対象プロジェクトのPythonを分離する。[DAPの設定・導入と確認](neovim-dap.md)を参照する。
+
 Pythonはbasedpyrightで型解析・補完・定義ジャンプ、Ruffでlint・import整理・整形を行う。[Pythonの移行と確認手順](python-lsp.md)を参照する。
 
 LSP・整形・プラグインの導入担当、Masonからmiseへの移行条件、環境別の確認範囲は[Neovim依存一覧](neovim-dependencies.md)を参照する。管理ソースからMason依存を除去済みで、移行用の切替指定は不要。設定適用後の通常起動も利用者が確認済みで、既存のMasonデータは保持している。

@@ -27,6 +27,7 @@
 | basedpyrightとRuffの担当・Pythonパス変更・import整理・保存時の処理順序 | `tests/test_python_lsp.py` |
 | Deno・Nodeのルート分岐・バッファごとのWeb整形・Biome起動パス | `tests/test_web_lsp.py` |
 | Neovimの初回取得・失敗終了・一時領域・再試行 | `tests/test_neovim_bootstrap.py` |
+| DAPの設定登録・Lua接続先・Python選択・UIイベント・キー操作 | `tests/test_neovim_dap.py` |
 | mini.testの読み込み・初期化用opts・固定revision | `tests/test_neovim_plugin_tests.py` |
 | 規約のUnicode文字数・リンク・フォルダごとの上限 | `tests/test_instruction_budget.py` |
 

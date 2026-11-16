@@ -268,6 +268,11 @@ systemdの起動は共通前提ではない。`systemd-detect-virt`は存在時�
 - NV-03のMason依存除去：有効なLSP構成と旧_index.luaからMason宣言・初期化・移行用切替・インストール用コマンドを除去し、23サーバー・補完・整形連携を維持した。関連23テストとmake checkのunittest 247件・Bats 18件が成功、skipなし。実Neovimの隔離有効化も成功。既存データは削除せず、[適用後の通常起動確認](../setup/neovim-dependencies.md#利用者による適用と通常起動の確認)を残す。
 - Mason除去の通常起動報告：利用者のLSP・補完・診断・整形は成功したが、Mason読み込み判定はtrue。読み取り比較で展開済みLSP設定3件が旧版であり、Mason宣言・初期化が残っていることを確認した。追加のソース修正や適用操作は行わず、適用後の新規プロセス確認を残す。
 - NV-03の完了確認：利用者が各確認用プロジェクトでLSP接続・実行パス・root、補完・診断・保存時整形の維持とMason読み込み判定falseを確認した。読み取り比較でも展開済みLSP設定3件がソースと一致した。確認済み環境・用途の範囲でNV-03を完了とし、sqlsのDB機能と未確認環境は別途確認、既存Masonデータは保持する。
+- NV-04の再現テスト：fix/neovim-dapで13件を追加し、登録・Luaのtype・Python選択とアダプター・UIイベント・キー操作の11件が失敗、既存動作2件が成功した。設定コードと依存は未変更。make checkは新規11件で失敗し、既存247件と独立実行のBats 18件は成功。[再現記録](../testing/neovim-dap-verification.md)を参照。
+- NV-04の設定修正と依存導入：DAP登録・Python選択・UIイベント・キー操作を修正し、debugpy 1.8.22をPython 3.13.18の専用環境へ導入した。診断用の迂回なしで回帰22件が成功し、全体はunittest 269件・Bats 18件成功、skipなし。Python・Luaの停止・変数取得・ステップ・続行を隔離実確認し、[通常UIの確認](../setup/neovim-dap.md)を残す。設定適用・commit・pushは未実施。
+- NV-04の通常UI確認完了：利用者がTermux + proot Ubuntu・Neovim v0.12.6でPython・Luaの停止・ステップ・変数表示・処理完了、UI表示、必要範囲のF11・F12、ログポイント・REPL、切断・終了の成功を確認した。展開済みDAP設定3件もソースと一致。確認済み環境・用途の範囲でNV-04を完了とする。miseのPythonは既存ツール用に保持し、新規プロジェクトはuvを使う意図を記録した。
+- uv管理Pythonの追加検証：承認されたPython 3.14.10で.venvを作成し、既存のPython 3.13.18/debugpy 1.8.22から停止・各ステップ・変数取得・対象終了コード0を確認した。prootのonly-managed判定による再作成を確認し、検証用設定はmanagedへ変更。アダプター終了コード1が出る場合があり、[通常UIと終了警告の確認](../testing/neovim-uv-python-dap.md)を残す。既存の設定コード・ツールは変更していない。
+- uv管理Pythonの通常UI確認（2026-11-16）：利用者がTermux + proot Ubuntu・Neovim v0.12.6で、uv runの警告・不要な.venv再作成なし、停止・各ステップ・変数表示・対象処理完了、アダプター終了警告なしを確認した。REPLの版は3.14.10、アダプターのlatest実体は1.8.22。通常UIの検証は成功として記録し、過去の隔離実行で出た終了コード1の原因は未特定として残す。別作業のtmux変更は保持。
 
 ### DF-10：Yazi keymapのTOML互換性
 

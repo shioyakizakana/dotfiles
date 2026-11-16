@@ -71,7 +71,7 @@ Rust設定は`rustc`と`cargo`も呼ぶ（`after/lsp/rust_analyzer.lua:22-23,84-
 | クリップボード | `unnamedplus`。OS別providerの明示定義なし | `lua/config/ui.lua:6`。Termux・WSL・SSH・デスクトップで別確認 |
 | SKK | lazy.nvimのskkelua.nvimと`~/.skk/dic/SKK-JISYO.*` | `lua/plugins/completion/skkelua.lua:8-15`。辞書取得定義は今回の管理ソースでは見つからない。rank.jsonは利用時の保存データとして内容を読まない |
 | 補完用辞書 | 管理ソースの`dict/user_dict.txt` | `lua/plugins/completion/sources.lua:49-50`。実機の個人辞書は読まない |
-| Python DAP | Python実行環境とデバッグアダプター | `lua/plugins/dap/adapters.lua:19-37`。pythonアダプターの登録とdebugpyの導入定義は見つからない |
+| Python DAP | miseのpipx:debugpy専用環境と、プロジェクト側の対象Python | dap/adapters.lua。debugpy-adapterをPATHから起動し、対象はvenv・.venv・PATHで選ぶ。[導入と確認](neovim-dap.md) |
 | Lua DAP | lazy.nvimのone-small-step-for-vimkindとnluaアダプター | 同ファイル3-17行。実接続・API互換性は未確認 |
 
 ## プラグイン本体とビルドはlazy.nvimが担当する
@@ -106,14 +106,14 @@ UbuntuのAPT定義にはbuild-essential・cmake・makeがあるが、全プラ�
 
 ## 修正候補と推奨順序
 
-NV-01はソース修正済み。利用者から設定の実適用成功報告があり、初回取得・失敗復旧の実機確認は残る。NV-02は導入定義とVue連携を修正済み。利用者から4ツールの導入成功報告があり、Svelteは下記の復旧手順で実導入と隔離起動を確認した。Vueは利用者の通常操作と依存追加後の診断確認が成功した。NV-03は主力言語・汎用LSP・追加5サーバーの段階的な確認まで対応済み。Web分岐とBiome起動は利用者が確認し、Tailwindの依存を備えた構成の通常UI確認も成功し、Mason参照の除去はソースで対応済み。NV-03は確認済みの範囲で完了し、sqlsのDB機能と未確認環境は別途の確認対象として残す。NV-04〜NV-06は未実装。ソース上の事実と、ダミーで再現した不具合、通常設定での実機確認を区別する。
+NV-01はソース修正済み。利用者から設定の実適用成功報告があり、初回取得・失敗復旧の実機確認は残る。NV-02は導入定義とVue連携を修正済み。利用者から4ツールの導入成功報告があり、Svelteは下記の復旧手順で実導入と隔離起動を確認した。Vueは利用者の通常操作と依存追加後の診断確認が成功した。NV-03は主力言語・汎用LSP・追加5サーバーの段階的な確認まで対応済み。Web分岐とBiome起動は利用者が確認し、Tailwindの依存を備えた構成の通常UI確認も成功し、Mason参照の除去はソースで対応済み。NV-03は確認済みの範囲で完了し、sqlsのDB機能と未確認環境は別途の確認対象として残す。NV-04は設定修正・依存導入と、確認済み環境での通常UI確認まで完了した。NV-05・NV-06は未実装。ソース上の事実と、ダミーで再現した不具合、通常設定での実機確認を区別する。
 
 | ID | 重要度・工数 | 区分・現状 | 次の作業と受け入れ条件 |
 | --- | --- | --- | --- |
 | NV-01 | Medium / Small | 信頼性・ソース修正済み。利用者から設定の適用成功報告あり。修正前の取得失敗時に未定義の`out`を表示してエラーになることをダミーで再現した | 同じ親ディレクトリの一時領域へ取得し、成功後に配置する。失敗時は自分の一時領域だけを削除して非0で終了する。回帰テスト10件が成功。実通信と実機確認は未実施 |
 | NV-02 | Medium / Medium | DF-09後続・実機確認中。承認されたmise定義5件とVue/vtsls連携を追加 | 回帰テスト8件が成功。その後Svelteの実導入と隔離LSPを確認。主要言語の接続とBiomeのフォルダ内・別cwdでの起動は利用者が確認済み。残る追加サーバーと環境別の範囲はNV-03で整理する |
 | NV-03 | Medium / Medium | 完了（確認済み環境・用途の範囲）。Mason依存宣言・setup・移行用切替を除去 | 23サーバーの登録と補完・整形を回帰検証。利用者が各確認用プロジェクトで接続・実行パス・root・補完・診断・保存時整形の維持とMason未読み込みを確認。sqlsのDB機能と他環境は未検証として残し、既存Masonデータは保持 |
-| NV-04 | Medium / Medium | 信頼性・潜在的リスク。DAPに`dap.configuration`・`tyoe`があり、Pythonのパス連結に区切り不足、fallbackが`usr/bin/python`。pythonアダプター定義もない（`lua/plugins/dap/adapters.lua:3-37`） | 採用するnvim-dap APIとPythonアダプターの担当を確定する。モックで設定登録を再現し、空白を含む仮想環境パス、未導入時の案内、Lua接続設定を検証する |
+| NV-04 | Medium / Medium | 完了（確認済み環境・用途）。登録・Python選択・UIイベント・キー操作を修正しdebugpyを導入 | 回帰22件と全体unittest 269件・Bats 18件が成功。利用者がPython・Luaの停止・ステップ・変数表示・処理完了・UI・キー操作・正常終了を確認。[結果](../testing/neovim-dap-verification.md#通常uiの確認完了2026-11-15)を参照。他環境やPython版は別途確認 |
 | NV-05 | Medium / Medium | DF-06後続・再現性。Neovimはlatest、lazy.nvimはstable、lazy-lock.jsonは除外 | 実機で動く組合せを記録し、Neovim本体と公開プラグインの固定・復元を設計する。既存lockfileを無断で上書きせず、個人依存の扱いを先に決める |
 | NV-06 | Low / Small | 保守性・改善提案。現在importされない旧LSP・整形・SKK設定が残る | NV-03後に用途を確認し、維持・整理を選ぶ。現行importから未使用設定を呼ばないことを確認する |
 
@@ -341,3 +341,19 @@ NV-03は、これまでに確認したTermux + proot Ubuntu・Neovim v0.12.6と�
 本ブランチの作業は、依存整理・導入処理の修正と、確認済み環境・用途でのNV-03完了までとする。NV-04のDAP修正、NV-05のバージョン固定・復元設計、NV-06の旧設定整理は別の作業ブランチで再開する。
 
 sqlsのDB機能、他環境での導入・起動、NV-01の実際の初回取得・失敗復旧は未検証事項として保持する。これらを本ブランチで確認済みとは扱わず、必要な環境・依存・通信・認証の条件を決めて個別に進める。既存のMasonデータや個人のlockfileはそのまま保持する。
+
+## NV-04の不具合再現（2026-11-15）
+
+別ブランチfix/neovim-dapで、DAPの読み込み・Lua設定・Python選択・UIイベント・キー操作をモックで再現した。13件中2件成功・11件失敗で、設定コードは未修正。make checkは新規DAPテストの失敗で停止し、既存247件は成功、Bats 18件も独立実行で成功した。[再現方法・診断用互換処理・次の修正](../testing/neovim-dap-verification.md)を参照する。
+
+## NV-04の修正と依存導入（2026-11-15）
+
+DAPの設定登録、Pythonのアダプターと対象Pythonの選択、UIイベント、関数キーと重複キーを修正した。miseへdebugpyの定義を追加し、アダプターはPython 3.13を指定する。承認されたdebugpy 1.8.22を専用環境へ導入し、Python・Luaの実接続が隔離環境で成功した。
+
+回帰22件、make checkのunittest 269件・Bats 18件が成功し、skipなし。[設定・適用・手動確認](neovim-dap.md)と[再現から修正後までの記録](../testing/neovim-dap-verification.md)を参照する。利用者が適用後の通常UIも確認し、NV-04は確認済み環境・用途の範囲で完了した。Codexによる実環境へのchezmoi適用やcommit・pushは行っていない。
+
+## uv管理Pythonの追加検証（2026-11-15）
+
+既存のdebugpy 1.8.22・Python 3.13.18を維持し、uv管理Python 3.14.10の.venvを実デバッグした。停止・各ステップ・変数取得・対象終了コード0が成功。prootのonly-managed判定で.venv再作成を確認し、検証用プロジェクトはmanagedへ調整した。最後の実行ではアダプター終了コード1があり、通常UI確認と終了警告の調査を残す。[詳細](../testing/neovim-uv-python-dap.md)を参照する。NV-04の従来構成での完了と、新しい版の追加検証の残件を区別する。
+
+2026-11-16の利用者報告では、uv管理Pythonの通常UIでも停止・各ステップ・変数表示・処理完了が成功し、起動警告・不要な.venv再作成・アダプター終了警告はなかった。[追加検証の通常UI結果](../testing/neovim-uv-python-dap.md#通常uiの確認結果2026-11-16)を記録した。確認済み環境・用途での検証は完了とし、過去の終了コード1の原因や他環境は別途の確認対象とする。
