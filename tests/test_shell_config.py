@@ -106,6 +106,58 @@ class ShellConfigTests(unittest.TestCase):
             capture_output=True, text=True, timeout=10,
         )
 
+    def test_snapshot_function_preserves_arguments_and_exit_status(self):
+        script = self.local_bin / "nvim-snapshot.py"
+        script.write_text("# fixture\n")
+        self.stub("python3", 'printf "<%s>\n" "$@"\nexit 23\n')
+        for shell in ("bash", "zsh"):
+            with self.subTest(shell=shell):
+                result = self.run_shell(shell, "nvim_snapshot save --note 'spaces and $(literal)' ''")
+                self.assertEqual(result.returncode, 23, result.stderr)
+                self.assertEqual(result.stdout.splitlines(), [f"<{script}>", "<save>", "<--note>", "<spaces and $(literal)>", "<>"])
+
+    def test_snapshot_function_handles_missing_python_or_script(self):
+        for shell in ("bash", "zsh"):
+            with self.subTest(shell=shell):
+                result = self.run_shell(shell, f'PATH={shlex.quote(str(self.bin))}\nprintf "%s\\n" "$TEST_STARTUP_STATUS"; nvim_snapshot list')
+                self.assertEqual(result.returncode, 127)
+                self.assertEqual(result.stdout.strip(), "0")
+                self.assertIn("Python", result.stderr)
+        self.stub("python3", 'exit 99\n')
+        for shell in ("bash", "zsh"):
+            result = self.run_shell(shell, 'nvim_snapshot list')
+            self.assertEqual(result.returncode, 127)
+            self.assertIn("nvim-snapshot.py", result.stderr)
+
+    def test_snapshot_definition_is_repeatable_without_running_cli_or_changing_shell(self):
+        self.stub("python3", 'printf "UNEXPECTED\n" >> "$TRACE"\n')
+        for shell in ("bash", "zsh"):
+            with self.subTest(shell=shell):
+                self.trace.write_text("")
+                result = self.run_shell(shell, 'before_pwd=$PWD; before_umask=$(umask); before_path=$PATH; before_options=$-\n. "$HOME/.config/shell/functions.sh"\n. "$HOME/.config/shell/functions.sh"\n[ "$PWD" = "$before_pwd" ] && [ "$(umask)" = "$before_umask" ] && [ "$PATH" = "$before_path" ] && [ "$-" = "$before_options" ]')
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertNotIn("同名", result.stderr)
+                self.assertNotIn("UNEXPECTED", self.trace.read_text())
+
+    def test_existing_legacy_snapshot_function_is_preserved(self):
+        legacy = self.home / "scripts/shell/funciton.sh"
+        legacy.parent.mkdir(parents=True)
+        legacy.write_text('nvim_snapshot() { printf "legacy\\n"; }\n')
+        for shell in ("bash", "zsh"):
+            with self.subTest(shell=shell):
+                result = self.run_shell(shell, 'nvim_snapshot')
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout.strip(), "legacy")
+                self.assertIn("同名", result.stderr)
+
+    def test_snapshot_git_ignore_is_explicit_without_ignoring_cli(self):
+        git = shutil.which("git")
+        result = subprocess.run([git, "check-ignore", "--no-index", "--stdin"], cwd=ROOT,
+                                input="home/dot_config/nvim/lazy-lock.json\nhome/dot_local/bin/executable_nvim-snapshot.py\n",
+                                capture_output=True, text=True, timeout=5)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.splitlines(), ["home/dot_config/nvim/lazy-lock.json"])
+
     def test_missing_legacy_file_does_not_cause_startup_error(self):
         for shell in ("bash", "zsh"):
             with self.subTest(shell=shell):

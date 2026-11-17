@@ -22,6 +22,7 @@ BASH_FILES = (
     "home/.chezmoiscripts/run_after_install-mise.sh",
     "home/dot_config/shell/env.sh",
     "home/dot_config/shell/aliases.sh",
+    "home/dot_config/shell/functions.sh",
     "home/dot_local/bin/executable_update_apps",
     "home/dot_local/bin/executable_update-agent-skills",
     "home/dot_local/bin/executable_textlint-ja",

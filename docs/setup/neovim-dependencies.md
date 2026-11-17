@@ -14,7 +14,7 @@ Masonからmiseへの段階的な移行を進めるため、管理ソースに�
 
 | 処理・依存 | 現在の担当と根拠 | 移行時の扱い |
 | --- | --- | --- |
-| Neovim本体 | `home/dot_config/mise/config.toml:42`の`neovim = "latest"` | 起動・LSP・補完の組合せを確認してから固定候補を選ぶ |
+| Neovim本体 | `home/dot_config/mise/config.toml:43`の`neovim = "latest"` | 固定せず、miseの一括更新時に他ツールとともに最新版へ更新する |
 | 起動順序 | `init.lua`→`lua/config/init.lua`→`lua/config/lazy.lua` | base・indent・ui・keymaps・filetypeもプラグインより先に読む |
 | lazy.nvim | `lua/config/lazy.lua:1-41`で不足時にGit clone、`stable`ブランチ | 他プラグインの導入はlazy.nvim。miseへ移さない |
 | プラグイン更新確認 | 同ファイル末尾の`checker = { enable = true }` | オフライン検証では実行しない |
@@ -106,7 +106,7 @@ UbuntuのAPT定義にはbuild-essential・cmake・makeがあるが、全プラ�
 
 ## 修正候補と推奨順序
 
-NV-01はソース修正済み。利用者から設定の実適用成功報告があり、初回取得・失敗復旧の実機確認は残る。NV-02は導入定義とVue連携を修正済み。利用者から4ツールの導入成功報告があり、Svelteは下記の復旧手順で実導入と隔離起動を確認した。Vueは利用者の通常操作と依存追加後の診断確認が成功した。NV-03は主力言語・汎用LSP・追加5サーバーの段階的な確認まで対応済み。Web分岐とBiome起動は利用者が確認し、Tailwindの依存を備えた構成の通常UI確認も成功し、Mason参照の除去はソースで対応済み。NV-03は確認済みの範囲で完了し、sqlsのDB機能と未確認環境は別途の確認対象として残す。NV-04は設定修正・依存導入と、確認済み環境での通常UI確認まで完了した。NV-05・NV-06は未実装。ソース上の事実と、ダミーで再現した不具合、通常設定での実機確認を区別する。
+NV-01はソース修正済み。利用者から設定の実適用成功報告があり、初回取得・失敗復旧の実機確認は残る。NV-02は導入定義とVue連携を修正済み。利用者から4ツールの導入成功報告があり、Svelteは下記の復旧手順で実導入と隔離起動を確認した。Vueは利用者の通常操作と依存追加後の診断確認が成功した。NV-03は主力言語・汎用LSP・追加5サーバーの段階的な確認まで対応済み。Web分岐とBiome起動は利用者が確認し、Tailwindの依存を備えた構成の通常UI確認も成功し、Mason参照の除去はソースで対応済み。NV-03は確認済みの範囲で完了し、sqlsのDB機能と未確認環境は別途の確認対象として残す。NV-04は設定修正・依存導入と、確認済み環境での通常UI確認まで完了した。NV-05はPython CLI・共通関数・Git除外を実装し、実機の保存・復元準備と一時領域への原本復元を確認した。利用者がLazy restore後の主要機能も確認した。NV-06は未実装。ソース上の事実と、ダミーで再現した不具合、通常設定での実機確認を区別する。
 
 | ID | 重要度・工数 | 区分・現状 | 次の作業と受け入れ条件 |
 | --- | --- | --- | --- |
@@ -114,7 +114,7 @@ NV-01はソース修正済み。利用者から設定の実適用成功報告が
 | NV-02 | Medium / Medium | DF-09後続・実機確認中。承認されたmise定義5件とVue/vtsls連携を追加 | 回帰テスト8件が成功。その後Svelteの実導入と隔離LSPを確認。主要言語の接続とBiomeのフォルダ内・別cwdでの起動は利用者が確認済み。残る追加サーバーと環境別の範囲はNV-03で整理する |
 | NV-03 | Medium / Medium | 完了（確認済み環境・用途の範囲）。Mason依存宣言・setup・移行用切替を除去 | 23サーバーの登録と補完・整形を回帰検証。利用者が各確認用プロジェクトで接続・実行パス・root・補完・診断・保存時整形の維持とMason未読み込みを確認。sqlsのDB機能と他環境は未検証として残し、既存Masonデータは保持 |
 | NV-04 | Medium / Medium | 完了（確認済み環境・用途）。登録・Python選択・UIイベント・キー操作を修正しdebugpyを導入 | 回帰22件と全体unittest 269件・Bats 18件が成功。利用者がPython・Luaの停止・ステップ・変数表示・処理完了・UI・キー操作・正常終了を確認。[結果](../testing/neovim-dap-verification.md#通常uiの確認完了2026-11-15)を参照。他環境やPython版は別途確認 |
-| NV-05 | Medium / Medium | DF-06後続・再現性。Neovimはlatest、lazy.nvimはstable、lazy-lock.jsonは除外 | 実機で動く組合せを記録し、Neovim本体と公開プラグインの固定・復元を設計する。既存lockfileを無断で上書きせず、個人依存の扱いを先に決める |
+| NV-05 | Medium / Medium | 完了（確認済み環境・用途）。スナップショット運用と実復旧後の主要機能を確認 | Neovim本体はlatestを維持し、miseの一括更新に含める。他環境と取得元消失時の復旧は別途確認 |
 | NV-06 | Low / Small | 保守性・改善提案。現在importされない旧LSP・整形・SKK設定が残る | NV-03後に用途を確認し、維持・整理を選ぶ。現行importから未使用設定を呼ばないことを確認する |
 
 NV-01の修正後は、NV-02→NV-03の順で移行する。NV-04は別PRで並行可能。NV-05の版選定は設定と主要機能を確認した後に行う。Mason併存そのものを不具合として扱わず、移行中の状態として維持する。
@@ -357,3 +357,212 @@ DAPの設定登録、Pythonのアダプターと対象Pythonの選択、UIイベ
 既存のdebugpy 1.8.22・Python 3.13.18を維持し、uv管理Python 3.14.10の.venvを実デバッグした。停止・各ステップ・変数取得・対象終了コード0が成功。prootのonly-managed判定で.venv再作成を確認し、検証用プロジェクトはmanagedへ調整した。最後の実行ではアダプター終了コード1があり、通常UI確認と終了警告の調査を残す。[詳細](../testing/neovim-uv-python-dap.md)を参照する。NV-04の従来構成での完了と、新しい版の追加検証の残件を区別する。
 
 2026-11-16の利用者報告では、uv管理Pythonの通常UIでも停止・各ステップ・変数表示・処理完了が成功し、起動警告・不要な.venv再作成・アダプター終了警告はなかった。[追加検証の通常UI結果](../testing/neovim-uv-python-dap.md#通常uiの確認結果2026-11-16)を記録した。確認済み環境・用途での検証は完了とし、過去の終了コード1の原因や他環境は別途の確認対象とする。
+
+
+## NV-05のスナップショット設計（2026-11-17）
+
+以下は初期設計。利用者の方針に合わせ、公開プラグインを常時固定する方式から、必要時に構成を保存する方式へ変更した。Python CLIの実装状況は末尾に記載する。実機のlockfileは読んでいない。
+
+### 方針と既存構成
+
+普段は各環境でプラグインを更新し、LSP・補完・Treesitter等の変更前に手動で保存する。スナップショットと設定のGit履歴を組み合わせて復旧する。Neovim本体や外部ツールの固定は別途判断し、この設計で版を変更しない。
+
+- `home/.chezmoiignore`は`.config/nvim/lazy-lock.json`を展開対象から除外している。これはGitの除外設定とは異なるため、実装時にソース側の`/home/dot_config/nvim/lazy-lock.json`も`.gitignore`へ明示する。既存のchezmoi除外は維持する。
+- Bashは`home/dot_bashrc`、Zshは`home/dot_zsh/path.zsh`から共通の`home/dot_config/shell/env.sh`を読む。共通関数の定義をここから読み込めば、Zshだけのfunctionsディレクトリへ重複配置せずに済む。
+- 旧手動配置の`~/scripts/shell/funciton.sh`は互換処理として維持し、今回の機能を追加しない。既存関数との名前の衝突時は上書きせず警告する。
+
+### 保存先とファイル構成
+
+保存先は`${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles/neovim-snapshots/<app>/`を提案する。`app`は`NVIM_APPNAME`、未設定・空なら`nvim`とし、初期実装では単一のディレクトリ名だけを受け付ける。環境名の任意ラベルは記録用であり、chezmoiの環境判定には使わない。
+
+```text
+~/.local/state/dotfiles/neovim-snapshots/nvim/
+  20261116T130000Z-a1b2c3d4/
+    lazy-lock.json
+    metadata.json
+```
+
+IDはUTC日時とランダム値で作り、同時保存と同秒保存でも既存データを上書きしない。メモやホスト名をパスに使わない。XDGの指定は絶対パスに限り、保存先がdotfilesのソース内になる指定は拒否する。プロファイルが同じでも、HOMEを共有する環境は同じ保存領域を使うため、必要ならラベルで区別する。
+
+スナップショット専用ディレクトリ以下は0700、ファイルは0600で作る。XDG_STATE_HOMEとdotfilesの共用親は本人所有かつ他者の書き込み不可とし、読み取り・通過権限は許容する。条件に合わない既存領域の権限は自動変更せずエラーにする。保存先のシンボリックリンクによる意図しない書き込みを拒否し、Termuxでもアプリ専用領域を使う。共有ストレージや一時領域へは置かない。自動削除・世代数制限・クラウド同期は初期実装に含めない。
+
+### 記録形式
+
+`lazy-lock.json`は読み取ったバイト列をそのまま保存する。JSONがオブジェクトであることと、各エントリーのbranch・commitの形式を検証する。独自項目があっても書き換えない。想定外の形式は保存前に理由を示して止める。形式の細部は実装前に対象lazy.nvimの仕様を確認する。
+
+`metadata.json`はUTF-8のJSONとし、次の項目を記録する。
+
+| 項目 | 内容 |
+| --- | --- |
+| `schema_version` | 初版は1。対応しない版は読み取りを止める |
+| `id` / `created_at` | ディレクトリIDとUTCのISO 8601日時 |
+| `label` / `note` | 利用者が明示した環境ラベルとメモ。省略可能 |
+| `app_name` / `platform` / `architecture` | アプリ名・OS・CPU。ホスト名や環境変数一覧は取得しない |
+| `lockfile` | 元ファイルの絶対パス・SHA256・バイト数・エントリー数 |
+| `dotfiles` | 明示されたソースのコミットID、追跡対象の変更有無、未追跡ファイルの有無 |
+| `neovim` | PATH上の実行ファイルのパスと`nvim --version`の先頭行 |
+| `lazy_nvim` | 実配置先とGitコミットID。取得できなければnullと理由 |
+| `config_application` | 常に`unverified`。ソースと展開済み設定の一致を保証しない |
+| `warnings` | 未コミット変更・取得できない版情報等の説明 |
+
+GitからはコミットIDと変更有無だけを取り、差分本文・未追跡ファイルの内容・リモートURLを保存しない。statusではfsmonitor等の外部補助処理とインデックス更新を無効にする。変更がある場合も保存は可能とするが、コミットだけでは設定を再現できない旨を表示する。大きな変更前には設定のコミットも推奨する。
+
+版取得は通常のNeovim起動を使わず、`--version`とローカルGit参照だけで行う。版情報が不足した場合も、有効なlockfileと設定コミットがあれば警告付きで保存する。プラグインの実配置とlockfileの一致、パーサー・LSP・ビルド成果物の版は確認済みと扱わない。
+
+### 共通関数とCLI
+
+関数名は`nvim_snapshot`、実処理は`nvim-snapshot.py`とする案。共通関数は実行ファイルの存在を確認し、引数をそのまま渡して終了コードを返す。source時にコマンドを実行せず、PATH・カレントディレクトリ・umask・シェルオプションを変更しない。
+
+| 操作例 | 仕様 |
+| --- | --- |
+| `nvim_snapshot save --source /path/to/dotfiles --label proot --note "LSP変更前"` | 対象ソースを必須指定し、無関係な作業ディレクトリのコミットを記録しない。保存成功時はIDと保存先を表示 |
+| `nvim_snapshot list` | 完成した保存データだけを日時順に表示。保存先がなければ作成せず、空一覧で成功 |
+| `nvim_snapshot show ID` | 記録情報と整合性を表示。lockfile本文やプラグイン名一覧は通常出力しない |
+| `nvim_snapshot prepare ID --source /path/to/dotfiles` | 保存時と現在の設定コミット・変更状態・版情報を比較し、復旧手順を表示。ファイルは変更しない |
+
+lockfileの既定値は`${XDG_CONFIG_HOME:-$HOME/.config}/<app>/lazy-lock.json`。lazy.nvimの配置先は`${XDG_DATA_HOME:-$HOME/.local/share}/<app>/lazy/lazy.nvim`を候補とし、実装前に対象版の標準パスと一致するか確認する。独自設定向けに`--lockfile`と`--lazy-dir`の明示指定を用意し、広範囲の探索は行わない。
+
+`save`では元ファイルの内容を一度だけ読み、同じバイト列からJSON検証・SHA256計算・保存を行う。Neovim終了後の保存を推奨し、読み取り中の置換・更新を検出したら再試行を案内する。保存先と同じ親の非公開一時ディレクトリで書き込みを完了し、完成したディレクトリだけを公開する。失敗時は自分の一時領域だけを後始末する。
+
+終了コードは成功0、引数不正2、入出力・形式・整合性の失敗1とする。シェル経由のコマンド文字列やevalを使わず、引数配列で呼び出す。スナップショット内のID・パス・メモを実行命令として使わない。
+
+Pythonは既存テストと同じ3.11以上、標準ライブラリだけを使う。既存のGit・Neovim以外の新しいツールは追加しない。source先の指定によってchezmoi設定の読み取りも不要にする。外部通信、パッケージ操作、秘密情報の取得、プラグインの起動は行わない。
+
+### 復旧と保持する範囲
+
+初期実装は復元準備までとし、自動上書きは行わない。Neovimを終了し、現在の設定変更とlockfileを退避してから、保存したコミットの設定とlockfileを組み合わせて復旧する。Git履歴は破壊せず、設定変更はレビューできる差分としてソースへ戻す。必要な適用・プラグイン取得は利用者が別操作で行う。
+
+スナップショットはプラグイン本体のバックアップではない。取得元の消失、ローカル修正、Treesitterパーサー、外部ツール、ビルド環境の差は復元できない。lazy.nvimのコミットは記録するが自動的に切り替えず、既存配置を保護する。実際の復元コマンドと取得範囲は、対象版の公式資料と隔離環境で確認してから手順へ記載する。
+
+### 実装順序と検証条件
+
+1. `home/dot_local/bin/executable_nvim-snapshot.py`に保存・一覧・詳細表示・復元準備を実装する。JSON・Git・パスの処理をPythonへ集める。
+2. `home/dot_config/shell/functions.sh`に共通関数を置き、`env.sh`から読み込む。`.gitignore`にソース側のlockfile除外を追加する。
+3. `tests/test_neovim_snapshot.py`を追加し、既存`tests/test_shell_config.py`でBash・Zsh双方から同じ引数と終了コードを渡せることを確認する。静的検証の対象一覧へ共通関数を追加する。
+4. 保存・復旧の利用手順と、NV-05の対応状況を更新する。既存テストの成功と実機確認を区別する。
+
+回帰テストは隔離HOME・XDGディレクトリ・ダミーlockfile・一時Gitリポジトリで行う。初期値と独自XDG、空白入りパス、プロファイル、ID衝突、不正なJSON、未知スキーマ、ハッシュ不一致、書き込み失敗、同時保存、元ファイル更新、シンボリックリンク、Git未コミット状態、任意の版情報不足を対象にする。失敗時に既存データを変えないことも確認する。
+
+一覧・表示・復元準備で保存領域や実機lockfileを変更しないこと、関数を繰り返し読み込んでも副作用がないこと、Python不足時もシェル起動が成功することを検証する。Git・Neovimの版取得はモック化し、通信や実プラグイン起動を禁止する。実装後は対象unittest、共通関数の構文・ShellCheck、最後に`make check`を実行する。
+
+Python側の保存・整合性確認と回帰テストを先に実装し、共通シェル関数を後から追加する。実機への配置・適用・保存は別操作とする。
+
+
+### Python CLIの実装（2026-11-17）
+
+`home/dot_local/bin/executable_nvim-snapshot.py`にsave・list・show・prepareを実装した。共通シェル関数は未実装のため、次のコマンドはPythonソースを直接呼ぶ形式。saveは保存領域を作成し、実機lockfileを読むため、今回の自動検証では実行していない。実際に使う場合はNeovimを終了してから呼び出す。
+
+```sh
+python3 home/dot_local/bin/executable_nvim-snapshot.py save --source /absolute/path/to/dotfiles --label proot --note "LSP変更前"
+python3 home/dot_local/bin/executable_nvim-snapshot.py list
+python3 home/dot_local/bin/executable_nvim-snapshot.py show ID
+python3 home/dot_local/bin/executable_nvim-snapshot.py prepare ID --source /absolute/path/to/dotfiles
+```
+
+成功時はJSON、失敗時は標準エラーへ説明を出力する。ファイルは最大8 MiB、メモは4096文字、ラベルは256文字まで。保存先は専用ディレクトリ以下を非公開とし、共用親の所有者と書き込み権限も確認する。条件に合わない既存領域の権限は自動変更せず停止する。ディレクトリFD・リンク拒否・保存時の排他制御を使い、完成前のデータは一覧に出さない。ハッシュは破損検出用であり、記録の作成者を認証するものではない。
+
+Gitはグローバル・システム設定と環境変数による上書きを継承せず、任意ローカル設定への依存を減らした。statusではfsmonitorを無効にし、インデックスの任意更新も止める。版情報はローカルコマンドだけで取得する。実機のlockfile、個人プラグイン、秘密情報は今回の検証対象に含めていない。
+
+回帰テストは`tests/test_neovim_snapshot.py`の30件。偽Git・Neovimと隔離HOMEを使い、保存原本・メタデータ・権限・整合性・異常時の後始末・同時保存・読み取り専用操作を確認した。最終の`make check`はunittest 299件・Bats 18件が成功し、skipなし。追加部分のtextlint・natural-japaneseと`git diff --check`も成功した。実機へのchezmoi適用、追加依存の導入、commit・pushは行っていない。
+
+残りは共通シェル関数、Git除外の明示、通常環境での保存と復旧の確認。Neovim本体の固定と、プラグインの実取得を伴う復旧は、このCLI実装で完了したとは扱わない。
+
+
+### 共通シェル関数と実機確認（2026-11-17）
+
+`home/dot_config/shell/functions.sh`にnvim_snapshotを追加し、共通env.shから読み込むようにした。Bash・ZshのどちらでもPython CLIへ引数と終了コードを渡す。読み込み時にはPythonを起動せず、PythonやCLIが未配置でもシェル起動は継続する。同名コマンドがあれば上書きせず警告する。`.gitignore`にはソース側の`/home/dot_config/nvim/lazy-lock.json`を明示し、chezmoiの既存除外も維持した。
+
+実機の`.local/state/dotfiles`は0755だった。初回の保存は旧チェックで拒否されたため、共用親と専用領域のチェックを分けた。既存の権限は変更していない。親の他者書き込みを拒否することと、保存データを非公開に保つことを回帰テストへ追加した。
+
+| 実機の確認項目 | 結果 |
+| --- | --- |
+| Neovimの版 | NVIM v0.12.6 |
+| 保存ID | 20261117T031547Z-41a4638b |
+| 保存先 | ~/.local/state/dotfiles/neovim-snapshots/nvim/20261117T031547Z-41a4638b |
+| save・list・show・prepare | 成功。ソースのPython CLIから実行 |
+| 保存原本の整合性 | SHA256が元lockfileと一致 |
+| 一時領域への原本復元 | 保存したlockfileをコピーし、SHA256の一致を確認 |
+| 実機lockfile | 上書きせず、確認後もSHA256が同じ |
+| 版情報 | lazy.nvimのコミットも取得できた |
+| 設定との対応 | コミットIDは一致。未コミット変更ありの警告を記録 |
+
+保存データは上記の場所へ残した。プラグイン名やlockfile本文は文書・ログへ出していない。この時点では共通関数を隔離HOMEのBash・Zshで検証し、実機の共通設定は未展開だった。適用後の利用者報告は末尾を参照する。プラグインの実配置、パーサー、ビルド成果物は変更していない。
+
+### 配置と残る手動確認
+
+以下は通常のnvimプロファイルを使う場合の手順。独自XDGやNVIM_APPNAMEがある場合は、保存記録のパスに合わせる。Codexは以下の実適用・上書き・プラグイン取得を実行していない。
+
+1. 実機のenv.shに独自変更がないか、次の限定差分を確認する。問題なければ3ファイルだけを適用し、新しいBashまたはZshを開く。
+
+   ```sh
+   chezmoi diff -- ~/.config/shell/env.sh ~/.config/shell/functions.sh ~/.local/bin/nvim-snapshot.py
+   chezmoi apply --include=files --refresh-externals=never ~/.config/shell/env.sh ~/.config/shell/functions.sh ~/.local/bin/nvim-snapshot.py
+   type nvim_snapshot
+   ```
+
+2. dotfilesのソースをカレントディレクトリにし、次で一覧・整合性・復元準備を確認する。今回の保存時点には未コミット変更があるため、コミットだけで当時の設定を再現できるとは扱わない。
+
+   ```sh
+   nvim_snapshot list
+   nvim_snapshot show 20261117T031547Z-41a4638b
+   nvim_snapshot prepare 20261117T031547Z-41a4638b --source "$PWD"
+   ```
+
+3. 実際のプラグイン復旧を試す場合だけ、Neovimを終了し、現在の設定変更を別途保全する。設定を戻す必要があれば、記録コミットを基準にソースの差分を確認してから修正する。現在のlockfileも次のsaveで退避し、表示された保存IDを控える。
+
+   ```sh
+   nvim_snapshot save --source "$PWD" --note "復旧直前の退避"
+   ```
+
+4. showで整合性を確認した保存データから、lockfileを戻す。次は既存ファイルを上書きする操作なので、手順3の退避とパスを確認してから実行する。
+
+   ```sh
+   cp -- "$HOME/.local/state/dotfiles/neovim-snapshots/nvim/20261117T031547Z-41a4638b/lazy-lock.json" "$HOME/.config/nvim/lazy-lock.json"
+   ```
+
+5. 必要な設定を適用した上でNeovimを開き、`:Lazy restore`を実行する。導入済みlazy.nvimのヘルプでは、lockfileの版へプラグインを戻す操作と説明されている。通信やビルドが発生する可能性がある。通常の起動、LSPの接続・補完・診断、保存時整形、Treesitterの表示、DAPを確認する。
+
+6. 問題があればNeovimを終了し、手順3の保存原本と保全した設定へ戻す。確認した環境・成功・失敗・警告を記録する。現在の配置を削除するLazy cleanや、Git reset等は復旧手順に含めない。
+
+展開後の共通関数は下記の利用者報告で確認した。実プラグインの復旧は未確認として残す。バージョン固定や取得元が失われた場合の復元まで完了したとは扱わない。
+
+今回追加したシェル・Git除外の確認は5件、共用親の権限の確認は2件。最終の`make check`はunittest 306件・Bats 18件が成功し、skipなし。Zsh構文、ShellCheck、shfmt、差分と追加部分のtextlintも成功した。natural-japaneseの語彙反復の指摘は、保存・復元手順の用語を統一するため維持した。commit・pushは行っていない。
+
+
+### 適用後の利用者確認（2026-11-17）
+
+利用者がchezmoi applyで今回の実装を含む変更を実環境へ適用した。その後、type nvim_snapshotと、list・show・prepareの各操作について、警告が出ず、後者3操作が正常に標準出力されたと報告した。Codexによる再実行ではなく、利用者の確認結果として記録する。
+
+共通関数の展開後の呼び出し、一覧表示、保存データの整合性確認、復元準備は確認済みとする。実プラグインの巻き戻し、通信・ビルドを伴う復旧、他環境での動作は未確認のまま残す。正常な環境を確認目的だけで巻き戻す必要はない。保存時の未コミット変更に関する注意も引き続き有効。
+
+今回の更新は文書のみ。コード・依存・実機データは変更せず、前回のmake check成功結果（unittest 306件・Bats 18件、skipなし）を再利用する。commit・pushは行っていない。
+
+
+### Lazy restore後の利用者確認（2026-11-17）
+
+利用者がNeovimを終了し、nvim_snapshot saveで復旧直前のlockfileを退避した。その後、保存ID 20261117T031547Z-41a4638bのlazy-lock.jsonを実機の~/.config/nvim/lazy-lock.jsonへコピーし、起動したNeovimで:Lazy restoreを実行したと報告した。
+
+/tmp以下のテスト用環境で、次の操作を手動確認できる範囲で試し、異常な挙動がないことを確認したとの報告を受けた。
+
+- 通常の起動。
+- LSPの接続・補完・診断。
+- 保存時整形。
+- Treesitterの表示。
+- DAP。
+
+今回の報告は利用者の手動検証であり、Codexによる再実行ではない。スナップショットの保存・復元準備に加え、lockfileを戻してLazy restoreを実行した後の主要機能まで確認済みとする。復旧前後の各プラグインのコミット比較や、新規取得・ビルドの発生有無は報告に含まれないため、確認済みとは扱わない。
+
+上記結果により、プラグインの実復旧操作と、その後の主要機能の確認は残件から外す。Neovim本体の版管理方針、他環境での検証、取得元が失われた場合の復旧は引き続き別途検討する。
+
+今回の変更は文書のみ。既存のmake check成功結果（unittest 306件・Bats 18件、skipなし）を再利用し、コード・依存・実機データの変更、commit・pushは行っていない。
+
+
+### Neovim本体の更新方針とNV-05の完了範囲（2026-11-17）
+
+利用者の方針により、Neovim本体は現時点でバージョン固定せず、miseの一括更新時に他ツールと同時に最新版へ更新する。既存のneovim = "latest"を維持し、版固定の検討をNV-05の残件から外す。home/dot_local/bin/executable_update_appsのmise対象は、すでにHOMEを対象としたmise upgradeを実行するため、コード変更は不要。
+
+プラグインは各環境で更新し、必要時にlockfileを保存する方針を維持する。スナップショットには保存時のNeovimの版を記録するが、本体バイナリの保存や巻き戻しは行わない。
+
+NV-05は、保存CLI・共通関数・Git除外・運用手順の実装と、確認済み環境・用途での保存・復旧・主要機能確認まで完了とする。他環境での検証と、取得元が失われた場合の復旧は別途の確認対象として残す。
+
+今回の変更は更新方針と完了範囲の文書化のみ。実際のmise更新、コード・設定の変更、commit・pushは行っていない。

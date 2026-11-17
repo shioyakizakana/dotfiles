@@ -48,3 +48,8 @@ fi
 
 export LANG=ja_JP.UTF-8
 export LANGUAGE=ja_JP:ja
+
+if [ -r "$HOME/.config/shell/functions.sh" ]; then
+  # shellcheck source=/dev/null
+  . "$HOME/.config/shell/functions.sh"
+fi
