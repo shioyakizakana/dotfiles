@@ -9,7 +9,8 @@
 | 変更対象 | 対応するテストファイル |
 | --- | --- |
 | 初期設定・環境フラグ・ignore・tmux・スキルの展開範囲 | `tests/test_environment_policy.py` |
-| Bash・Zshの共通環境・PATH・エイリアス・起動設定 | `tests/test_shell_config.py` |
+| Bash・Zshの共通環境・PATH・エイリアス・共通関数・起動設定 | `tests/test_shell_config.py` |
+| Neovimのlockfile保存・整合性・読取専用の復元準備 | `tests/test_neovim_snapshot.py` |
 | Zshプラグイン・Yazi初期化・textlintの任意依存 | `tests/test_optional_dependencies.py` |
 | YaziのTOML互換性・キー定義・公開依存manifestの固定と対応 | `tests/test_yazi_config.py` |
 | 基礎ツールbootstrap | `tests/test_bootstrap_tools.py` |
