@@ -24,3 +24,6 @@
 # 端末固有のlefthook設定は共有しない。
 /lefthook-local.yml
 
+
+# Neovimのlockfileは環境ごとに保持し、必要時にGit管理外へ保存する。
+/home/dot_config/nvim/lazy-lock.json
