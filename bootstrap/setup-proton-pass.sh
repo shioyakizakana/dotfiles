@@ -105,6 +105,12 @@ check_keyring_environment() {
 }
 
 initialize_environment() {
+  profile=global
+  if [[ "${1:-}" == --profile ]]; then
+    (($# >= 2)) && [[ -n "$2" ]] || die '--profileには名前が必要です'
+    profile="$2"
+    shift 2
+  fi
   local cli_provider="${1:-}" env_provider="${PROTON_PASS_KEY_PROVIDER:-}"
   (($# <= 1)) || die '引数が多すぎます。使用方法: %s [env|keyring]' "$0"
   if [[ -n "$cli_provider" && -n "$env_provider" && "$cli_provider" != "$env_provider" ]]; then
@@ -124,13 +130,24 @@ initialize_environment() {
   [[ "$configured_provider" == env || "$configured_provider" == keyring ]] || die 'chezmoiのproviderが不正です'
   linux_env="${LINUX_ENV:-$configured_env}"
   [[ "$linux_env" == "$configured_env" ]] || die 'LINUX_ENVとchezmoiの実行環境が一致しません'
-  provider="$(resolve_provider "$linux_env" "${cli_provider:-${env_provider:-$configured_provider}}")" || die 'プロバイダーの決定に失敗しました'
-  [[ "$provider" == "$configured_provider" ]] || die 'プロバイダー不一致: Bootstrap=%s、chezmoi=%s' "$provider" "$configured_provider"
+  if [[ "$profile" == global ]]; then
+    provider="$(resolve_provider "$linux_env" "${cli_provider:-${env_provider:-$configured_provider}}")" || die 'プロバイダーの決定に失敗しました'
+    [[ "$provider" == "$configured_provider" ]] || die 'プロバイダー不一致: Bootstrap=%s、chezmoi=%s' "$provider" "$configured_provider"
+  else
+    [[ "${cli_provider:-${env_provider:-env}}" == env ]] || die 'プロジェクトではenvのみを使用します'
+    provider='env'
+  fi
   if [[ "$provider" == keyring ]]; then
     check_keyring_environment || die 'Keyringの利用条件を満たしていません'
   fi
 
-  readonly DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/proton-pass"
+  local data_dir="${XDG_DATA_HOME:-$HOME/.local/share}/proton-pass"
+  if [[ "$profile" != global ]]; then
+    require python3
+    data_dir="$(python3 "$REPO_ROOT/home/dot_local/bin/private_executable_proton-pass-key-cache.py.tmpl" --profile "$profile" configure)" ||
+      die 'プロジェクトの保存先を準備できませんでした'
+  fi
+  readonly DATA_DIR="$data_dir"
   readonly AGE_IDENTITY_DIR="${AGE_IDENTITY_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/age}"
   readonly AGE_IDENTITY_FILE="${AGE_IDENTITY_FILE:-$AGE_IDENTITY_DIR/id_proton_pat.age}"
   readonly RECIPIENT_FILE="${AGE_RECIPIENT_FILE:-$AGE_IDENTITY_DIR/proton-pass-recipient.txt}"
@@ -150,8 +167,13 @@ initialize_environment() {
 
 # bootstrapの同時実行を防ぐ。fd 9 は終了時に閉じられ、ロックが解除される。
 acquire_setup_lock() {
-  install -d -m 700 "$DATA_DIR"
+  if [[ "$profile" == global ]]; then
+    install -d -m 700 "$DATA_DIR"
+  fi
   local lock_file="$DATA_DIR/.setup-proton-pass.lock"
+  if [[ "$profile" != global ]]; then
+    lock_file="$DATA_DIR/.cli.lock"
+  fi
   [[ ! -L "$lock_file" ]] || die 'ロックファイルにシンボリックリンクは使用できません'
   exec 9>"$lock_file"
   flock -n 9 || die '別のbootstrapが実行中です'
@@ -187,7 +209,9 @@ write_recipient_once() (
 
 initialize_age_identity() {
   local recovered first_line
-  install -d -m 700 "$DATA_DIR" "$(dirname -- "$AGE_IDENTITY_FILE")" "$(dirname -- "$RECIPIENT_FILE")"
+  if [[ "$profile" == global ]]; then
+    install -d -m 700 "$DATA_DIR" "$(dirname -- "$AGE_IDENTITY_FILE")" "$(dirname -- "$RECIPIENT_FILE")"
+  fi
   [[ ! -L "$AGE_IDENTITY_FILE" && ! -L "$RECIPIENT_FILE" ]] || die 'identity/recipientにシンボリックリンクは使用できません'
 
   if [[ -e "$LEGACY_IDENTITY" && "$LEGACY_IDENTITY" != "$AGE_IDENTITY_FILE" && ! -e "$AGE_IDENTITY_FILE" ]]; then
@@ -261,6 +285,11 @@ initialize_secrets() {
 
 run_authenticated_setup() (
   local token encryption_key
+  exec 9>&-
+  unset PROTON_PASS_PERSONAL_ACCESS_TOKEN PROTON_PASS_ENCRYPTION_KEY
+  if [[ "$profile" != global ]]; then
+    export PROTON_PASS_SESSION_DIR="$DATA_DIR/cli"
+  fi
   # bootstrapは復号結果をキャッシュしないため、envではパスフレーズ入力が複数回発生する。
   token="$(age -d -i "$AGE_IDENTITY_FILE" "$PAT_FILE")" || die 'PATの復号に失敗しました'
   [[ -n "$token" ]] || die '復号したPATが空です'

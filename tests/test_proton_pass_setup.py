@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+import sys
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -114,6 +115,99 @@ main "$@"
     def test_unavailable_keyring_stops_before_secret_operations(self):
         self.assert_stopped_before_secrets(self.run_setup(SETTINGS="wsl-ubuntu keyring", KEYRING_EXIT="1"))
 
+    def project_fixture(self):
+        helper = self.repo / "home/dot_local/bin/private_executable_proton-pass-key-cache.py.tmpl"
+        helper.parent.mkdir(parents=True)
+        shutil.copyfile(ROOT / "home/dot_local/bin/private_executable_proton-pass-key-cache.py.tmpl", helper)
+        (self.bin / "python3").symlink_to(sys.executable)
+        identity = Path(self.env["HOME"]) / ".local/share/age/id_proton_pat.age"
+        identity.parent.mkdir(parents=True)
+        identity.write_text("dummy encrypted identity")
+        identity.chmod(0o600)
+        return identity
+
+    def test_project_bootstrap_uses_env_without_changing_global_keyring(self):
+        identity = self.project_fixture()
+        for _ in range(2):
+            self.trace.write_text("")
+            result = self.run_setup("--profile", "demo", SETTINGS="wsl-ubuntu keyring")
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertNotIn("keyring-check", self.trace.read_text())
+            self.assertIn("wsl-ubuntu env", result.stdout)
+        data = Path(self.env["HOME"]) / ".local/share/proton-pass"
+        self.assertTrue((data / "projects/demo/cli").is_dir())
+        self.assertFalse((data / "token.age").exists())
+        self.assertEqual(identity.read_text(), "dummy encrypted identity")
+
+    def test_project_bootstrap_rejects_invalid_name_or_provider_before_secrets(self):
+        self.project_fixture()
+        for arguments in (("--profile", "../escape"), ("--profile", "demo", "keyring"),
+                          ("--profile", ""), ("--profile", "demo", "--profile", "other")):
+            with self.subTest(arguments=arguments):
+                self.trace.write_text("")
+                self.assert_stopped_before_secrets(self.run_setup(*arguments))
+
+    def test_project_bootstrap_requires_existing_shared_identity(self):
+        identity = self.project_fixture()
+        identity.unlink()
+        self.assert_stopped_before_secrets(self.run_setup("--profile", "demo"))
+
+    def test_project_authenticated_setup_selects_session_and_excludes_pat_from_info(self):
+        data = self.base / "dummy project"
+        self.stub("age", 'case "$*" in *token.age) printf "dummy-pat" ;; *) printf "%064d" 0 ;; esac\n')
+        self.stub("pass-cli", 'printf "%s %s %s\\n" "$*" "$PROTON_PASS_SESSION_DIR" "${PROTON_PASS_PERSONAL_ACCESS_TOKEN:-absent}" >> "$TRACE"\n')
+        result = subprocess.run(
+            [BASH, "-c", 'source "$1"; profile=demo; provider=env; DATA_DIR="$2"; AGE_IDENTITY_FILE=/dummy/identity; PAT_FILE=/dummy/token.age; ENCRYPTION_FILE=/dummy/key.age; run_authenticated_setup',
+             "test", str(self.script), str(data)],
+            env={**self.env, "PROTON_PASS_PERSONAL_ACCESS_TOKEN": "inherited-dummy-pat"},
+            capture_output=True, text=True, timeout=10,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.trace.read_text().splitlines(),
+                         [f"login {data}/cli dummy-pat", f"info {data}/cli absent"])
+
+    @unittest.skipUnless(CHEZMOI, "chezmoiが必要です")
+    def test_wrapper_routes_project_and_explicit_global_without_ambient_selection(self):
+        source = self.base / "empty-source"
+        source.mkdir()
+        config = self.base / "config.json"
+        config.write_text(json.dumps({"data": {"protonPassProvider": "keyring"}}))
+        rendered = subprocess.run(
+            [CHEZMOI, "--config", str(config), "--source", str(source),
+             "--destination", self.env["HOME"], "--cache", str(self.base / "cache"),
+             "--persistent-state", str(self.base / "state.db"),
+             "--refresh-externals=never", "execute-template"],
+            input=(ROOT / "home/dot_local/bin/executable_proton-pass.tmpl").read_text(),
+            env=self.env, capture_output=True, text=True, timeout=10,
+        )
+        self.assertEqual(rendered.returncode, 0, rendered.stderr)
+        wrapper = self.base / "wrapper"
+        wrapper.write_text(rendered.stdout)
+        helper = Path(self.env["HOME"]) / ".local/bin/proton-pass-key-cache.py"
+        helper.parent.mkdir(parents=True)
+        helper.write_text(f'#!{BASH}\nprintf "helper %s\\n" "$*" >> "$TRACE"\n')
+        helper.chmod(0o755)
+        (self.bin / "python3").symlink_to(sys.executable)
+        self.stub("pass-cli", 'printf "cli %s\\n" "$*" >> "$TRACE"\n')
+        for arguments, expected in (
+            (["--profile", "demo", "login"], "helper --profile demo run -- login\n"),
+            (["--profile", "global", "info"], "cli info\n"),
+            (["info"], "cli info\n"),
+        ):
+            with self.subTest(arguments=arguments):
+                self.trace.write_text("")
+                result = subprocess.run([BASH, str(wrapper), *arguments],
+                                        env={**self.env, "PROTON_PASS_PROFILE": "demo"},
+                                        capture_output=True, text=True, timeout=10)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(self.trace.read_text(), expected)
+        for arguments in (["--profile"], ["--profile", ""], ["--profile", "global", "--profile", "demo"]):
+            self.trace.write_text("")
+            result = subprocess.run([BASH, str(wrapper), *arguments], env=self.env,
+                                    capture_output=True, text=True, timeout=10)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(self.trace.read_text(), "")
+
     @unittest.skipUnless(CHEZMOI, "chezmoiが必要です")
     def test_bootstrap_reads_real_chezmoi_data_from_isolated_configuration(self):
         (self.repo / "home").mkdir()
@@ -209,25 +303,41 @@ main "$@"
                     self.assertEqual(self.trace.read_text(), "")
 
     @unittest.skipUnless(MAKE, "makeが必要です")
-    def test_make_wrapper_deploys_only_wrapper_and_cache_without_scripts_or_externals(self):
+    def test_make_wrapper_deploys_entries_without_scripts_or_externals(self):
         wrapper = self.base / "proton-pass"
         wrapper.write_text("fixture\n")
         wrapper.chmod(0o755)
         cache = self.base / "proton-pass-key-cache.py"
         cache.write_text("fixture\n")
         cache.chmod(0o755)
+        project_setup = self.base / "setup-proton-pass-project"
+        project_setup.write_text("fixture\n")
+        project_setup.chmod(0o755)
         self.stub("chezmoi", 'printf "%s\\n" "$@" >> "$TRACE"\n')
         result = subprocess.run(
             [MAKE, "--no-print-directory", "-f", str(ROOT / "Makefile"), "wrapper",
              f"CHEZMOI_BIN={self.bin / 'chezmoi'}", f"PROTON_PASS_WRAPPER={wrapper}",
-             f"PROTON_PASS_CACHE={cache}", "--assume-old=require"],
+             f"PROTON_PASS_CACHE={cache}", f"PROTON_PASS_PROJECT_SETUP={project_setup}", "--assume-old=require"],
             env=self.env, capture_output=True, text=True, timeout=10,
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(self.trace.read_text().splitlines(), [
             "--source", str(ROOT), "apply", "--include=files", "--refresh-externals=never",
-            str(wrapper), str(cache),
+            str(wrapper), str(cache), str(project_setup),
         ])
+
+    @unittest.skipUnless(MAKE, "makeが必要です")
+    def test_make_bootstrap_passes_explicit_project(self):
+        bootstrap = self.repo / "bootstrap/mock.sh"
+        bootstrap.write_text('printf "%s\\n" "$@"\n')
+        result = subprocess.run(
+            [MAKE, "--no-print-directory", "-f", str(ROOT / "Makefile"), "bootstrap",
+             f"BOOTSTRAP={bootstrap}", "PROTON_PASS_PROFILE=demo", "--assume-old=require"],
+            env={**self.env, "PATH": str(Path(BASH).parent)},
+            capture_output=True, text=True, timeout=10,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.splitlines()[-2:], ["--profile", "demo"])
 
     @unittest.skipUnless(MAKE, "makeが必要です")
     def test_make_bootstrap_does_not_apply_and_passes_checkout_and_binary(self):
