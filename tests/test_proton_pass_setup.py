@@ -141,7 +141,7 @@ main "$@"
 
     def test_project_bootstrap_rejects_invalid_name_or_provider_before_secrets(self):
         self.project_fixture()
-        for arguments in (("--profile", "../escape"), ("--profile", "demo", "keyring"),
+        for arguments in (("--profile",), ("--profile", "../escape"), ("--profile", "demo", "keyring"),
                           ("--profile", ""), ("--profile", "demo", "--profile", "other")):
             with self.subTest(arguments=arguments):
                 self.trace.write_text("")

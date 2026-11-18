@@ -107,7 +107,9 @@ check_keyring_environment() {
 initialize_environment() {
   profile=global
   if [[ "${1:-}" == --profile ]]; then
-    (($# >= 2)) && [[ -n "$2" ]] || die '--profileには名前が必要です'
+    if (($# < 2)) || [[ -z "${2:-}" ]]; then
+      die '--profileには名前が必要です'
+    fi
     profile="$2"
     shift 2
   fi
