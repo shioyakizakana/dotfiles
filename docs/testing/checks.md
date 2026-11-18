@@ -24,11 +24,13 @@
 
 検証用の環境に実PAT・age秘密鍵・Proton Passのセッションは不要。既存テストはダミーと隔離HOMEを使う。Batsは配置確認だけを行い、実際のchezmoi適用、実認証、パッケージ操作、update_appsは検証から呼ばない。
 
+プロジェクト別PATの関連テストは`test_proton_pass_setup.py`、`test_proton_pass_key_cache.py`、`test_proton_pass_completion.py`。認証対象の分離、TTL・所有者判定、初期登録コマンド、Bash・Zsh補完をダミーで確認する。実機成功報告と未確認範囲は[Proton Pass手順書](../setup/proton-pass.md#現在の状態)を参照する。
+
 ## 静的検証の対象と例外
 
 `tests/check_instruction_budget.py --global-source`でAGENTS.md・自作SKILL.mdの字数と、フォルダごとの常時読込合計を確認する。CIは配布元を使い、個人の展開済み規約には依存しない。現在のGLOBALを含む確認は[字数管理](../agents/instruction-budget.md)を参照する。
 
-対象一覧は`tests/check.py`で管理する。bootstrap、3本の適用後スクリプト、共通シェル設定、更新・textlint用コマンドをBash構文とShellCheckで確認する。Bashの起動設定は構文確認、`home/dot_zsh/`の`.zsh`ファイルは`zsh -dfn`で確認する。Pythonはtests内の構文、TOMLは管理対象のmise設定とYazi設定を解析する。
+対象一覧は`tests/check.py`で管理する。bootstrap、3本の適用後スクリプト、共通シェル設定、更新・textlint用コマンドをBash構文とShellCheckで確認する。Bashの起動設定は構文確認、`home/dot_zsh/`の`.zsh`ファイルは`zsh -dfn`で確認する。Proton PassのBash補完はBash構文・ShellCheck・shfmt、拡張子のないZsh補完`_proton-pass`は`zsh -dfn`で確認する。Pythonはtests内の構文、TOMLは管理対象のmise設定とYazi設定を解析する。
 
 Go templateを含むファイルは直接ShellCheck・shfmtへ渡さない。既存unittestが、確認済みのテンプレートをダミーデータと隔離したchezmoi設定で評価する。実ソース全体や実HOMEを使ったテンプレート評価は行わない。
 
