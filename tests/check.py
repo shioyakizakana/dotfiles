@@ -23,6 +23,7 @@ BASH_FILES = (
     "home/dot_config/shell/env.sh",
     "home/dot_config/shell/aliases.sh",
     "home/dot_config/shell/functions.sh",
+    "home/dot_config/bash/completions/proton-pass.bash",
     "home/dot_local/bin/executable_update_apps",
     "home/dot_local/bin/executable_update-agent-skills",
     "home/dot_local/bin/executable_textlint-ja",
@@ -76,6 +77,7 @@ def run_lint():
         run_command(["bash", "-n", name])
     for path in sorted((ROOT / "home/dot_zsh").rglob("*.zsh")):
         run_command(["zsh", "-dfn", str(path.relative_to(ROOT))])
+    run_command(["zsh", "-dfn", "home/dot_zsh/completions/_proton-pass"])
     for name in BASH_FILES:
         arguments = ["shellcheck"]
         if name == "bootstrap/setup-proton-pass.sh":

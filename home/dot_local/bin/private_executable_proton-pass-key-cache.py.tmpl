@@ -6,9 +6,11 @@ PATとage identityはキャッシュしない。
 """
 
 import argparse
+from contextlib import ExitStack
 import fcntl
 import json
 import os
+import re
 import socket
 import stat
 import struct
@@ -20,6 +22,146 @@ from pathlib import Path
 DEFAULT_TTL = 900
 MAX_TTL = 3600
 MAX_MSG = 4096
+
+
+def current_user_ids() -> set[int]:
+    uids = {os.getuid()}
+    # PRootでは仮想UIDと、同一プロセスのカーネル側UIDが異なる。
+    try:
+        for line in Path("/proc/self/status").read_text(encoding="ascii").splitlines():
+            fields = line.split()
+            if fields and fields[0] == "Uid:":
+                if len(fields) == 5 and all(value.isdecimal() for value in fields[1:]):
+                    uid = int(fields[1])
+                    if 0 <= uid < 2**32 - 1:
+                        uids.add(uid)
+                break
+    except (OSError, UnicodeError):
+        pass
+    return uids
+
+
+def completion(arguments: list[str]) -> list[str]:
+    if not arguments:
+        return []
+    command, *words = arguments
+    current = words[-1] if words else ""
+    previous = words[:-1]
+    profiles = ["global"]
+    root = Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local/share") / "proton-pass/projects"
+    if root.is_absolute() and ".." not in root.parts and not any(
+        path.is_symlink() for path in (root, *root.parents)
+    ):
+        try:
+            profiles.extend(sorted(
+                path.name for path in root.iterdir()
+                if re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,63}", path.name)
+                and path.name != "global" and not path.is_symlink() and path.is_dir()
+            ))
+        except OSError:
+            pass
+    cache = command == "proton-pass-key-cache.py"
+    if command == "setup-proton-pass-project":
+        candidates = ["--help", *profiles[1:]] if not previous else []
+    else:
+        options = ("--profile", "--ttl-minutes") if cache else ("--profile",)
+        index = 0
+        while index + 1 < len(previous) and previous[index] in options:
+            index += 2
+        pending = previous[index:]
+        if pending == ["--profile"]:
+            candidates = profiles
+        elif cache and pending == ["--ttl-minutes"]:
+            candidates = ["15", "30", "45", "60"]
+        elif pending:
+            candidates = []
+        elif cache:
+            candidates = ["--help", "unlock", "status", "lock", "run"]
+            if "--profile" not in previous:
+                candidates.append("--profile")
+            if "--ttl-minutes" not in previous:
+                candidates.append("--ttl-minutes")
+        elif command == "proton-pass":
+            candidates = ["--help", "login", "logout", "info", "inject", "run", "vault",
+                          "item", "folder", "export", "invite", "password", "personal-access-token",
+                          "totp", "share", "user", "session", "ssh-agent", "settings", "agent", "support"]
+            if "--profile" not in previous:
+                candidates.append("--profile")
+        else:
+            candidates = []
+    return [candidate for candidate in candidates if candidate.startswith(current)]
+
+
+def project_paths(name: str, create: bool = False) -> tuple[Path, Path, Path]:
+    if not re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,63}", name) or name == "global":
+        fail("プロジェクト名が不正です")
+    uids = current_user_ids()
+    base = Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local/share")
+    data = base / "proton-pass/projects" / name
+    runtime = Path.home() / ".cache/proton-pass-key-cache/projects" / name
+    if len(os.fsencode(runtime / "agent.sock")) > 107:
+        fail("キャッシュのソケットパスが長すぎます。短いプロジェクト名を使用してください")
+    identity, _, _ = paths()
+    expected_identity = Path(os.environ.get("AGE_IDENTITY_DIR") or base / "age") / "id_proton_pat.age"
+    for key, expected in (
+        ("AGE_IDENTITY_FILE", expected_identity),
+        ("PROTON_PASS_SESSION_DIR", data / "cli"),
+        ("PROTON_PASS_CACHE_DIR", runtime),
+    ):
+        if key in os.environ and Path(os.environ[key]) != expected:
+            fail(f"{key}がプロジェクトの保存先と一致しません")
+    if os.environ.get("PROTON_PASS_KEY_PROVIDER", "env") != "env":
+        fail("プロジェクトではenvのみを使用します")
+    for path in (base, data, runtime, identity):
+        if not path.is_absolute() or ".." in path.parts or "\n" in str(path):
+            fail("プロジェクトの保存先は絶対パスで指定してください")
+        for parent in (path, *path.parents):
+            if parent.is_symlink():
+                fail("プロジェクトの保存先にシンボリックリンクは使用できません")
+            if parent.exists():
+                info = parent.lstat()
+                if info.st_mode & 0o022 and not (info.st_uid == 0 and info.st_mode & stat.S_ISVTX):
+                    fail("保存先の親が他者から書き込み可能です")
+                if info.st_uid != 0 and info.st_uid not in uids:
+                    fail("保存先の親の所有者が不正です")
+            if (parent / ".git").exists() or (parent / ".chezmoiroot").exists():
+                fail("プロジェクトの秘密情報をリポジトリ内へ保存できません")
+    session = data / "cli/.session"
+    if session.exists() or session.is_symlink():
+        info = session.lstat()
+        if not stat.S_ISDIR(info.st_mode) or info.st_uid not in uids or info.st_mode & 0o077:
+            fail("プロジェクトのセッション領域が不正です")
+        if not (data / "token.age").exists() or not (data / "encryption-key.age").exists():
+            fail("セッションの暗号文が不足しています。既存データは再生成しません")
+    for path in (identity, data / "token.age", data / "encryption-key.age"):
+        if create and path != identity and not path.exists() and not path.is_symlink():
+            continue
+        try:
+            info = path.lstat()
+        except FileNotFoundError:
+            fail("プロジェクトのidentityまたは暗号文がありません")
+        if not stat.S_ISREG(info.st_mode) or info.st_uid not in uids or info.st_mode & 0o077 or not info.st_size:
+            fail("プロジェクトのidentityまたは暗号文の権限・形式が不正です")
+    lock = data / ".cli.lock"
+    if lock.exists() or lock.is_symlink():
+        info = lock.lstat()
+        if not stat.S_ISREG(info.st_mode) or info.st_uid not in uids or info.st_mode & 0o077:
+            fail("プロジェクトのロックファイルが不正です")
+    # 共用親は読み取り・通過を許し、専用領域だけを非公開にする。
+    for target, private in ((base, False), (base / "proton-pass", True),
+                            (data.parent, True), (data, True),
+                            (data / "cli", True), (runtime.parent.parent, True),
+                            (runtime.parent, True), (runtime, True)):
+        if create:
+            target.mkdir(mode=0o700, parents=True, exist_ok=True)
+        if target.exists():
+            info = target.lstat()
+            mask = 0o077 if private else 0o022
+            if not stat.S_ISDIR(info.st_mode) or info.st_uid not in uids or info.st_mode & mask:
+                fail("プロジェクト保存領域の所有者・権限が不正です")
+        elif not create:
+            fail("プロジェクトが未登録です。bootstrapで登録してください")
+    return data, identity, runtime
 
 
 def fail(message: str) -> None:
@@ -48,7 +190,7 @@ def check_dir(path: Path) -> None:
         fail(f"キャッシュディレクトリにシンボリックリンクは使用できません: {path}")
     path.mkdir(mode=0o700, parents=True, exist_ok=True)
     st = path.lstat()
-    if not stat.S_ISDIR(st.st_mode) or st.st_uid != os.getuid() or st.st_mode & 0o077:
+    if not stat.S_ISDIR(st.st_mode) or st.st_uid not in current_user_ids() or st.st_mode & 0o077:
         fail(f"キャッシュディレクトリの所有者・権限が不正です: {path} (0700が必要)")
 
 
@@ -93,13 +235,17 @@ def decrypt_key(identity: Path, encrypted: Path) -> str:
     )
     if result.returncode != 0:
         fail("CLI暗号化鍵の復号に失敗しました")
-    key = result.stdout.decode("ascii", errors="strict").strip()
+    try:
+        key = result.stdout.decode("ascii", errors="strict").strip()
+    except UnicodeError:
+        fail("CLI暗号化鍵の形式が不正です")
     if not key_valid(key):
         fail("CLI暗号化鍵の形式が不正です（64桁の16進数が必要）")
     return key
 
 
 def serve(sock_path: Path, ttl: int, lock_path: Path) -> None:
+    uids = current_user_ids()
     # エージェントの稼働中は排他ロックを保持し、二重起動を防止する。
     with lock_path.open("a+b") as lock:
         try:
@@ -108,7 +254,7 @@ def serve(sock_path: Path, ttl: int, lock_path: Path) -> None:
             return
         if sock_path.exists() or sock_path.is_symlink():
             st = sock_path.lstat()
-            if not stat.S_ISSOCK(st.st_mode) or st.st_uid != os.getuid():
+            if not stat.S_ISSOCK(st.st_mode) or st.st_uid not in uids:
                 return
             try:
                 sock_path.unlink()
@@ -136,7 +282,7 @@ def serve(sock_path: Path, ttl: int, lock_path: Path) -> None:
                                 socket.SOL_SOCKET, socket.SO_PEERCRED, 12
                             )
                             _, peer_uid, _ = struct.unpack("3i", creds)
-                            if peer_uid != os.getuid():
+                            if peer_uid not in uids:
                                 continue
                             data = bytearray()
                             while not data.endswith(b"\n"):
@@ -193,6 +339,7 @@ def unlock(
         daemon_env = os.environ.copy()
         daemon_env.pop("PROTON_PASS_PERSONAL_ACCESS_TOKEN", None)
         daemon_env.pop("PROTON_PASS_ENCRYPTION_KEY", None)
+        daemon_env["PROTON_PASS_CACHE_TTL"] = str(ttl)
         subprocess.Popen(
             [sys.executable, str(Path(__file__).resolve()), "_serve", str(ttl)],
             stdin=subprocess.DEVNULL,
@@ -218,31 +365,64 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Proton Passの暗号化鍵を期限付きでメモリキャッシュ"
     )
+    parser.add_argument("--profile", action="append")
+    parser.add_argument("--ttl-minutes", type=int, choices=(15, 30, 45, 60))
     parser.add_argument(
-        "command", choices=("unlock", "status", "lock", "run", "_serve")
+        "command", choices=("unlock", "status", "lock", "run", "_serve", "configure", "complete")
     )
     parser.add_argument("arguments", nargs=argparse.REMAINDER)
     args = parser.parse_args()
+    if args.command == "complete":
+        for candidate in completion(args.arguments):
+            print(candidate)
+        return
+    if args.profile and len(args.profile) != 1:
+        fail("--profileは一度だけ指定してください")
+    args.profile = args.profile[0] if args.profile else "global"
+    cli_args = args.arguments
+    if cli_args and cli_args[0] == "--":
+        cli_args = cli_args[1:]
+    if args.command == "run" and (not cli_args or cli_args[0] == "--profile"):
+        fail("使用方法: proton-pass-key-cache [--profile NAME] run -- <pass-cliの引数>")
+    ttl_raw = os.environ.get("PROTON_PASS_CACHE_TTL", str(DEFAULT_TTL))
+    try:
+        ttl = args.ttl_minutes * 60 if args.ttl_minutes else int(ttl_raw)
+    except ValueError:
+        fail("PROTON_PASS_CACHE_TTLは整数で指定してください")
+    if not 1 <= ttl <= MAX_TTL:
+        fail(f"キャッシュ期限は1〜{MAX_TTL}秒で指定してください")
     identity, encrypted, runtime = paths()
+    project = args.profile != "global"
+    if project:
+        os.environ.pop("PROTON_PASS_PERSONAL_ACCESS_TOKEN", None)
+        os.environ.pop("PROTON_PASS_ENCRYPTION_KEY", None)
+        data, identity, runtime = project_paths(args.profile, args.command == "configure")
+        encrypted = data / "encryption-key.age"
+        os.environ["PROTON_PASS_CACHE_DIR"] = str(runtime)
+        os.environ["PROTON_PASS_SESSION_DIR"] = str(data / "cli")
+        if args.command == "configure":
+            print(data)
+            return
+    elif args.command == "configure":
+        fail("configureにはプロジェクト名が必要です")
     check_dir(runtime)
     sock_path = runtime / "agent.sock"
     lock_path = runtime / "agent.lock"
     if args.command == "_serve":
         if len(args.arguments) != 1:
             fail("invalid daemon arguments")
-        serve(sock_path, int(args.arguments[0]), lock_path)
+        try:
+            daemon_ttl = int(args.arguments[0])
+        except ValueError:
+            fail("invalid daemon arguments")
+        if not 1 <= daemon_ttl <= MAX_TTL:
+            fail("invalid daemon arguments")
+        serve(sock_path, daemon_ttl, lock_path)
         return
-    ttl_raw = os.environ.get("PROTON_PASS_CACHE_TTL", str(DEFAULT_TTL))
-    try:
-        ttl = int(ttl_raw)
-    except ValueError:
-        fail("PROTON_PASS_CACHE_TTLは整数で指定してください")
-    if not 1 <= ttl <= MAX_TTL:
-        fail(f"キャッシュ期限は1〜{MAX_TTL}秒で指定してください")
     if args.command == "status":
         reply = try_request(sock_path, {"op": "status"})
         print(
-            f"unlock済み（残り{reply['remaining']}秒）"
+            f"unlock済み（残り{reply['remaining'] // 60}分{reply['remaining'] % 60}秒）"
             if reply and reply.get("ok")
             else "ロック中"
         )
@@ -260,22 +440,58 @@ def main() -> None:
         print("CLI暗号化鍵を一時的にキャッシュしました")
         return
     # runでは鍵を標準出力に出さず、pass-cliの実行環境にのみ渡す。
-    cli_args = args.arguments
-    if cli_args and cli_args[0] == "--":
-        cli_args = cli_args[1:]
-    if not cli_args:
-        fail("使用方法: proton-pass-key-cache run -- <pass-cliの引数>")
-    reply = try_request(sock_path, {"op": "get"})
-    if not reply or not reply.get("ok"):
-        unlock(identity, encrypted, sock_path, lock_path, ttl)
+    with ExitStack() as stack:
+        execution_lock = None
+        token = None
+        if project:
+            if cli_args[0] == "logout" and any(
+                arg.startswith("-") and arg not in ("--help", "-h") for arg in cli_args[1:]
+            ):
+                fail("プロジェクトの強制ログアウトは使用できません")
+            if cli_args[0] == "login" and cli_args[1:]:
+                fail("プロジェクトのloginは追加引数を受け付けません")
+            fd = os.open(data / ".cli.lock", os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
+            execution_lock = stack.enter_context(os.fdopen(fd, "a+b"))
+            info = os.fstat(fd)
+            if not stat.S_ISREG(info.st_mode) or info.st_uid not in current_user_ids() or info.st_mode & 0o077:
+                fail("プロジェクトのロックファイルが不正です")
+            try:
+                fcntl.flock(execution_lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                fail("同じプロジェクトの処理が実行中です")
+            if cli_args[0] == "login":
+                result = subprocess.run(
+                    ["age", "-d", "-i", str(identity), str(data / "token.age")],
+                    capture_output=True, check=False,
+                )
+                if result.returncode or not result.stdout:
+                    fail("PATの復号に失敗しました")
+                try:
+                    token = result.stdout.decode("utf-8").rstrip("\n")
+                except UnicodeError:
+                    fail("PATの形式が不正です")
+                if not token or "\x00" in token:
+                    fail("PATの形式が不正です")
         reply = try_request(sock_path, {"op": "get"})
-    if not reply or not reply.get("ok"):
-        fail("キャッシュから暗号化鍵を取得できません")
-    env = os.environ.copy()
-    env["PROTON_PASS_KEY_PROVIDER"] = "env"
-    env["PROTON_PASS_ENCRYPTION_KEY"] = reply["key"]
-    os.execvpe("pass-cli", ["pass-cli", *cli_args], env)
+        if not reply or not reply.get("ok"):
+            unlock(identity, encrypted, sock_path, lock_path, ttl)
+            reply = try_request(sock_path, {"op": "get"})
+        if not reply or not reply.get("ok"):
+            fail("キャッシュから暗号化鍵を取得できません")
+        env = os.environ.copy()
+        env["PROTON_PASS_KEY_PROVIDER"] = "env"
+        env["PROTON_PASS_ENCRYPTION_KEY"] = reply["key"]
+        if project:
+            if token is not None:
+                env["PROTON_PASS_PERSONAL_ACCESS_TOKEN"] = token
+            # 親がロックを保持し、CLIとその子にはロックFDを継承させない。
+            result = subprocess.run(["pass-cli", *cli_args], env=env, check=False)
+            raise SystemExit(result.returncode if result.returncode >= 0 else 128 - result.returncode)
+        os.execvpe("pass-cli", ["pass-cli", *cli_args], env)
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except OSError:
+        fail("ファイルまたはコマンドの操作に失敗しました")

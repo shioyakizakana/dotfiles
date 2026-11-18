@@ -54,6 +54,10 @@ fi
 
 unset _zcompdump
 
+# 既存のzcompdumpにも、新しく追加したProton Pass補完を登録する。
+autoload -Uz _proton-pass
+compdef _proton-pass proton-pass proton-pass-key-cache.py setup-proton-pass-project
+
 
 # ------------------------------------------------------------
 # 補完候補

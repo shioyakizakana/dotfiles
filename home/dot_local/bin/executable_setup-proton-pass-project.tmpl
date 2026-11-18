@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+case "${1:-}" in
+-h | --help)
+  printf '%s\n' '使用方法: setup-proton-pass-project NAME' \
+    '既存の共有identityを使い、プロジェクト用PATとCLI暗号化鍵を初期登録してログインします。' \
+    '再実行時は既存ファイルを再利用します。'
+  exit 0
+  ;;
+esac
+if (($# != 1)) || [[ ! "$1" =~ ^[a-z0-9][a-z0-9_-]{0,63}$ || "$1" == global ]]; then
+  printf '%s\n' '使用方法: setup-proton-pass-project NAME（global以外）' >&2
+  exit 1
+fi
+
+# ソースの場所をシェルの展開から保護し、初期生成処理はbootstrapへ集約する。
+readonly REPO_ROOT='{{ .chezmoi.workingTree | replace "'" "'\"'\"'" }}'
+[[ -f "$REPO_ROOT/bootstrap/setup-proton-pass.sh" ]] || {
+  printf '%s\n' 'dotfilesのbootstrapが見つかりません。ソースの配置を確認してください。' >&2
+  exit 1
+}
+exec bash "$REPO_ROOT/bootstrap/setup-proton-pass.sh" --profile "$1" env

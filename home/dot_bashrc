@@ -117,6 +117,11 @@ if ! shopt -oq posix; then
   fi
 fi
 
+# Proton Passの補完は、システムのbash-completionがなくても読み込む。
+if [ -r "$HOME/.config/bash/completions/proton-pass.bash" ]; then
+  . "$HOME/.config/bash/completions/proton-pass.bash"
+fi
+
 # ------------------------------------------------------------
 # user setting
 # ------------------------------------------------------------

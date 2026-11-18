@@ -21,6 +21,8 @@ TEST_PYTHON ?= python3
 # ラッパースクリプトの展開先
 PROTON_PASS_WRAPPER := $(HOME)/.local/bin/proton-pass
 PROTON_PASS_CACHE := $(HOME)/.local/bin/proton-pass-key-cache.py
+PROTON_PASS_PROJECT_SETUP := $(HOME)/.local/bin/setup-proton-pass-project
+PROTON_PASS_PROFILE ?= global
 
 .PHONY: help diff apply status require require-bootstrap wrapper bootstrap
 .PHONY: check test test-unit test-smoke lint
@@ -35,7 +37,7 @@ help:
 		'  apply   : chezmoiの設定を反映' \
 		'  status  : chezmoi管理ファイルの状態確認' \
 		'  require  : セットアップ実行環境の診断' \
-		'  wrapper  : Proton Passラッパーと鍵キャッシュを限定展開' \
+		'  wrapper  : Proton Passラッパー・鍵キャッシュ・プロジェクト初期登録コマンドを限定展開' \
 		'  bootstrap   : chezmoi設定に従って認証の初期セットアップを実行' \
 		'  check       : 静的検査・単体テスト・配置テストを実行' \
 		'  test        : 単体テストと配置テストを実行' \
@@ -102,7 +104,7 @@ require:
 # ========================================
 wrapper: require
 	@echo "==> Proton Passラッパーを展開"
-	@$(CHEZMOI) apply --include=files --refresh-externals=never "$(PROTON_PASS_WRAPPER)" "$(PROTON_PASS_CACHE)"
+	@$(CHEZMOI) apply --include=files --refresh-externals=never "$(PROTON_PASS_WRAPPER)" "$(PROTON_PASS_CACHE)" "$(PROTON_PASS_PROJECT_SETUP)"
 	@test -x "$(PROTON_PASS_WRAPPER)" || { \
 		echo "ERROR: ラッパーが実行可能ではありません" >&2; \
 		exit 1; \
@@ -111,10 +113,14 @@ wrapper: require
 		echo "ERROR: 鍵キャッシュが実行可能ではありません" >&2; \
 		exit 1; \
 	}
+	@test -x "$(PROTON_PASS_PROJECT_SETUP)" || { \
+		echo "ERROR: プロジェクト初期登録コマンドが実行可能ではありません" >&2; \
+		exit 1; \
+	}
 
 # ========================================
 # 初期セットアップ
 # ========================================
 bootstrap: require
 	@echo "==> Proton Pass初期セットアップ"
-	@CHEZMOI_SOURCE_DIR="$(REPO_ROOT)" CHEZMOI_BIN="$(CHEZMOI_BIN)" bash "$(BOOTSTRAP)"
+	@CHEZMOI_SOURCE_DIR="$(REPO_ROOT)" CHEZMOI_BIN="$(CHEZMOI_BIN)" bash "$(BOOTSTRAP)" $(if $(filter-out global,$(PROTON_PASS_PROFILE)),--profile "$(PROTON_PASS_PROFILE)")

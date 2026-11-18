@@ -90,6 +90,10 @@ chezmoiは明示した検証用config・source・destination・cache・persisten
 
 APTのテストはid・apt・sudoをダミーに置き換える。実際のUIDやsudo権限を変更せず、root・非root・sudo欠落を再現する。Homebrewのテストも探索と取得を置き換え、実際の通信・導入を行わない。
 
+## Proton Passの確認済み範囲
+
+prootでのUID差異に対応し、利用者からグローバルとpat-testの認証切り替え、許可した保管庫だけの一覧表示、補完、30分キャッシュの開始と分・秒表示の成功報告を受けた。確認内容は[Proton Pass手順書](../setup/proton-pass.md#現在の状態)を参照する。Termux本体や他のUbuntu環境、実パッケージ操作などの確認完了とは区別する。
+
 ## 実機確認が必要な内容
 
 Termux本体とproot Ubuntuの確認順序・合否基準・結果欄は[実機チェックリスト](termux-checklist.md)にまとめた。既存の導入手順と組み合わせ、確認できた環境と未実施の環境を分けて記録する。
@@ -99,7 +103,7 @@ Termux本体とproot Ubuntuの確認順序・合否基準・結果欄は[実機�
 - Termuxの実際のPREFIX、実行ファイル、シバン解決とtermux-execの有無。
 - 共有ストレージ上の実行属性・リンクなど、Android固有のファイルシステム制約。
 - 各ツールのAndroid／ARM64対応と、Ubuntu向けバイナリとの互換性。
-- prootでのUID・権限の見え方、実際のAPTやHomebrewの制約。
+- prootでのUID・権限の見え方のうち、上記のProton Pass確認に含まれない条件。実際のAPTやHomebrewの制約。
 - 起動済みtmuxへの設定反映と、実際のzshによるペイン起動。
 
 ## 通常適用と更新の分離

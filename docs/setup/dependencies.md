@@ -7,6 +7,7 @@
 | 対象 | 現在の準備方法 | 不足時の扱い |
 | --- | --- | --- |
 | 初期認証のPython 3.11以上、make、openssl、wget、flockなど | [READMEの初期準備](../../README.md#31-必要なコマンド)。認証前にOS側で準備する | miseの適用後処理では初期認証に間に合わない。`make require`だけですべての前提を確認したことにはならない |
+| プロジェクト別PAT | グローバルの初期認証後に`setup-proton-pass-project NAME`を実行 | age・Python・pass-cliとdotfilesのチェックアウトが必要。既存identityを共有し、プロジェクト用PAT・CLI鍵を準備する。[利用手順](../../README.md#74-プロジェクト別patの登録と利用)を参照 |
 | 基礎ツール | Ubuntu・Termux向け`bootstrap/bootstrap-tools.sh`。環境別のパッケージ一覧を同スクリプトで管理 | Ubuntuの基礎導入一覧にはPythonが含まれない。Zsh・LuaRocks・fzfは両環境で手動準備 |
 | 開発CLI・ランタイム | `home/dot_config/mise/config.toml`とmiseの適用後処理 | 一覧の不足を導入する。個別の導入失敗は解決が必要 |
 | lefthook | miseとCIは2.2.2へ固定。各作業コピーでGit hooksをインストール | bootstrap-tools.shの自動導入対象には含めない。Termux向けの準備は[Git hooksの手順](../testing/git-hooks.md)を参照 |

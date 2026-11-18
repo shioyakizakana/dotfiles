@@ -1,0 +1,19 @@
+#compdef proton-pass proton-pass-key-cache.py setup-proton-pass-project
+
+local helper="$HOME/.local/bin/proton-pass-key-cache.py"
+local -a candidates
+[[ -x "$helper" ]] || return 0
+# サブコマンド以降の値を、補完用プロセスの引数へ渡さない。
+local index=2
+while ((index < CURRENT)); do
+  case "${words[index]}" in
+  --profile) ((index += 2)) ;;
+  --ttl-minutes)
+    [[ "${words[1]:t}" == proton-pass-key-cache.py ]] || return 0
+    ((index += 2))
+    ;;
+  *) return 0 ;;
+  esac
+done
+candidates=("${(@f)$("$helper" complete "${words[1]:t}" "${(@)words[2,CURRENT]}" 2>/dev/null)}")
+compadd -a candidates

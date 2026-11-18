@@ -3,7 +3,7 @@
 chezmoiを中心に、Linux環境の設定ファイル、開発ツール、初期構築を管理するdotfilesリポジトリ。
 開発ツールは主にmise、システム依存はAPT、補助ツールはHomebrewで管理する。Proton Pass CLIとageを使い、必要な設定へ秘密情報を渡す。
 
-新規構築では1〜6節を順に確認する。通常の更新は7節、既存identityの移行は8節、問題が起きた場合は10節を参照する。
+新規構築では1〜6節を順に確認する。通常の更新とプロジェクト別PATの利用は7節、既存identityの移行は8節、問題が起きた場合は10節を参照する。
 最初の`chezmoi init`では`--apply`を付けず、認証bootstrapとラッパーの限定展開を済ませてから全体を適用する。
 
 ## 1. 対応環境
@@ -66,6 +66,7 @@ chezmoiを中心に、Linux環境の設定ファイル、開発ツール、初�
 │   ├── dot_local/
 │   │   ├── bin/
 │   │   │   ├── executable_init-proton-pass.tmpl
+│   │   │   ├── executable_setup-proton-pass-project.tmpl
 │   │   │   ├── executable_proton-pass.tmpl
 │   │   │   ├── private_executable_proton-pass-key-cache.py.tmpl
 │   │   │   ├── executable_update_apps
@@ -84,7 +85,7 @@ chezmoiを中心に、Linux環境の設定ファイル、開発ツール、初�
 たとえば`home/dot_local/bin/executable_proton-pass.tmpl`は`~/.local/bin/proton-pass`になる。初期構築や文書用の`bootstrap/`、`docs/`、`tests/`はホームへ展開しない。
 
 プロジェクト専用スキルはルートの`.agents/skills/`で直接管理する。このディレクトリもホームへの展開対象には含まれず、共通スキルは従来どおり`home/dot_agents/skills/`で管理する。
-Codex CLIではこのリポジトリ内から`/skills`や`$スキル名`で選択できる。新しいスキルが表示されない場合はCodexを再起動して確認する。用途は[AGENTS.mdのスキル一覧](AGENTS.md#81-プロジェクト固有スキル)を参照する。
+Codex CLIではこのリポジトリ内から`/skills`や`$スキル名`で選択できる。新しいスキルが表示されない場合はCodexを再起動して確認する。用途と手順は[各スキルのSKILL.md](.agents/skills/)を参照する。
 
 ### 2.1 BashとZshの共通設定
 
@@ -243,7 +244,7 @@ chezmoi init shioyakizakana
 ```shell
 cd "$HOME/.local/share/chezmoi"
 make bootstrap
-# 初回の全体適用より前に、ラッパーと鍵キャッシュだけを展開する。
+# 初回の全体適用より前に、ラッパー・鍵キャッシュ・プロジェクト初期登録コマンドを展開する。
 make wrapper
 ```
 
@@ -275,7 +276,7 @@ Termux・prootはenvを使用し、Ubuntu系は初期化時にenvまたはkeyrin
 
 ### 5.3 認証情報の保存先
 
-標準設定では、以下のファイルを作成する。
+グローバルの標準設定では、以下のファイルを作成する。プロジェクト用の配置は7.4節を参照する。
 
 ```tree
 ~/.local/share/
@@ -309,7 +310,7 @@ export AGE_IDENTITY_DIR="$HOME/.local/state/secure-keys"
 export AGE_IDENTITY_FILE="$HOME/.local/state/secure-keys/id_proton_pat.age"
 ```
 
-変更した場合は、Bootstrapと通常操作の両方で同じ保存先を参照する必要がある。
+変更した場合は、Bootstrapと通常操作の両方で同じ保存先を参照する必要がある。プロジェクト利用では共有の`AGE_IDENTITY_DIR`を使い、`AGE_IDENTITY_FILE`も指定する場合は、その配下の`id_proton_pat.age`と一致させる。
 
 ## 6. chezmoiによる設定の適用
 
@@ -369,7 +370,8 @@ make -C "$HOME/.local/share/chezmoi" apply
 ~/.local/bin/
 ├── init-proton-pass
 ├── proton-pass
-└── proton-pass-key-cache.py
+├── proton-pass-key-cache.py
+└── setup-proton-pass-project
 ```
 
 `~/.local/bin`にPATHが通っていない場合は、`.bashrc`などのシェル設定を確認する。(`zsh`におけるPATHは`~/.zsh/path.zsh`にて管理)
@@ -388,7 +390,7 @@ proton-pass info
 init-proton-pass
 ```
 
-`init-proton-pass`はPATを復号してログインを実行するためのエントリーポイント。
+`init-proton-pass`はグローバルのPATを復号して再ログインする。プロジェクトの再ログインは7.4節のように対象を明示する。
 通常のProton Pass CLI操作には、`proton-pass`ラッパーを使用する。
 
 ## 7. 日常の更新とProton Passの運用
@@ -397,8 +399,9 @@ Proton Pass CLIに関わる各スクリプトの役割は次の通り。
 
 | スクリプト| 役割 | 実行タイミング |
 | --- | --- | --- |
-| `setup-proton-pass.sh` | identity・PAT・暗号化鍵の初期生成 | 新規環境構築時 |
-| `init-proton-pass` | PATによる再ログイン | 再ログインが必要な場合 |
+| `setup-proton-pass.sh` | グローバルのidentity・PAT・暗号化鍵の初期準備。プロジェクト指定時は共有identityを使ってPAT・CLI鍵を準備 | 新規環境・プロジェクトの構築時 |
+| `setup-proton-pass-project` | 既存bootstrapへ委譲し、プロジェクトの初期登録・ログインを実行 | プロジェクトの初期構築時 |
+| `init-proton-pass` | グローバルPATによる再ログイン | 再ログインが必要な場合 |
 | `proton-pass` | 暗号化鍵を一時注入してProton Pass CLIを実行 | 通常操作時 |
 | `proton-pass-key-cache.py` | CLI暗号化鍵のみを一時的にキャッシュして`pass-cli`へ注入 | `env`環境における通常操作時 |
 
@@ -434,23 +437,28 @@ PATとage identityはキャッシュしない。
 | 使用言語   | Python 3。PATH上の`python3`を使用   |
 | 保存対象  | Proton Pass CLIの暗号鍵のみ   |
 | 標準有効期限   | 15分  |
+| コマンドで選べる有効期限 | `--ttl-minutes`で15・30・45・60分 |
 | 設定可能な最大有効期限   | 60分  |
+| 残り時間の表示 | `status`で分・秒を表示 |
 | 有効期限後   | プロセスを終了してキャッシュを破棄   |
 | 手動ロック   | 対応   |
 | 再起動後の状態   | ロック状態   |
 | `pass-cli`の起動   | キャッシュスクリプト経由で実行   |
 
 有効期限内はCLI暗号化鍵の復号を省略できる。再ログイン時のPAT復号では、別途ageのパスフレーズ入力が必要になる。
-キャッシュの通信先は標準で`~/.cache/proton-pass-key-cache/agent.sock`。`PROTON_PASS_CACHE_DIR`でディレクトリを変更できる。平文の鍵をこのディレクトリに保存しない。
+グローバルのキャッシュの通信先は標準で`~/.cache/proton-pass-key-cache/agent.sock`。グローバルでは`PROTON_PASS_CACHE_DIR`でディレクトリを変更できる。平文の鍵をこのディレクトリに保存しない。
 
-キャッシュを手動で破棄する場合は、以下を実行する。
+グローバルのキャッシュを30分で開始し、状態を確認してから手動で破棄する例を示す。
 
 ```shell
+proton-pass-key-cache.py --ttl-minutes 30 unlock
+proton-pass-key-cache.py status
 proton-pass-key-cache.py lock
 ```
 
 > [!Note]
 > 有効期限は鍵を登録した時点から計算し、通常の参照では延長しない。`PROTON_PASS_CACHE_TTL`は秒単位で1〜3600を指定できる。
+> `--ttl-minutes`はサブコマンドより前に置き、`PROTON_PASS_CACHE_TTL`と併用した場合はコマンド側を優先する。
 > 起動済みエージェントの有効期限を変更する場合は、一度ロックして再度解除する。
 
 ### 7.3 外部スキルと文章チェック
@@ -468,6 +476,35 @@ update-agent-skills update natural-japanese
 ```shell
 textlint-ja README.md
 ```
+
+### 7.4 プロジェクト別PATの登録と利用
+
+グローバルの初期構築後、Proton Pass側で必要な保管庫・項目だけにアクセスできるPATを作成し、次のコマンドで対話入力する。
+
+```shell
+setup-proton-pass-project demo
+proton-pass --profile demo info
+# ログアウト後やセッション切れ後の再ログイン
+proton-pass --profile demo login
+```
+
+初期登録コマンドは既存のage identityとrecipientを共有し、プロジェクト用PATとCLI暗号化鍵を暗号化保存してログインする。再実行では既存ファイルを再利用する。dotfilesのチェックアウトが必要で、`make bootstrap PROTON_PASS_PROFILE=demo`でも登録できる。
+
+プロジェクト名は英小文字・数字で始まる64文字以内とし、以降は英小文字・数字・ハイフン・アンダースコアを使う。`global`は予約名。保存先は標準で`~/.local/share/proton-pass/projects/NAME/`となり、`token.age`、`encryption-key.age`、CLIセッションの`cli/.session/`を対象ごとに分ける。`XDG_DATA_HOME`を指定した場合はその配下を使う。鍵キャッシュは`~/.cache/proton-pass-key-cache/projects/NAME/`に分ける。
+
+無指定または`--profile global`は従来のグローバル利用。作業ディレクトリによる自動切り替えは行わない。プロジェクト側はenv方式に限定し、グローバル側の既存providerを維持する。プロジェクトの強制ログアウトは受け付けない。
+
+```shell
+proton-pass info
+proton-pass --profile demo vault list
+proton-pass-key-cache.py --profile demo --ttl-minutes 30 unlock
+proton-pass-key-cache.py --profile demo status
+proton-pass-key-cache.py --profile demo lock
+```
+
+Bash・Zshでは、`proton-pass`、`proton-pass-key-cache.py`、`setup-proton-pass-project`のプロファイル名・サブコマンド・TTL候補などをTab補完できる。補完にはシェル設定と補完ファイルの適用も必要で、`make wrapper`だけでは反映しない。CLI固有の下位オプションは補完対象に含めない。
+
+実装仕様と利用者による適用・実機確認の範囲、PAT更新・復旧の残件は[Proton Pass手順書の現在の状態](docs/setup/proton-pass.md#現在の状態)を参照する。SOPS + ageによるプロジェクト設定の管理とmiseとの連携は、後続の設計・実装対象である。
 
 ## 8. 既存環境からの移行
 

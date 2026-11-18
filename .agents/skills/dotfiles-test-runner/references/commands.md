@@ -23,6 +23,7 @@
 | Nimの固定版・CPU別配布URL・公式SHA256 | `tests/test_nim_config.py` |
 | provider・認証前の停止・ラッパー | `tests/test_proton_pass_setup.py` |
 | PAT継承・鍵キャッシュ | `tests/test_proton_pass_key_cache.py` |
+| プロジェクト初期登録の専用コマンド・Bash/Zshの補完候補と認証を実行しない動作 | `tests/test_proton_pass_completion.py` |
 | 明示的なAPT更新・mise更新の対象・失敗集計 | `tests/test_update_apps.py` |
 | NeovimのLSP導入定義・Masonなしの登録と旧フラグ互換・Nim探索・ハイライト・Vue連携・Go整形 | `tests/test_neovim_lsp.py` |
 | basedpyrightとRuffの担当・Pythonパス変更・import整理・保存時の処理順序 | `tests/test_python_lsp.py` |
