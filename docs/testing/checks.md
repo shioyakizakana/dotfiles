@@ -22,6 +22,8 @@
 
 任意の検証として許可するskipは、`test_yazi_config.YaziConfigTests.test_yazi_loads_keymap_in_isolated_terminal`だけ。Yaziがない場合や疑似端末を作成できない場合が対象で、識別子と理由を`[任意検証skip]`として表示する。Yaziがある場合の起動失敗は通常のテスト失敗になる。TOMLの解析とキー定義のテストは、この任意検証とは別に実行する。
 
+test_environment_policy.pyは、本文を直接評価する検証に加え、.chezmoirootと初期設定テンプレートだけを一時領域へ配置した実initで設定生成を確認する。組み込みGitを使い、実HOME・認証・外部取得・applyは使用しない。
+
 検証用の環境に実PAT・age秘密鍵・Proton Passのセッションは不要。既存テストはダミーと隔離HOMEを使う。Batsは配置確認だけを行い、実際のchezmoi適用、実認証、パッケージ操作、update_appsは検証から呼ばない。
 
 プロジェクト別PATの関連テストは`test_proton_pass_setup.py`、`test_proton_pass_key_cache.py`、`test_proton_pass_completion.py`。認証対象の分離、TTL・所有者判定、初期登録コマンド、Bash・Zsh補完をダミーで確認する。実機成功報告と未確認範囲は[Proton Pass手順書](../setup/proton-pass.md#現在の状態)を参照する。

@@ -4,6 +4,10 @@
 
 この文書は会話とリポジトリを確認してまとめた作業記録。作業規約と操作承認はAGENTS.mdに従い、再開時にはGit状態を再確認する。秘密情報の実値は記載していない。
 
+## 初期化テンプレートの配置修正（2026-11-19）
+
+Termuxでclone後に設定入力が出ないとの報告を受け、初期設定テンプレートをhome/.chezmoi.toml.tmplへ移動した。.chezmoirootがhomeを指定するため、従来のリポジトリ直下ではinitの探索対象にならなかった。本文評価だけだったテストに、隔離した実initで設定生成を確認する回帰テストを追加した。実機への適用・再初期化は別途行う。
+
 ## Termux検証への引き継ぎ（2026-11-19）
 
 PR #10はmainへマージ済みで、ローカルの基点はc3fce78。利用者はmain更新後に旧作業ブランチを削除した。次はTermux本体でのdotfiles構築・検証を進める。[Termux側Codexへの引き継ぎ](CODEX_TERMUX_HANDOFF.md)に現在の状態、確認手順、承認条件と完了条件を記載した。以下の2026-11-18の作業ブランチ・PR作成前の記述は当時の記録として読む。
@@ -75,7 +79,7 @@ chezmoiを中心に、複数Linux環境のdotfiles、開発ツール、初期構
 | env方式 | `proton-pass-key-cache.py`へ委譲し、pass-cliに必要なデータベース暗号化鍵を渡す |
 | キャッシュ | encryption-key.ageとランタイムディレクトリを使う。既定TTL 900秒、上限3600秒。常駐プロセスへPAT・暗号化鍵を継承させない処理がある |
 | 初期認証 | `bootstrap/setup-proton-pass.sh`。token.ageとencryption-key.ageを扱い、既存鍵・暗号文の保護やprovider確認を行う |
-| chezmoi | `.chezmoi.toml.tmpl`のprotonPass.commandはホーム配下の通常ラッパーを指す |
+| chezmoi | `home/.chezmoi.toml.tmpl`のprotonPass.commandはホーム配下の通常ラッパーを指す |
 
 キャッシュはPATそのものを保持する仕組みではない。次の設計で、PAT、CLIのログイン状態、データベース暗号化鍵を混同しないこと。
 
@@ -197,7 +201,7 @@ make check
 | 秘密管理の確認手順 | [secret-management-review](../.agents/skills/secret-management-review/SKILL.md)、[確認観点](../.agents/skills/secret-management-review/references/checklist.md) |
 | テンプレート・テスト | [chezmoi-template-validation](../.agents/skills/chezmoi-template-validation/SKILL.md)、[テスト対応表](../.agents/skills/dotfiles-test-runner/references/commands.md)、[共通チェック](testing/checks.md) |
 | Proton Passのソース | [通常ラッパー](../home/dot_local/bin/executable_proton-pass.tmpl)、[鍵キャッシュ](../home/dot_local/bin/private_executable_proton-pass-key-cache.py.tmpl)、[initラッパー](../home/dot_local/bin/executable_init-proton-pass.tmpl)、[bootstrap](../bootstrap/setup-proton-pass.sh) |
-| Proton Passの呼び出し元 | [.chezmoi.toml.tmpl](../.chezmoi.toml.tmpl)、[Git設定テンプレート](../home/dot_gitconfig.tmpl)、[Makefile](../Makefile) |
+| Proton Passの呼び出し元 | [初期設定テンプレート](../home/.chezmoi.toml.tmpl)、[Git設定テンプレート](../home/dot_gitconfig.tmpl)、[Makefile](../Makefile) |
 | Proton Passの検証 | [setupテスト](../tests/test_proton_pass_setup.py)、[鍵キャッシュテスト](../tests/test_proton_pass_key_cache.py)、[利用者向け手順](setup/proton-pass.md) |
 | Neovimの設計と履歴 | [依存・NVタスク一覧](setup/neovim-dependencies.md)、[版管理方針](setup/tool-version-policy.md)、[DAP手順](setup/neovim-dap.md)、[uv DAP検証](testing/neovim-uv-python-dap.md) |
 | 直近の実装 | [スナップショットCLI](../home/dot_local/bin/executable_nvim-snapshot.py)、[共通関数](../home/dot_config/shell/functions.sh)、[mise設定](../home/dot_config/mise/config.toml)、[スナップショットテスト](../tests/test_neovim_snapshot.py) |

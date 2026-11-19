@@ -27,3 +27,12 @@
 
 # Neovimのlockfileは環境ごとに保持し、必要時にGit管理外へ保存する。
 /home/dot_config/nvim/lazy-lock.json
+
+# Pythonの実行で生成されるバイトコード。
+__pycache__/
+*.pyc
+*.pyo
+
+# 作業コピー内の仮想環境と、再導入できるnpm依存。
+/.venv/
+node_modules/

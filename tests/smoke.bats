@@ -16,9 +16,9 @@ ZDIR="$REPO_ROOT/home/dot_zsh"
   [ "$output" = "home" ]
 }
 
-@test ".chezmoi.toml.tmpl is at repo root, not inside home/" {
-  [ -f "$REPO_ROOT/.chezmoi.toml.tmpl" ]
-  [ ! -f "$REPO_ROOT/home/.chezmoi.toml.tmpl" ]
+@test ".chezmoi.toml.tmpl is inside the source state root home/" {
+  [ -f "$REPO_ROOT/home/.chezmoi.toml.tmpl" ]
+  [ ! -f "$REPO_ROOT/.chezmoi.toml.tmpl" ]
 }
 
 # -----------------------------------------------------------
