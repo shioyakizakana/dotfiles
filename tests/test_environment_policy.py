@@ -205,6 +205,42 @@ class EnvironmentPolicyTests(unittest.TestCase):
                 targets = set(result.stdout.splitlines())
                 self.assertTrue({str(self.base / "home" / path) for path in expected} <= targets)
 
+    def test_init_discovers_config_template_below_chezmoiroot(self):
+        checkout = self.base / "init-checkout"
+        (checkout / "home").mkdir(parents=True)
+        shutil.copyfile(ROOT / ".chezmoiroot", checkout / ".chezmoiroot")
+        # 実際の配置を保ち、外部取得設定・実スクリプト・秘密情報は持ち込まない。
+        for relative in (".chezmoi.toml.tmpl", "home/.chezmoi.toml.tmpl"):
+            if (ROOT / relative).exists():
+                shutil.copyfile(ROOT / relative, checkout / relative)
+        destination = self.base / "init-home"
+        destination.mkdir()
+        config = self.base / "init-config/chezmoi.toml"
+        result = subprocess.run(
+            [CHEZMOI, "--source", str(checkout),
+             "--destination", str(destination), "--config", str(config),
+             "--cache", str(self.base / "init-cache"),
+             "--persistent-state", str(self.base / "init-state.db"),
+             "--refresh-externals=never", "--no-tty", "--use-builtin-git=true",
+             "init", "--apply=false", "--data=false",
+             "--promptString", "Machine type (personal/work)=personal",
+             "--promptString", "Execute Linux Environment (native-ubuntu/wsl-ubuntu/qemu-ubuntu/proot-ubuntu/termux)=termux",
+             "--promptString", "Execute Linux Environment (termux/qemu-ubuntu/proot-ubuntu)=termux"],
+            env={"HOME": str(destination), "PATH": str(self.prefix / "bin"),
+                 "XDG_CONFIG_HOME": str(self.base / "init-config"),
+                 "XDG_CACHE_HOME": str(self.base / "init-cache"),
+                 "XDG_DATA_HOME": str(self.base / "init-data")},
+            capture_output=True, text=True, timeout=10,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(config.is_file(), "initが設定テンプレートを発見できていません")
+        generated = tomllib.loads(config.read_text())
+        self.assertTrue(generated["data"]["termux"])
+        self.assertEqual(generated["data"]["protonPassProvider"], "env")
+        self.assertEqual(generated["protonPass"]["command"],
+                         str(destination / ".local/bin/proton-pass"))
+        self.assertEqual(list(destination.iterdir()), [])
+
     def test_init_data_selects_termux_and_proot_policies(self):
         for linux_env, os_name, expected in (
             ("termux", "linux", set()),
@@ -225,7 +261,7 @@ class EnvironmentPolicyTests(unittest.TestCase):
                         "--promptString", f"{prompt}={linux_env}",
                     ],
                     os_name=os_name,
-                    text=(ROOT / ".chezmoi.toml.tmpl").read_text(),
+                    text=(ROOT / "home/.chezmoi.toml.tmpl").read_text(),
                 )
                 self.assertEqual(result.returncode, 0, result.stderr)
                 data = tomllib.loads(result.stdout)["data"]
@@ -242,7 +278,7 @@ class EnvironmentPolicyTests(unittest.TestCase):
              "--promptString",
              "Execute Linux Environment (native-ubuntu/wsl-ubuntu/qemu-ubuntu/proot-ubuntu/termux)=" + linux_env,
              "--promptString", "Proton Pass provider (env/keyring)=" + provider],
-            flags=flags, text=(ROOT / ".chezmoi.toml.tmpl").read_text(),
+            flags=flags, text=(ROOT / "home/.chezmoi.toml.tmpl").read_text(),
         )
 
     def test_ubuntu_init_accepts_both_providers(self):

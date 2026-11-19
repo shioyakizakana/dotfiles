@@ -36,7 +36,6 @@ chezmoiを中心に、Linux環境の設定ファイル、開発ツール、初�
 │   └── secret-management-review/
 ├── .github/workflows/check.yml
 ├── .chezmoiroot
-├── .chezmoi.toml.tmpl
 ├── AGENTS.md
 ├── README.md
 ├── Makefile
@@ -54,6 +53,7 @@ chezmoiを中心に、Linux環境の設定ファイル、開発ツール、初�
 │       └── environment-matrix.md
 ├── home/
 │   ├── AGENTS.md                  # 展開ソース用の局所規約（配布しない）
+│   ├── .chezmoi.toml.tmpl
 │   ├── .chezmoiignore
 │   ├── .chezmoiexternal.toml.tmpl
 │   ├── .chezmoiscripts/
@@ -80,7 +80,7 @@ chezmoiを中心に、Linux環境の設定ファイル、開発ツール、初�
 └── tests/
 ```
 
-`.chezmoiroot`は`home`をsource stateのルートに指定する。初期設定の`.chezmoi.toml.tmpl`はリポジトリ直下に置く。
+`.chezmoiroot`は`home`をsource stateのルートに指定する。初期設定テンプレートは`home/.chezmoi.toml.tmpl`に置く。`.chezmoiroot`はリポジトリ直下に残し、他の特殊ファイルは[公式の配置規則](https://www.chezmoi.io/reference/special-files/)に従う。
 管理対象はソース側を編集し、`dot_`、`executable_`、`private_`、`symlink_`、`.tmpl`などの属性に従ってホームへ展開する。
 たとえば`home/dot_local/bin/executable_proton-pass.tmpl`は`~/.local/bin/proton-pass`になる。初期構築や文書用の`bootstrap/`、`docs/`、`tests/`はホームへ展開しない。
 
@@ -212,9 +212,11 @@ chezmoi init shioyakizakana
 
 この段階では`--apply`を指定しない。
 
+修正前の配置でcloneだけが完了し、設定入力が出なかった場合は、修正版を取得してから既存のローカル設定を保護し、`chezmoi init`を`--apply`なしで再実行する。リポジトリや認証情報の削除は不要。保存済みデータを使う項目では、再入力が省略される場合がある。
+
 ### 4.2 初期設定の入力
 
-`.chezmoi.toml.tmpl`に定義されたプロンプトに従い、実行環境などを指定する。
+`home/.chezmoi.toml.tmpl`に定義されたプロンプトに従い、実行環境などを指定する。
 
 | 設定| 内容 |
 | --- | --- |
@@ -541,7 +543,7 @@ Bash・Zshでは、`proton-pass`、`proton-pass-key-cache.py`、`setup-proton-pa
 
 ### 10.1 `chezmoi: map has no entry for key`
 
-chezmoiの設定に必要なテンプレート変数がない可能性がある。ローカル設定の`[data]`と`.chezmoi.toml.tmpl`を比較する。
+chezmoiの設定に必要なテンプレート変数がない可能性がある。ローカル設定の`[data]`と`home/.chezmoi.toml.tmpl`を比較する。
 全データの出力を共有せず、必要な環境フラグとproviderだけを確認する。具体的なコマンドは[Proton Passの確認手順](docs/setup/proton-pass.md)を参照する。
 
 ### 10.2 `identityとrecipientが一致しません`

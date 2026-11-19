@@ -6,7 +6,7 @@
 
 | 対象 | 確認する内容 |
 | --- | --- |
-| `.chezmoi.toml.tmpl` | 初期入力から環境フラグ・providerへの変換。保存されるlinuxEnvは環境名ではなく真偽値 |
+| `home/.chezmoi.toml.tmpl` | 初期入力から環境フラグ・providerへの変換。保存されるlinuxEnvは環境名ではなく真偽値 |
 | `home/.chezmoiignore` | 拡張子はtmplではないがGo templateを含む。除外パターンは展開先の名前で指定する |
 | `home/dot_config/tmux/tmux.conf.tmpl` | Termux相当のPATH・PREFIXと、zshがない場合の出力 |
 | 認証ラッパーのtmpl | ダミーproviderによる展開と、不一致時に秘密情報操作へ進まないこと |
@@ -25,12 +25,14 @@ python3 -B -m unittest discover -s tests -p test_proton_pass_setup.py -v
 `test_environment_policy.py`のrun_chezmoiとrender_init、`test_proton_pass_setup.py`のラッパー展開を参考に、必要なケースを追加する。
 初期入力を再現する`execute-template --init`は、実際の`chezmoi init`とは別の操作。隔離した設定と確認済みの初期設定テンプレートに限って使用する。
 
+設定テンプレートの探索はtest_init_discovers_config_template_below_chezmoirootで確認する。このテストだけは、一時領域へ.chezmoirootと初期設定テンプレートのみを実配置のままコピーし、組み込みGitによるローカルinitで設定を生成する。HOME・config・destination・cache・persistent-stateと環境変数を隔離し、通信・apply・実スクリプト・実認証を伴わない。
+
 ## fixtureの条件
 
 - sourceには確認済みのファイルだけを置く。実リポジトリ全体やchezmoiexternal設定をコピーしない。
 - config・source・destination・cache・persistent-stateを一時ディレクトリへ明示する。実HOMEの設定や状態を参照しない。
 - HOME・PATHなど必要な環境変数だけを渡す。認証情報や実際のprovider上書きを継承しない。
-- `--refresh-externals=never`と`--no-tty`を指定し、managedまたはexecute-templateを使用する。
+- `--refresh-externals=never`と`--no-tty`を指定する。通常はmanagedまたはexecute-templateを使い、上記の探索テストだけは隔離したinitを使用する。
 - スクリプトは実処理を持ち込まず、実行されないダミーを使う。一時領域はテスト終了時に片付ける。
 
 既存フラグはnativeUbuntu・wslUbuntu・qemuUbuntu・prootUbuntu・termux。Termuxが優先される混在ケース、未知環境、linux・androidの両OS値も必要に応じて確認する。

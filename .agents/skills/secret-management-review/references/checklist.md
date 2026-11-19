@@ -6,7 +6,7 @@
 
 | ソース | 確認する処理 |
 | --- | --- |
-| `.chezmoi.toml.tmpl` | 環境フラグ、provider、CLIラッパーの参照先 |
+| `home/.chezmoi.toml.tmpl` | 環境フラグ、provider、CLIラッパーの参照先 |
 | `bootstrap/setup-proton-pass.sh` | 設定の事前検証、identity・暗号文の保護、初期認証、一時ファイル |
 | `home/dot_local/bin/executable_init-proton-pass.tmpl` | provider確認と通常ラッパーへの委譲 |
 | `home/dot_local/bin/executable_proton-pass.tmpl` | PATの復号とCLI・キャッシュへの環境変数の受け渡し |
