@@ -243,6 +243,60 @@ main "$@"
                          [f"login {data}/cli dummy-pat", f"info {data}/cli absent"])
 
     @unittest.skipUnless(CHEZMOI, "chezmoiが必要です")
+    def test_termux_entrypoints_use_prefix_env_without_changing_linux_shebangs(self):
+        entries = (
+            ("executable_proton-pass.tmpl", "bash"),
+            ("executable_init-proton-pass.tmpl", "bash"),
+            ("executable_setup-proton-pass-project.tmpl", "bash"),
+            ("private_executable_proton-pass-key-cache.py.tmpl", "python3"),
+        )
+        with tempfile.TemporaryDirectory(prefix="termux-entry-", dir="/tmp") as directory:
+            prefix = Path(directory)
+            (prefix / "bin").mkdir()
+            for name, executable in (("env", shutil.which("env")), ("bash", BASH),
+                                     ("python3", sys.executable)):
+                (prefix / "bin" / name).symlink_to(executable)
+            source = self.base / "empty-source"
+            source.mkdir()
+            config = self.base / "shebang.json"
+            environment = {**self.env, "PREFIX": str(prefix), "PATH": str(prefix / "bin")}
+            for flags in ({"termux": True}, {"prootUbuntu": True}, {}):
+                config.write_text(json.dumps({"data": {**flags, "protonPassProvider": "env"}}))
+                for name, language in entries:
+                    with self.subTest(flags=flags, name=name):
+                        result = subprocess.run(
+                            [CHEZMOI, "--config", str(config), "--source", str(source),
+                             "--destination", self.env["HOME"], "--cache", str(self.base / "cache"),
+                             "--persistent-state", str(self.base / "state.db"),
+                             "--refresh-externals=never", "execute-template"],
+                            input=(ROOT / "home/dot_local/bin" / name).read_text(),
+                            env=environment, capture_output=True, text=True, timeout=10,
+                        )
+                        self.assertEqual(result.returncode, 0, result.stderr)
+                        first_line = result.stdout.splitlines()[0]
+                        expected = str(prefix / "bin/env") if flags.get("termux") else "/usr/bin/env"
+                        self.assertEqual(first_line, f"#!{expected} {language}")
+                        if flags.get("termux"):
+                            probe = prefix / "probe"
+                            body = 'print("dummy entry")' if language == "python3" else 'printf "dummy entry\\n"'
+                            probe.write_text(first_line + "\n" + body + "\n")
+                            probe.chmod(0o755)
+                            direct = subprocess.run([str(probe)], env=environment,
+                                                    capture_output=True, text=True, timeout=10)
+                            self.assertEqual(direct.returncode, 0, direct.stderr)
+                            self.assertEqual(direct.stdout, "dummy entry\n")
+                            from_chezmoi = subprocess.run(
+                                [CHEZMOI, "--config", str(config), "--source", str(source),
+                                 "--destination", self.env["HOME"], "--cache", str(self.base / "cache"),
+                                 "--persistent-state", str(self.base / "state.db"),
+                                 "--refresh-externals=never", "execute-template"],
+                                input="{{ output " + json.dumps(str(probe)) + " }}",
+                                env=environment, capture_output=True, text=True, timeout=10,
+                            )
+                            self.assertEqual(from_chezmoi.returncode, 0, from_chezmoi.stderr)
+                            self.assertEqual(from_chezmoi.stdout, "dummy entry\n")
+
+    @unittest.skipUnless(CHEZMOI, "chezmoiが必要です")
     def test_wrapper_routes_project_and_explicit_global_without_ambient_selection(self):
         source = self.base / "empty-source"
         source.mkdir()

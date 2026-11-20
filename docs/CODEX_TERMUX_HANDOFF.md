@@ -2,6 +2,14 @@
 
 作成日：2026-11-19。対象はTermux本体で動くCodexとdotfilesの作業コピー。まず1〜4節を読み、変更を伴わない現状確認から始める。導入・設定適用・認証は、実施対象と承認状況を確認してから進める。
 
+## chezmoiからのラッパー起動失敗と修正（2026-11-20追記）
+
+PR #13はmainへ取り込み済み。別セッションのハードリンク対応後、利用者はTermuxでpkg install proton-pass-cliを実施し、基礎bootstrap、ラッパー経由のPATログイン、保管庫一覧表示、ssh-agent起動の成功を報告した。続くchezmoi applyは.gitconfigのprotonPassからラッパーを直接起動する段階で停止した。以下のbootstrap成功前の記録は当時の状態として読む。
+
+作業ブランチはfix/termux-proton-pass-shebangで、基点は5e62543。Termuxの場合だけ関連4コマンドのシバンをPREFIX/bin/envへ展開し、シバン補正に依存しない形へ修正した。Linux・prootは従来どおり。ローカルのmake checkはunittest 353件・Bats 18件が成功、skip 0件。利用者の追加確認で、ラッパーは実行可能、先頭行は#!/usr/bin/env bash、/usr/bin/envは実行不可、PREFIX/bin/envは実行可能と分かった。実ファイルの欠落ではなく、シバン先を実行できない状態を確認済み。修正後の限定適用と通常applyの実機確認は未完了。
+
+次は修正版を取得し、[Proton Pass手順書13節](setup/proton-pass.md#13-termuxでchezmoiからラッパーを起動できない場合2026-11-20)に従って関連4ファイルを限定適用した後、通常のapplyを再試行する。既存の認証情報を移行・削除しない。Codex側では実認証・秘密値の取得・実環境への適用を行っていない。
+
 ## Termux初期構築の停止と修正案（2026-11-20）
 
 PR #12はmainへ取り込み済み。利用者はTermuxで再度chezmoi initを実行し、promptStringOnceが正常に動作したと報告した。次のbootstrapはidentity生成後のファイル確定で停止したため、fix/termux-bootstrap-publishをmainの1c43852から作成した。

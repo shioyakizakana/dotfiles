@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!{{ if get . "termux" }}{{ $prefix := env "PREFIX" }}{{ if not (hasPrefix "/" $prefix) }}{{ fail "TermuxのPREFIXには絶対パスが必要です" }}{{ end }}{{ joinPath $prefix "bin/env" }}{{ else }}/usr/bin/env{{ end }} bash
 set -euo pipefail
 umask 077
 
