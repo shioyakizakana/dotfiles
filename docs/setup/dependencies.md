@@ -115,7 +115,9 @@ python3 --version
 mise --version
 ```
 
-Homebrewは対象外。Proton Pass CLIの自動取得・認証は行わず、基礎導入の終了状態が0でも認証準備完了とは扱わない。公式の[対応環境](https://protonpass.github.io/pass-cli/get-started/installation/)ではAndroidネイティブの対応を確認できていない。既存のpass-cliも存在のみの確認なので、必要なら利用者が`pass-cli --version`を確認する。動かない場合はTermux側の認証構築を保留し、proot Ubuntu側での構築を検討する。
+Homebrewは対象外。Proton Pass CLIの自動取得・認証は行わず、基礎導入の終了状態が0でも認証準備完了とは扱わない。当初の調査では、公式の[対応環境](https://protonpass.github.io/pass-cli/get-started/installation/)ではAndroidネイティブの対応を確認できていなかった。既存のpass-cliも存在のみの確認なので、必要なら利用者が`pass-cli --version`を確認する。動かない場合はTermux側の認証構築を保留し、proot Ubuntu側での構築を検討する。
+
+2026-11-20の利用者報告では、pkg install proton-pass-cliによる導入後に基礎bootstrapが成功し、Proton PassラッパーでのPATログインと保管庫一覧表示、ssh-agentの起動も成功した。この端末での確認結果であり、全ミラーの候補や他端末の動作まで確認済みとは扱わない。続くchezmoi applyはラッパーの直接起動で停止しており、[シバンの修正手順](proton-pass.md#13-termuxでchezmoiからラッパーを起動できない場合2026-11-20)を参照する。
 
 mise本体の導入は、Ubuntu用の管理対象TOMLをTermuxへ展開する許可を意味しない。開発ツール一式と各バックエンドのAndroid互換性は別途確認する。Zsh・fzf・LuaRocksはこの導入処理には追加していない。
 

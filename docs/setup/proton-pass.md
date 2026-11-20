@@ -11,6 +11,8 @@ DF-07のコード修正後に、利用者が実環境で行う確認手順。実
 
 ## 現在の状態
 
+2026-11-20の追加報告：TermuxでCLIの導入、PATログイン、保管庫一覧、ssh-agent起動は成功した。続くchezmoi applyはラッパーの直接起動で停止しており、修正と再確認の手順は13節に記載する。
+
 2026-11-20追記：Termux本体では初期設定の入力成功が報告されたが、その後のbootstrapはidentityのファイル確定で停止した。修正案と、実機確認待ちの範囲は12節を参照する。
 
 プロジェクト別PATの選択・保存配置・env限定・PAT用identityの共有は承認済みで、この作業ブランチに実装済み。利用者による実環境への適用と、以下の動作確認も完了している。6節の設計案や各実装段階の「未実施」は、その時点の記録として読む。
@@ -443,3 +445,27 @@ proton-pass --profile pat-test vault list
 この共通処理はidentity、recipient、PAT・CLI鍵の暗号文で使う。パスや暗号化方式は変更せず、bootstrapの必須コマンドをlnからmvへ変更した。回帰テスト4件で、ハードリンク非対応、権限維持、既存データの非上書き、不正な宛先、競合、移動失敗時のエラー表示と元データ維持を確認した。関連テスト24件と、make checkのunittest 352件・Bats 18件が成功し、skipは0件。実鍵の生成・復号・認証は行っていない。
 
 利用者が修正版を取得した後に再試行する場合は、同じTermux環境で既存のbootstrap手順を使う。bootstrapはソースから実行するため、この修正のためだけのchezmoi applyは不要。identity・recipient・暗号文の削除や鍵再生成を先に行わず、既存ファイルに不整合があれば停止した状態で確認する。
+
+## 13. Termuxでchezmoiからラッパーを起動できない場合（2026-11-20）
+
+利用者は、TermuxでProton Pass CLIをpkgから導入し、ラッパー経由のPATログイン、保管庫一覧表示、ssh-agentデーモンの起動に成功した。その後のchezmoi applyは.gitconfigのprotonPass呼び出しで、ラッパーへのfork/execがno such file or directoryとなって停止した。秘密値の取得前のプロセス起動段階のエラーである。
+
+ラッパーが存在していても、シバンに指定したインタプリタが存在しなければ同じエラーになる。従来の関連コマンドは/usr/bin/envを指定していた。[Termux公式の実行環境資料](https://github.com/termux/termux-packages/wiki/Termux-execution-environment)でも、シバン補正を利用できない起動ではこの形式が失敗し得ると説明されている。利用者の追加確認では、ラッパーは実行可能で、先頭行は#!/usr/bin/env bashだった。/usr/bin/envは実行不可、PREFIX/bin/envは実行可能だった。存在するラッパーのシバン先を実行できない状態が確認できたため、今回の直接起動失敗の原因をシバン不整合として記録する。修正後の限定適用と通常applyの成功確認は残す。
+
+修正後はtermuxフラグがtrueの場合だけ、proton-pass、init-proton-pass、setup-proton-pass-project、proton-pass-key-cache.pyのシバンをPREFIX/bin/envへ展開する。PREFIXが空または相対パスなら展開を停止する。Linux・prootでは/usr/bin/envを維持し、Bash・Pythonの選択は引き続きPATHに従う。provider、PAT、セッション、キャッシュの配置は変えない。
+
+修正版を取得した利用者は、Termuxで差分を確認してから関連4ファイルだけを適用する。以下は利用者向けの操作例であり、Codexは実行していない。
+
+```sh
+chezmoi apply --include=files --refresh-externals=never \
+  "$HOME/.local/bin/proton-pass" \
+  "$HOME/.local/bin/init-proton-pass" \
+  "$HOME/.local/bin/setup-proton-pass-project" \
+  "$HOME/.local/bin/proton-pass-key-cache.py"
+head -n 1 "$HOME/.local/bin/proton-pass"
+head -n 1 "$HOME/.local/bin/proton-pass-key-cache.py"
+```
+
+先頭行がTermuxの絶対パスのenvを指すことを確認後、通常のchezmoi applyを再試行する。出力に秘密値が含まれる可能性があるため、共有ログへ貼らない。セッションが有効なら、今回の修正のための再ログイン・鍵再生成・ssh-agent再起動は不要。
+
+隔離したPREFIX・HOMEとダミー処理で、関連4コマンドのシバン、補正ライブラリなしの直接起動、chezmoi経由の起動を確認した。Linux・prootでPREFIXを引き継いでも既存形式を維持することも確認した。make checkはunittest 353件・Bats 18件が成功し、skipは0件。実PAT・実鍵・実セッションは使用していない。

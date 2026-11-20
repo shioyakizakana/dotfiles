@@ -119,7 +119,7 @@ reload、プロンプト、補完、キー操作、mise・zoxide・atuinなど�
 - `make`、Bash、`flock`などの基本コマンド
 - Python 3.11以上（env方式の鍵キャッシュに使用）
 
-鍵キャッシュのシバンは`#!/usr/bin/env python3`なので、PATH上のPythonを使う。OS標準のPythonに固定されているわけではない。
+鍵キャッシュはPATH上のPythonを使う。Linux・prootのシバンは`#!/usr/bin/env python3`、Termuxは`$PREFIX/bin/env python3`へ展開する。Proton Pass関連のBashスクリプトも同じ方法でTermuxのenvを指定し、シバン補正に依存しない。Termux設定の展開時には絶対パスの`PREFIX`が必要。
 `make require`の確認対象は主要コマンドと`~/.local/bin/chezmoi`。Pythonやflockなどは、このターゲットでは確認しない。基礎導入後も必要なコマンドとPythonのバージョンを確認する。
 
 #### 3.1.1 基礎ツールのインストール
