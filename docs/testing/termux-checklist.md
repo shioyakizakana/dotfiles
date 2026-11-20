@@ -24,7 +24,7 @@ python3 --version
 chezmoi --version
 ```
 
-Termuxと判定され、Pythonが3.11以上で、必要な実行ファイルがTermux用に準備されていることを確認する。不足があれば導入手順へ戻る。`[MANUAL]`・`[UNVERIFIED]`は準備完了と数えない。pass-cliの準備・認証は今回の確認に含めず、以降のテストにも実認証は不要。
+Termuxと判定され、Pythonが3.11以上で、必要な実行ファイルがTermux用に準備されていることを確認する。不足があれば導入手順へ戻る。`[--] pkg:名前`は未導入を示す。Proton Pass CLIとpkg対応開発ツールもbootstrapの導入対象だが、認証は今回の確認に含めず、以降のテストにも実認証は不要。
 
 proot Ubuntuを確認する場合はゲスト内で別途実行し、Ubuntuと判定されることを確認する。Termuxの実行ファイルや生成hookをゲストのものと共用しない。
 
