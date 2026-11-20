@@ -24,7 +24,9 @@ class ProtonCompletionTests(unittest.TestCase):
         self.bin = self.home / ".local/bin"
         self.bin.mkdir(parents=True)
         self.helper = self.bin / "proton-pass-key-cache.py"
-        shutil.copyfile(ROOT / "home/dot_local/bin/private_executable_proton-pass-key-cache.py.tmpl", self.helper)
+        source = (ROOT / "home/dot_local/bin/private_executable_proton-pass-key-cache.py.tmpl").read_text()
+        # シバンの展開はsetupテストで確認し、ここでは補完処理を検証する。
+        self.helper.write_text(f"#!{sys.executable}\n" + source.partition("\n")[2])
         self.helper.chmod(0o755)
         (self.bin / "python3").symlink_to(sys.executable)
         self.trace = self.base / "trace"

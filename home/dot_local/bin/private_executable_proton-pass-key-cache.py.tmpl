@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!{{ if get . "termux" }}{{ $prefix := env "PREFIX" }}{{ if not (hasPrefix "/" $prefix) }}{{ fail "TermuxのPREFIXには絶対パスが必要です" }}{{ end }}{{ joinPath $prefix "bin/env" }}{{ else }}/usr/bin/env{{ end }} python3
 """Proton Passのenvプロバイダー向け一時鍵キャッシュ（Linux / Android Termux）。
 
 CLIのデータベース暗号化鍵（64桁の16進数）だけを常駐プロセスのメモリに保持する。
