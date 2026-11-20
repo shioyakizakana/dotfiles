@@ -2,6 +2,14 @@
 
 作成日：2026-11-19。対象はTermux本体で動くCodexとdotfilesの作業コピー。まず1〜4節を読み、変更を伴わない現状確認から始める。導入・設定適用・認証は、実施対象と承認状況を確認してから進める。
 
+## 現在の状態とpkg導入の追加
+
+利用者はPR #14のマージ・取得後、修正版をTermuxへ適用し、chezmoi applyの正常終了を確認した。以下のシバン修正後のapply未確認という記述は当時の記録として読む。
+
+今回の変更では、bootstrap-tools.shがTermux本体と確認できた場合に限り、Proton Pass CLI・Codexとpkg対応の開発ツールを導入する。対象は同スクリプトのTERMUX_PACKAGES。Ubuntu用mise設定・導入処理はTermuxへ展開せず、重複導入を防ぐ。Ubuntu・prootの導入方法と認証の初期化処理は変更しない。
+
+次は[Termuxの導入手順](setup/dependencies.md#termuxでの導入と実機確認)で対象一覧と不足を確認し、利用者の承認範囲でbootstrapを実行する。make bootstrap-toolsでも実行可能。既存のローカルmise設定と導入済みツールは削除しないため、PATHの競合、pkg版の違い、LSP・DAPの不足を確認する。新しい一括導入はモック検証の対象であり、Termux実機での成功はまだ確認していない。
+
 ## chezmoiからのラッパー起動失敗と修正（2026-11-20追記）
 
 PR #13はmainへ取り込み済み。別セッションのハードリンク対応後、利用者はTermuxでpkg install proton-pass-cliを実施し、基礎bootstrap、ラッパー経由のPATログイン、保管庫一覧表示、ssh-agent起動の成功を報告した。続くchezmoi applyは.gitconfigのprotonPassからラッパーを直接起動する段階で停止した。以下のbootstrap成功前の記録は当時の状態として読む。
@@ -94,7 +102,7 @@ command -v zsh lua bats shellcheck shfmt lefthook
 
 存在したコマンドだけバージョンを確認し、OS・CPU、対象コミット、導入済みと不足を記録する。Pythonは3.11以上が必要。Termux本体と判定されることを確かめ、Ubuntuと判定された場合は実行場所と継承設定を調べる。
 
---checkは不足があっても正常終了するため、終了コードだけで準備完了としない。pass-cliのMANUAL・UNVERIFIEDも未確認として残す。chezmoi data、環境変数全体、秘密ファイルの内容を表示して現状確認しない。
+--checkは不足があっても正常終了するため、終了コードだけで準備完了としない。pkg管理対象はパッケージの導入状況も確認する。chezmoi data、環境変数全体、秘密ファイルの内容を表示して現状確認しない。
 
 ## 5. 検証を進める順序と条件
 
@@ -114,7 +122,7 @@ Termuxパッケージのchezmoiで設定適用用Makeターゲットを使う場
 ## 6. 維持する仕様と停止条件
 
 - 対象はAPT/dpkg方式のTermux。Ubuntu用APT導入、Homebrew、Ubuntu用mise設定と一括導入スクリプトの展開除外を維持する。mise本体を導入できても、Ubuntu用ツール一式が利用可能とは判断しない。
-- 基礎bootstrapはTermux用pass-cliを自動導入しない。実行互換性が未解決なら認証段階を保留し、基礎導入・共通テストの結果は別に記録する。
+- bootstrapはTermux用proton-pass-cliをpkgで導入する。認証は自動実行せず、導入・共通テストの結果と実認証の確認を分けて記録する。
 - 不明な配布元やLinux用バイナリへ自動で切り替えない。新しい依存・認証方式・保存場所が必要なら、理由と影響を示して承認を得る。
 - PAT、age identity、復号結果、秘密変数を表示・Git追加しない。既存のproot用identityやセッションをTermuxへコピーして解決しない。
 - 不具合は再現条件を記録し、最小の修正と対応テストを追加する。テスト失敗を理由に検証条件を弱めない。

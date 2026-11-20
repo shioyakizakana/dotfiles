@@ -18,7 +18,7 @@ chezmoiを中心に、Linux環境の設定ファイル、開発ツール、初�
 | WSL版Ubuntu | `wsl-ubuntu` | `keyring` / `env` |
 | ネイティブUbuntu | `native-ubuntu` | `keyring` / `env` |
 
-`keyring`を利用する場合は、D-Busセッション、`busctl`、Secret Serviceが必要になる。Termuxの基礎ツールはbootstrap-tools.shで導入できるが、pass-cliや追加ツールには手動準備が残る。Ubuntu向けの一括導入やmise設定はTermuxには適用しない。
+`keyring`を利用する場合は、D-Busセッション、`busctl`、Secret Serviceが必要になる。Termuxではbootstrap-tools.shがProton Pass CLIとpkg対応の開発ツールを導入する。pkgに対応しない追加ツールは別途準備する。Ubuntu向けの一括導入やmise設定はTermuxには適用しない。
 
 > [!Note]
 > 認証bootstrapはchezmoiに保存した環境フラグを使用する。`LINUX_ENV`を明示する場合も、保存した環境との一致を要求する。
@@ -132,13 +132,15 @@ bash bootstrap/bootstrap-tools.sh --check
 bash bootstrap/bootstrap-tools.sh --install
 ```
 
-`--check`はディレクトリを作成せずにコマンドの存在を表示する。Python・Zsh・fzf・LuaRocksなども確認するが、バージョンや動作の互換性は別途確認する。
+`make bootstrap-tools`でも同じ導入処理を実行できる。既存の`make bootstrap`は認証の初期構築用として維持する。
+
+`--check`はディレクトリを作成せずにコマンドの存在を表示する。Termuxではpkg管理対象の導入状況も表示する。Python・Zsh・fzf・LuaRocksなども確認するが、バージョンや動作の互換性は別途確認する。
 
 | 実行環境 | `--install`の導入範囲 |
 | --- | --- |
 | Ubuntu系 | APTの基礎パッケージと、未導入のchezmoi・pass-cli・mise・Homebrew。Python・wget・opensslなどは別途準備 |
 | proot Ubuntu | Ubuntuと同じ。ただしHomebrewの新規導入は省略 |
-| Termux本体 | pkgによる基礎パッケージ・chezmoi・Python・make・OpenSSLコマンド・wget・util-linux・miseなど。Homebrewは対象外、pass-cliは手動準備 |
+| Termux本体 | pkgによる基礎パッケージ・chezmoi・Python・make・OpenSSLコマンド・wget・util-linux・miseなど。Proton Pass CLI・Codexとpkg対応の開発ツールも含む。Homebrewは対象外 |
 
 Termuxでは通常ユーザーで実行する。導入済みパッケージは省き、不足がある場合だけ一覧更新と導入を行う。APT・pkgとも、依存解決によって既存パッケージが更新される場合がある。一括upgradeは実行しない。詳細と実機での確認手順は[依存一覧](docs/setup/dependencies.md#termuxでの導入と実機確認)を参照する。
 prootで自動判定が難しい場合は`BOOTSTRAP_PROOT=1`を付ける。prootのHomebrew新規導入は省く。
@@ -158,7 +160,7 @@ bash -c "$bootstrap_script" bootstrap-tools.sh --install
 
 実行する内容を固定したい場合は、取得URLの`refs/heads/main`を対象コミットのSHAへ置き換える。
 
-基礎導入にはProton Passの認証、dotfilesの初期化・適用、mise管理ツール一式の導入は含まれない。Termuxのpass-cliは未導入なら`[MANUAL]`、存在しても`[UNVERIFIED]`と表示する。基礎導入の成功を認証準備の完了とは扱わない。
+導入にはProton Passの認証、dotfilesの初期化・適用、miseによるツール導入は含まれない。Termuxではpkg対応分を導入し、Ubuntu用mise設定と適用後スクリプトを除外して重複導入を防ぐ。既存のローカルmise設定や導入済みツールは削除しない。導入成功後も各ツールの版と実行可否を確認する。
 
 Termuxではchezmoiが`$PREFIX/bin/chezmoi`へ配置されるため、後続のMake操作に`CHEZMOI_BIN`を指定する。以下の確認はpass-cliが未準備なら失敗する。以降の手順でMakeを使う場合にも、同じ引数を付ける。
 

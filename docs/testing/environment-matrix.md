@@ -63,7 +63,7 @@ APTはrootなら直接実行し、非rootならsudoを必要とする。導入�
 
 `tests/test_bootstrap_platforms.py`は、Ubuntu・TermuxのOS情報、空白を含むHOME、Termux相当のPREFIX、pkg・dpkg-query・APT・sudoをダミーで用意する。ダウンロードやHomebrewなどの予想外の呼び出しもダミーで停止させ、実コマンドへ渡さない。
 
-Termuxの基礎パッケージ・mise導入、導入済みの省略、pkg一覧更新の重複防止、更新失敗・導入失敗・導入後確認失敗、root・未対応パッケージマネージャーの拒否を検証する。UbuntuゲストはPREFIXを引き継いでもTermuxと誤認しないこと、UbuntuのAPT引数とprootのHomebrew新規導入省略も確認する。
+Termuxの基礎パッケージ・mise・Proton Pass CLI・pkg対応開発ツールの導入、導入済みの省略、pkg一覧更新の重複防止、更新失敗・導入失敗・導入後確認失敗、root・未対応パッケージマネージャーの拒否を検証する。UbuntuゲストはPREFIXを引き継いでもTermuxと誤認しないこと、UbuntuのAPT引数とprootのHomebrew新規導入省略も確認する。
 
 `--check`ではpkg・ダウンロード・pass-cliを実行せず、HOME内のファイルを作成しない。ファイル・bash -c・標準入力からの起動は`--help`で検証する。Termuxの実パッケージ候補、Android上でのバイナリ実行、ミラーへの接続、Proton Pass認証は未実施であり、[実機確認手順](../setup/dependencies.md#termuxでの導入と実機確認)に沿って利用者が確認する。
 

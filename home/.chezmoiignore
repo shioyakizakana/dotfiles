@@ -20,6 +20,7 @@ AGENTS.md
 {{ $ubuntu := and (not (get . "termux")) (or (and (eq .chezmoi.os "linux") $ubuntuFlags) $androidGuest) }}
 {{ if not $ubuntu }}
 # Ubuntu用の一括導入とmise設定は、Termuxや未対応環境には適用しない。
+# Termuxのpkg管理対象をmiseでも重複導入しない。pkgはbootstrap-tools.shで扱う。
 # スクリプトはrun_after_属性を除いた名前で指定する。
 .chezmoiscripts/install-apt.sh
 .chezmoiscripts/install-mise.sh

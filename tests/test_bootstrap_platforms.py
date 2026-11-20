@@ -14,7 +14,14 @@ MKDIR = shutil.which("mkdir")
 CAT = shutil.which("cat")
 CHMOD = shutil.which("chmod")
 PACKAGES = {"ca-certificates", "curl", "git", "age", "chezmoi", "python", "make",
-            "openssl-tool", "wget", "util-linux", "procps", "file", "coreutils", "mise"}
+            "openssl-tool", "wget", "util-linux", "procps", "file", "coreutils", "mise",
+            "proton-pass-cli", "7zip", "atuin", "bat", "biome2", "bun", "codex", "deno",
+            "eza", "fd", "ffmpeg", "gh", "ghq", "git-delta", "git-lfs", "gofumpt",
+            "goimports", "golang", "golangci-lint", "gopls", "imagemagick", "jq", "lazygit",
+            "lua-language-server", "lua51", "marksman", "neovim", "nim", "nodejs-lts",
+            "npm", "oxlint", "pnpm", "poppler", "ripgrep", "ruby", "ruff", "rust",
+            "shellcheck", "shfmt", "sops", "stylua", "taplo", "tealdeer", "tmux",
+            "tree-sitter", "ty", "uv", "yazi", "yq", "zoxide"}
 
 
 @unittest.skipUnless(BASH and MKDIR and CAT and CHMOD, "Bash・mkdir・cat・chmodが必要です")
@@ -64,7 +71,10 @@ for package do
   [[ "${OMIT_PACKAGE:-}" == "$package" ]] && continue
   : > "$STATE/$package"
   case "$package" in
-    chezmoi|mise) printf '#!%s\\nexit 0\\n' "$FIXTURE_BASH" > "$PREFIX/bin/$package"
+    proton-pass-cli) package=pass-cli ;;
+  esac
+  case "$package" in
+    chezmoi|mise|pass-cli) printf '#!%s\\nexit 0\\n' "$FIXTURE_BASH" > "$PREFIX/bin/$package"
                  "$FIXTURE_CHMOD" 755 "$PREFIX/bin/$package";;
   esac
 done
@@ -93,11 +103,13 @@ read_os_release() { ID="${FIXTURE_OS:-}"; PRETTY_NAME="${FIXTURE_OS:-Termux}"; }
         self.assertEqual({path.name for path in self.state.iterdir()}, PACKAGES)
         calls = self.trace.read_text().splitlines()
         self.assertEqual(calls.count("pkg update -y"), 1)
-        self.assertEqual(len(calls), 3)
+        self.assertEqual(len(calls), 2)
+        requested = calls[1].split()[3:]
+        self.assertEqual(len(requested), len(set(requested)))
         self.assertTrue(all(call.startswith("pkg ") for call in calls))
-        self.assertIn("[MANUAL] pass-cli", result.stdout)
+        self.assertIn("[OK] pass-cli", result.stdout)
+        self.assertIn("[OK] pkg:codex", result.stdout)
         self.assertIn("[SKIP] Homebrew", result.stdout)
-        self.assertIn("認証準備は未完了", result.stderr)
         self.assertFalse((self.home / ".local").exists())
 
     def test_repeated_termux_install_does_not_update_or_reinstall_packages(self):
@@ -115,13 +127,15 @@ read_os_release() { ID="${FIXTURE_OS:-}"; PRETTY_NAME="${FIXTURE_OS:-Termux}"; }
         self.assertEqual(result.returncode, 0, result.stderr)
         calls = self.trace.read_text().splitlines()
         installed = set(calls[1].split()[3:])
-        self.assertEqual(installed, PACKAGES - {"git", "age", "python", "mise"})
+        self.assertEqual(installed, PACKAGES - {"git", "age", "python"})
 
-    def test_termux_check_is_read_only_and_marks_existing_pass_cli_unverified(self):
+    def test_termux_check_is_read_only_and_does_not_execute_pass_cli(self):
         self.stub("pass-cli", 'printf "forbidden:pass-cli\\n" >> "$TRACE"; exit 89\n')
         result = self.run_script('main --check')
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("[UNVERIFIED] pass-cli", result.stdout)
+        self.assertIn("[OK] pass-cli", result.stdout)
+        self.assertIn("[--] pkg:proton-pass-cli", result.stdout)
+        self.assertIn("[--] pkg:codex", result.stdout)
         self.assertIn("[SKIP] Homebrew", result.stdout)
         self.assertEqual(self.trace.read_text(), "")
         self.assertEqual(list(self.home.iterdir()), [])
@@ -189,8 +203,11 @@ read_os_release() { ID="${FIXTURE_OS:-}"; PRETTY_NAME="${FIXTURE_OS:-Termux}"; }
         self.assertEqual(list(self.state.iterdir()), [])
 
     def test_failed_install_or_missing_package_is_not_reported_as_success(self):
-        for options in ({"INSTALL_EXIT": "22"}, {"OMIT_PACKAGE": "python"}):
+        for options in ({"INSTALL_EXIT": "22"}, {"OMIT_PACKAGE": "python"},
+                        {"OMIT_PACKAGE": "proton-pass-cli"}, {"OMIT_PACKAGE": "codex"}):
             with self.subTest(options=options):
+                for path in self.state.iterdir():
+                    path.unlink()
                 result = self.run_script(**options)
                 self.assertNotEqual(result.returncode, 0)
                 self.assertNotIn("基礎ツールの導入が完了", result.stdout)
