@@ -181,11 +181,14 @@ acquire_setup_lock() {
   flock -n 9 || die '別のbootstrapが実行中です'
 }
 
-# 宛先が未作成の場合のみハードリンクで確定する。既存ファイルは上書きしない。
+# 同じ保存領域の一時ファイルを、ハードリンクを使わず上書き禁止で確定する。
 publish_once() {
   local src="$1" dest="$2"
-  if ln -- "$src" "$dest" 2>/dev/null; then
-    return 0
+  if mv -nT -- "$src" "$dest"; then
+    # mv -nは既存ファイルを残した場合も成功するため、移動済みか確認する。
+    if [[ ! -e "$src" && ! -L "$src" ]]; then
+      return 0
+    fi
   fi
   [[ -s "$dest" && -f "$dest" && ! -L "$dest" ]] || die 'ファイルの確定に失敗しました: %s' "$dest"
   warn '既存のファイルを再利用します: %s' "$dest"
@@ -317,7 +320,7 @@ print_next_steps() {
 main() {
   init_colors
   confirm_setup
-  require age age-keygen pass-cli "${CHEZMOI_BIN:-chezmoi}" openssl mktemp ln chmod install dirname rm flock cat
+  require age age-keygen pass-cli "${CHEZMOI_BIN:-chezmoi}" openssl mktemp mv chmod install dirname rm flock cat
   initialize_environment "$@"
   acquire_setup_lock
   initialize_age_identity

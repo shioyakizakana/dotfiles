@@ -74,6 +74,82 @@ main "$@"
         self.assertNotIn("login", self.trace.read_text())
         self.assertFalse((self.base / "home/.local/share/proton-pass").exists())
 
+    def run_publish(self, source, destination):
+        return subprocess.run(
+            [BASH, "-c", 'source "$1"; publish_once "$2" "$3"',
+             "test", str(self.script), str(source), str(destination)],
+            env=self.env, capture_output=True, text=True, timeout=10,
+        )
+
+    def test_publish_succeeds_without_hardlinks_and_preserves_permissions(self):
+        self.stub("ln", "exit 1\n")
+        self.stub("mv", 'exec ' + shlex.quote(shutil.which("mv")) + ' "$@"\n')
+        source = self.base / "dummy encrypted source"
+        source.write_text("dummy encrypted content")
+        source.chmod(0o600)
+        destination = self.base / "dummy published.age"
+        result = self.run_publish(source, destination)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(destination.read_text(), "dummy encrypted content")
+        self.assertEqual(destination.stat().st_mode & 0o777, 0o600)
+        self.assertFalse(source.exists())
+
+    def test_publish_preserves_existing_file_and_rejects_unsafe_targets(self):
+        self.stub("ln", "exit 1\n")
+        self.stub("mv", 'exec ' + shlex.quote(shutil.which("mv")) + ' "$@"\n')
+        for kind in ("regular", "directory", "symlink", "empty"):
+            with self.subTest(kind=kind):
+                area = self.base / kind
+                area.mkdir()
+                source = area / "source"
+                source.write_text("new dummy")
+                destination = area / "destination"
+                if kind == "regular":
+                    destination.write_text("existing dummy")
+                elif kind == "directory":
+                    destination.mkdir()
+                elif kind == "symlink":
+                    destination.symlink_to("missing")
+                else:
+                    destination.touch()
+                result = self.run_publish(source, destination)
+                self.assertEqual(result.returncode == 0, kind == "regular", result.stderr)
+                self.assertEqual(source.read_text(), "new dummy")
+                if kind == "regular":
+                    self.assertEqual(destination.read_text(), "existing dummy")
+                elif kind == "directory":
+                    self.assertEqual(list(destination.iterdir()), [])
+                elif kind == "symlink":
+                    self.assertTrue(destination.is_symlink())
+                    self.assertFalse((area / "missing").exists())
+                else:
+                    self.assertEqual(destination.stat().st_size, 0)
+
+    def test_publish_preserves_destination_created_during_move(self):
+        self.stub("ln", "exit 1\n")
+        self.stub("mv", 'printf "concurrent dummy" > "$4"\nexec '
+                  + shlex.quote(shutil.which("mv")) + ' "$@"\n')
+        source = self.base / "source"
+        source.write_text("new dummy")
+        destination = self.base / "destination"
+        result = self.run_publish(source, destination)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(destination.read_text(), "concurrent dummy")
+        self.assertEqual(source.read_text(), "new dummy")
+
+    def test_publish_failure_reports_move_error_and_preserves_source(self):
+        self.stub("ln", "exit 1\n")
+        self.stub("mv", 'printf "dummy move denied\\n" >&2\nexit 1\n')
+        source = self.base / "source"
+        source.write_text("dummy content")
+        destination = self.base / "destination"
+        result = self.run_publish(source, destination)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("dummy move denied", result.stderr)
+        self.assertIn("ファイルの確定に失敗", result.stderr)
+        self.assertEqual(source.read_text(), "dummy content")
+        self.assertFalse(destination.exists())
+
     def test_no_arguments_use_configured_environment_and_provider(self):
         for linux_env in ("termux", "proot-ubuntu", "native-ubuntu", "wsl-ubuntu", "qemu-ubuntu"):
             for provider in (("env",) if linux_env in ("termux", "proot-ubuntu") else ("env", "keyring")):
