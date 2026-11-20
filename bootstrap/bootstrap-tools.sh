@@ -25,6 +25,17 @@ set -Eeuo pipefail
 readonly SCRIPT_NAME="${0##*/}"
 readonly BIN_DIR="${HOME}/.local/bin"
 
+# TermuxではUbuntu用mise設定を除外し、Android向けのパッケージを使う。
+readonly TERMUX_PACKAGES=(
+  ca-certificates curl git chezmoi make openssl-tool wget util-linux procps file coreutils
+  mise proton-pass-cli
+  7zip age atuin bat biome2 bun codex deno eza fd ffmpeg gh ghq git-delta git-lfs
+  gofumpt goimports golang golangci-lint gopls imagemagick jq lazygit
+  lua-language-server lua51 marksman neovim nim nodejs-lts npm oxlint pnpm poppler
+  python ripgrep ruby ruff rust shellcheck shfmt sops stylua taplo tealdeer tmux
+  tree-sitter ty uv yazi yq zoxide
+)
+
 MODE="install"
 IS_PROOT=false
 IS_TERMUX=false
@@ -129,7 +140,7 @@ check_environment() {
       IS_PROOT=true
     fi
   elif [[ -z "$ID" || "$ID" == android ]] &&
-    [[ -n "${PREFIX:-}" && -x "${PREFIX}/bin/pkg" && -x "${PREFIX}/bin/sh" ]]; then
+    [[ "${PREFIX:-}" == /* && -x "${PREFIX}/bin/pkg" && -x "${PREFIX}/bin/sh" ]]; then
     [[ "${BOOTSTRAP_PROOT:-0}" != 1 ]] || die "proot指定時はUbuntuゲスト内で実行してください"
     IS_TERMUX=true
     PRETTY_NAME='Termux'
@@ -190,13 +201,7 @@ check_tools() {
   log "ツールのインストール状況"
 
   for name in "${tools[@]}"; do
-    if [[ "$IS_TERMUX" == true && "$name" == pass-cli ]]; then
-      if has_tool "$name"; then
-        printf '[UNVERIFIED] pass-cli: 存在のみ確認。Termuxでの実行可否は手動確認\n'
-      else
-        printf '[MANUAL] pass-cli: Termux向け自動導入は対象外\n'
-      fi
-    elif has_tool "$name"; then
+    if has_tool "$name"; then
       printf '[OK] %s\n' "$name"
     else
       printf '[--] %s\n' "$name"
@@ -205,6 +210,14 @@ check_tools() {
 
   if [[ "$IS_TERMUX" == true ]]; then
     printf '[SKIP] Homebrew: Termuxでは対象外\n'
+    log "Termuxのpkg管理対象（バージョン・実行可否は別途確認）"
+    for name in "${TERMUX_PACKAGES[@]}"; do
+      if termux_package_installed "$name"; then
+        printf '[OK] pkg:%s\n' "$name"
+      else
+        printf '[--] pkg:%s\n' "$name"
+      fi
+    done
   elif get_brew_path >/dev/null; then
     printf '[OK] Homebrew\n'
   else
@@ -268,8 +281,7 @@ install_termux_packages() {
 
 install_base_tools() {
   if [[ "$IS_TERMUX" == true ]]; then
-    install_termux_packages ca-certificates curl git age chezmoi python make \
-      openssl-tool wget util-linux procps file coreutils
+    install_termux_packages "${TERMUX_PACKAGES[@]}"
     return
   fi
   local -a packages=(
@@ -327,7 +339,7 @@ install_chezmoi() {
 
 install_proton_pass() {
   if [[ "$IS_TERMUX" == true ]]; then
-    warn "TermuxのProton Pass CLIは手動準備・実行確認が必要です。認証準備は未完了です"
+    has_tool pass-cli || die "Termuxのpass-cliが見つかりません"
     return
   fi
   if has_tool pass-cli; then
