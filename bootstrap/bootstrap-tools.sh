@@ -537,9 +537,10 @@ install_termux_resvg() (
     die "ビルドしたresvgの版を確認できません"
   printf '%s\n' '<svg xmlns="http://www.w3.org/2000/svg" width="2" height="2"><rect width="2" height="2" fill="black"/></svg>' >"$work/test.svg" ||
     die "resvgの確認用SVGを作成できません"
-  "$work/bin/resvg" "$work/test.svg" "$work/test.png" &&
-    [[ "$(file -b --mime-type "$work/test.png")" == image/png ]] ||
+  if ! "$work/bin/resvg" "$work/test.svg" "$work/test.png" ||
+    [[ "$(file -b --mime-type "$work/test.png")" != image/png ]]; then
     die "resvgのSVG変換を確認できません"
+  fi
   mv -fT -- "$work/bin/resvg" "$BIN_DIR/resvg" || die "resvgの切り替えに失敗しました"
 )
 
