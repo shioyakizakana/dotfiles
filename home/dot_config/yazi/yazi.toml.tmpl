@@ -2,6 +2,17 @@
 show_hidden = true
 linemode = "mtime"
 
+{{ if get . "termux" -}}
+# Termuxではresvgが画像用のメモリ上限下で起動できない。
+[[plugin.prepend_previewers]]
+mime = "image/svg+xml"
+run = "magick"
+
+[[plugin.prepend_preloaders]]
+mime = "image/svg+xml"
+run = "magick"
+
+{{ end -}}
 [[plugin.prepend_fetchers]]
 group = "git"
 url = "*"

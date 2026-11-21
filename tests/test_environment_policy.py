@@ -102,6 +102,21 @@ class EnvironmentPolicyTests(unittest.TestCase):
                 self.assertEqual(self.installer_names(entries), set())
                 self.assertNotIn("dot_config/mise/config.toml", entries)
 
+    def test_yazi_svg_uses_magick_only_on_termux_and_preserves_git_fetchers(self):
+        template = (ROOT / "home/dot_config/yazi/yazi.toml.tmpl").read_text()
+        for flags in ({"termux": True}, {"prootUbuntu": True}, {}):
+            with self.subTest(flags=flags):
+                result = self.run_chezmoi(["execute-template"], flags, "android", template)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                plugin = tomllib.loads(result.stdout)["plugin"]
+                self.assertEqual(plugin["prepend_fetchers"], [
+                    {"group": "git", "url": "*", "run": "git"},
+                    {"group": "git", "url": "*/", "run": "git"},
+                ])
+                svg = [{"mime": "image/svg+xml", "run": "magick"}] if flags.get("termux") else []
+                self.assertEqual(plugin.get("prepend_previewers", []), svg)
+                self.assertEqual(plugin.get("prepend_preloaders", []), svg)
+
     def test_yazi_manifest_is_managed_without_public_or_private_package_bodies(self):
         yazi = self.source / "dot_config/yazi"
         yazi.mkdir(parents=True)

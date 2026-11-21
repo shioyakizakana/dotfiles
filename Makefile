@@ -26,7 +26,7 @@ PROTON_PASS_PROFILE ?= global
 
 .PHONY: help diff apply status require require-bootstrap wrapper bootstrap
 .PHONY: check test test-unit test-smoke lint
-.PHONY: bootstrap-tools update-bats
+.PHONY: bootstrap-tools update-bats update-resvg
 
 # ========================================
 # help
@@ -42,6 +42,7 @@ help:
 		'  bootstrap   : chezmoi設定に従って認証の初期セットアップを実行' \
 		'  bootstrap-tools : 環境別の基礎ツールを導入（Termuxはpkg対応開発ツールも含む）' \
 		'  update-bats  : TermuxのBatsをリポジトリ指定版に更新' \
+		'  update-resvg : Termuxのresvgをリポジトリ指定版に導入・更新' \
 		'  check       : 静的検査・単体テスト・配置テストを実行' \
 		'  test        : 単体テストと配置テストを実行' \
 		'  test-unit   : 必須依存とskipを確認してunittestを実行' \
@@ -129,6 +130,9 @@ bootstrap-tools:
 
 update-bats:
 	@bash "$(REPO_ROOT)/bootstrap/bootstrap-tools.sh" --update-bats
+
+update-resvg:
+	@bash "$(REPO_ROOT)/bootstrap/bootstrap-tools.sh" --update-resvg
 
 bootstrap: require
 	@echo "==> Proton Pass初期セットアップ"

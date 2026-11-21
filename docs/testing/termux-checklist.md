@@ -70,18 +70,31 @@ Termux本体のNeovimで、隔離環境に展開した基本設定の読み込�
 
 Termux本体では、Androidが管理する親ディレクトリの権限が従来の条件に合わず、プロジェクト別の初期登録と鍵キャッシュのテストが失敗していた。Termux設定と実行時のAndroid判定が一致する場合に限り、標準のアプリ領域へのパス上で、指定の場所・所有者・グループ・モードを満たす親ディレクトリを許可する。秘密ファイルと専用領域には従来の権限条件を適用する。
 
+### Yaziのプラグインとflavor
+
+利用者がTermux本体の通常設定で、以下の操作を確認した。
+
+- `fzf` はショートカットから起動し、検索できた。
+- `zoxide` はショートカットから起動し、指定したパスに移動できた。
+- `smart-enter.yazi` は `yazi.toml` で指定したファイル種別ごとの処理を実行できた。
+- `full-border` は設定どおりに枠線を表示した。
+- `bunny.yazi` はショートカットから設定済みのパスに移動できた。
+- CatppuccinのLatteとMochaはエラーなく適用できた。
+
 ## 結果の記録欄
 
 実機確認後に利用者が記入する。公開する前に端末名・個人パス・ログに秘密情報が含まれていないか確認する。
 
 | 項目 | 結果 |
 | --- | --- |
-| 確認日・対象コミット | 未実施 |
+| 確認日・対象コミット | 2026-11-21、`e20eeb3`（PR #19のマージ後） |
 | Termux本体 / proot Ubuntu、CPU、OS・Termuxの版 | 未実施 |
 | 基礎確認・不足ツール | 未実施 |
 | lefthookの版・直接起動 | Termux本体で2.2.2。設定検証とpre-commitの直接起動に成功。直接起動時はステージ済みファイルがなく、差分検証はskip。利用者は `TMPDIR="$PREFIX/tmp" lefthook run pre-push --force` でテストの通過を確認した |
-| 通常commit・pushでのhook起動、PR番号 | コミット `c5d4aa6` でGitからpre-commitが起動し、差分検証に成功。通常のpushからの起動とPRは未実施 |
-| make checkの結果・件数・skip理由 | Termux本体で `TMPDIR="$PREFIX/tmp" make check` が成功。静的検証、unittest 361件、Bats 18件が通過し、skipは0件。Proton Passはダミーデータで確認した |
-| シェル・tmux | 未実施 |
-| Yazi・プレビュー・未導入プラグイン | 未実施 |
-| 残件・次の確認 | 未実施 |
+| 通常commit・pushでのhook起動、PR番号 | Gitからpre-commitとpre-pushが起動し、検証に成功。PR #19のGitHub Actionsも利用者が成功を確認した |
+| make checkの結果・件数・skip理由 | Termux本体で `TMPDIR="$PREFIX/tmp" make check` が成功。SVG対応後の `49dc9ec` では静的検証、unittest 362件、Bats 18件が通過し、skipは0件。Proton Passはダミーデータで確認した |
+| シェル・tmux | 利用者がTermux本体の通常設定でZshの起動、ウィンドウの追加・削除、ペイン分割を確認 |
+| Yazi・プレビュー・プラグイン | 利用者が `ya pkg install` でプラグインを導入し、PNG・PDFのプレビューに成功。Termux向けの `magick` 設定を適用した後、通常起動したYaziでSVGのプレビューにも成功。確認済みのプラグインとflavorは上記に記載 |
+| resvgの導入・更新 | 隔離HOMEで、旧版を模した実行ファイルからTermuxでビルドした0.50.0への切り替えとSVGからPNGへの変換に成功。同じ版では再ビルドせず、依存を取得できない場合は旧実行ファイルが残ることを確認 |
+| Neovimスナップショット | 展開済みコマンドと実際のlockfileを使い、一時保存先に保存して一覧に表示されることを確認 |
+| プロジェクト別Proton Pass | 展開済みコマンドで、隔離HOMEのダミーデータを使って登録準備と `status` に成功。通常環境では補完にプロジェクト候補がなく、実認証は未実施 |

@@ -92,7 +92,7 @@ done
     def run_script(self, body='main --install', **environment):
         return subprocess.run(
             [BASH, "-c", '''source "$1"
-export BATS_VERSION BATS_COMMIT
+export BATS_VERSION BATS_COMMIT RESVG_VERSION
 read_os_release() { ID="${FIXTURE_OS:-}"; PRETTY_NAME="${FIXTURE_OS:-Termux}"; }
 ''' + body, "--", str(self.source)],
             env={**self.environment, **environment}, input="",
@@ -200,6 +200,48 @@ esac
                                  FIXTURE_OS="ubuntu", BOOTSTRAP_PROOT="1")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue(result.stdout.endswith("false true\n"))
+
+    def test_resvg_switches_only_after_native_build_and_conversion(self):
+        for name in ("mktemp", "rm", "mv"):
+            (self.bin / name).symlink_to(shutil.which(name))
+        self.stub("rustc", '[[ "$*" == "--print host-tuple" ]] && printf "aarch64-linux-android\\n"\n')
+        self.stub("cargo", '''
+printf 'cargo\\n' >> "$TRACE"
+[[ "$*" == "install --registry crates-io --locked --version $RESVG_VERSION --target aarch64-linux-android --bin resvg --no-track --root "* ]] || exit 89
+[[ "${BUILD_EXIT:-0}" == 0 ]] || exit "$BUILD_EXIT"
+root="${@: -2:1}"
+mkdir -p "$root/bin"
+printf '#!%s\\n' "$FIXTURE_BASH" > "$root/bin/resvg"
+cat >> "$root/bin/resvg" <<'EOF'
+if [[ "$1" == --version ]]; then
+  printf '%s\\n' "$RESVG_VERSION"
+else
+  [[ -s "$1" && "${RENDER_EXIT:-0}" == 0 ]] || exit 1
+  printf 'dummy png\\n' > "$2"
+fi
+EOF
+"$FIXTURE_CHMOD" 755 "$root/bin/resvg"
+''')
+        self.stub("file", '[[ "$1 $2" == "-b --mime-type" && -s "$3" ]] && printf "image/png\\n"\n')
+        entry = self.home / ".local/bin/resvg"
+        entry.parent.mkdir(parents=True)
+        entry.write_text(f'#!{BASH}\nprintf "resvg previous\\n"\n')
+        entry.chmod(0o755)
+        previous = entry.read_bytes()
+        for options in ({"FIXTURE_OS": "ubuntu"}, {"BUILD_EXIT": "1"}, {"RENDER_EXIT": "1"}):
+            with self.subTest(options=options):
+                result = self.run_script("main --update-resvg", **options)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(entry.read_bytes(), previous)
+                self.assertEqual(list(entry.parent.iterdir()), [entry])
+        result = self.run_script("main --update-resvg")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotEqual(entry.read_bytes(), previous)
+        self.assertEqual(list(entry.parent.iterdir()), [entry])
+        self.assertEqual(self.trace.read_text().splitlines(), ["cargo"] * 3)
+        result = self.run_script("main --update-resvg")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.trace.read_text().splitlines(), ["cargo"] * 3)
 
     def test_ubuntu_keeps_apt_and_proot_skips_homebrew(self):
         # 導入引数だけを記録する。rootでも非rootでも実APT・sudoを呼ばない。
