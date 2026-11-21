@@ -146,7 +146,11 @@ initialize_environment() {
   local data_dir="${XDG_DATA_HOME:-$HOME/.local/share}/proton-pass"
   if [[ "$profile" != global ]]; then
     require python3
-    data_dir="$(python3 "$REPO_ROOT/home/dot_local/bin/private_executable_proton-pass-key-cache.py.tmpl" --profile "$profile" configure)" ||
+    local -a configure_args=(--profile "$profile" configure)
+    if [[ "$linux_env" == termux ]]; then
+      configure_args+=(--termux)
+    fi
+    data_dir="$(python3 "$REPO_ROOT/home/dot_local/bin/private_executable_proton-pass-key-cache.py.tmpl" "${configure_args[@]}")" ||
       die 'プロジェクトの保存先を準備できませんでした'
   fi
   readonly DATA_DIR="$data_dir"
