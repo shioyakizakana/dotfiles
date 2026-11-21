@@ -38,6 +38,7 @@ readonly TERMUX_PACKAGES=(
 
 readonly BATS_VERSION="1.13.0"
 readonly BATS_COMMIT="3bca150ec86275d6d9d5a4fd7d48ab8b6c6f3d87"
+readonly RESVG_VERSION="0.50.0"
 
 MODE="install"
 IS_PROOT=false
@@ -70,6 +71,7 @@ Options:
   --check      インストール状況を確認
   --install    不足しているツールを導入（既定）
   --update-bats  TermuxのBatsをリポジトリ指定版に更新
+  --update-resvg Termuxのresvgをリポジトリ指定版に導入・更新
   -h, --help   ヘルプを表示
 EOF
 }
@@ -83,8 +85,8 @@ parse_args() {
     --install)
       MODE="install"
       ;;
-    --update-bats)
-      MODE="update-bats"
+    --update-bats | --update-resvg)
+      MODE="${1#--}"
       ;;
     -h | --help)
       usage
@@ -505,8 +507,44 @@ install_termux_bats() (
 )
 
 # ------------------------------------------------------------
-# メイン処理
+# Termuxのresvg
 # ------------------------------------------------------------
+
+install_termux_resvg() (
+  [[ "$(id -u)" != 0 ]] || die "resvgは通常ユーザーで導入してください"
+  local active target work
+  active="$(command -v resvg || true)"
+  [[ -z "$active" || "$active" == "$BIN_DIR/resvg" ]] ||
+    die "別の場所に導入されたresvgは、その導入元で更新してください"
+  if [[ -n "$active" && "$("$active" --version)" == "$RESVG_VERSION" ]]; then
+    log "resvg $RESVG_VERSION は導入済みです"
+    return
+  fi
+
+  [[ -x "$PREFIX/bin/cargo" && -x "$PREFIX/bin/rustc" ]] ||
+    die "Termuxのcargoとrustcが必要です"
+  target="$("$PREFIX/bin/rustc" --print host-tuple)" || die "Rustの対象環境を確認できません"
+  [[ "$target" == *-linux-android || "$target" == *-linux-androideabi ]] ||
+    die "Termux本体向けのRustが必要です"
+  mkdir -p -- "$BIN_DIR" || die "resvgの導入先を作成できません"
+  work="$(mktemp -d "$BIN_DIR/.resvg-XXXXXXXX")" || die "resvgの作業領域を作成できません"
+  trap 'command rm -rf -- "$work"' EXIT
+  log "resvg $RESVG_VERSION を準備"
+  RUSTC="$PREFIX/bin/rustc" TMPDIR="$PREFIX/tmp" "$PREFIX/bin/cargo" install \
+    --registry crates-io --locked --version "$RESVG_VERSION" --target "$target" \
+    --bin resvg --no-track --root "$work" resvg || die "resvgのビルドに失敗しました"
+  [[ "$("$work/bin/resvg" --version)" == "$RESVG_VERSION" ]] ||
+    die "ビルドしたresvgの版を確認できません"
+  printf '%s\n' '<svg xmlns="http://www.w3.org/2000/svg" width="2" height="2"><rect width="2" height="2" fill="black"/></svg>' >"$work/test.svg" ||
+    die "resvgの確認用SVGを作成できません"
+  "$work/bin/resvg" "$work/test.svg" "$work/test.png" &&
+    [[ "$(file -b --mime-type "$work/test.png")" == image/png ]] ||
+    die "resvgのSVG変換を確認できません"
+  mv -fT -- "$work/bin/resvg" "$BIN_DIR/resvg" || die "resvgの切り替えに失敗しました"
+)
+
+# ------------------------------------------------------------
+# メイン処理
 # ------------------------------------------------------------
 
 main() {
@@ -526,6 +564,11 @@ main() {
   if [[ "$MODE" == "update-bats" ]]; then
     [[ "$IS_TERMUX" == true ]] || die "--update-batsはTermux本体専用です"
     install_termux_bats
+    return
+  fi
+  if [[ "$MODE" == "update-resvg" ]]; then
+    [[ "$IS_TERMUX" == true ]] || die "--update-resvgはTermux本体専用です"
+    install_termux_resvg
     return
   fi
 
