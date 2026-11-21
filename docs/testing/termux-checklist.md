@@ -79,8 +79,8 @@ Termux本体では、Androidが管理する親ディレクトリの権限が従�
 | 確認日・対象コミット | 未実施 |
 | Termux本体 / proot Ubuntu、CPU、OS・Termuxの版 | 未実施 |
 | 基礎確認・不足ツール | 未実施 |
-| lefthookの版・直接起動 | Termux本体で2.2.2。設定検証とpre-commitの直接起動に成功。ステージ済みファイルがなく、差分検証はskip |
-| 通常commit・pushでのhook起動、PR番号 | 未実施 |
+| lefthookの版・直接起動 | Termux本体で2.2.2。設定検証とpre-commitの直接起動に成功。直接起動時はステージ済みファイルがなく、差分検証はskip。利用者は `TMPDIR="$PREFIX/tmp" lefthook run pre-push --force` でテストの通過を確認した |
+| 通常commit・pushでのhook起動、PR番号 | コミット `c5d4aa6` でGitからpre-commitが起動し、差分検証に成功。通常のpushからの起動とPRは未実施 |
 | make checkの結果・件数・skip理由 | Termux本体で `TMPDIR="$PREFIX/tmp" make check` が成功。静的検証、unittest 361件、Bats 18件が通過し、skipは0件。Proton Passはダミーデータで確認した |
 | シェル・tmux | 未実施 |
 | Yazi・プレビュー・未導入プラグイン | 未実施 |
