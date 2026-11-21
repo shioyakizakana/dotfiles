@@ -64,7 +64,7 @@ pre-pushで`make check`が実行済みなら、その結果を再利用する。
 
 Termux本体では `ja_JP.utf8` の指定で起動時に `E197` が発生した。chezmoiの `termux` フラグが有効な場合は `C.UTF-8` を指定する。proot Ubuntuなどでは従来の指定を使う。
 
-Termux本体のNeovimで、隔離環境に展開した基本設定の読み込みとUTF-8の文字コードを確認した。適用後は通常起動で `E197` が出ず、日本語のUTF-8ファイルを表示できることを確認する。
+Termux本体のNeovimで、隔離環境に展開した基本設定の読み込みとUTF-8の文字コードを確認した。PR #18の修正適用後、利用者は通常起動で `E197` が解消したことを確認した。
 
 ## 結果の記録欄
 
@@ -75,9 +75,9 @@ Termux本体のNeovimで、隔離環境に展開した基本設定の読み込�
 | 確認日・対象コミット | 未実施 |
 | Termux本体 / proot Ubuntu、CPU、OS・Termuxの版 | 未実施 |
 | 基礎確認・不足ツール | 未実施 |
-| lefthookの版・直接起動 | 未実施 |
+| lefthookの版・直接起動 | Termux本体で2.2.2。設定検証とpre-commitの直接起動に成功。ステージ済みファイルがなく、差分検証はskip |
 | 通常commit・pushでのhook起動、PR番号 | 未実施 |
-| make checkの結果・件数・skip理由 | 未実施 |
+| make checkの結果・件数・skip理由 | Termux本体で静的検証は成功。unittestは358件中、失敗1件・エラー16件・skip 0件。Proton Passのプロジェクト別テストで、Androidの親ディレクトリの権限が既存の安全確認により拒否された。全体実行ではBatsに到達しなかった。利用者はBats 1.13.0の導入後、`TMPDIR="$PREFIX/tmp" make test-smoke` を単独実行し、18件すべての成功を確認した |
 | シェル・tmux | 未実施 |
 | Yazi・プレビュー・未導入プラグイン | 未実施 |
 | 残件・次の確認 | 未実施 |
