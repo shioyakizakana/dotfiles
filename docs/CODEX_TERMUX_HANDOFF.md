@@ -2,6 +2,14 @@
 
 作成日：2026-11-19。対象はTermux本体で動くCodexとdotfilesの作業コピー。まず1〜4節を読み、変更を伴わない現状確認から始める。導入・設定適用・認証は、実施対象と承認状況を確認してから進める。
 
+## zenoのSQLite読み込みエラー（2026-11-21）
+
+利用者はPR #15のマージ・取得後、Termuxでbootstrap-tools.sh --checkとmake bootstrap-toolsを実行し、各種ツールを導入したと報告した。Zsh再起動では、zenoが取得したSQLite共有ライブラリの依存libm.so.6を読み込めず、ソケットサーバーの起動に失敗した。以下のpkg一括導入前の記録は当時の状態として読む。
+
+修正ではTermuxフラグが有効なZsh設定だけ、読み取り可能なPREFIX/lib/libsqlite3.soをDENO_SQLITE_PATHへ設定する。既存の明示指定を保持し、Ubuntu・prootは変更しない。libsqliteは既存のPythonの依存に含まれるため、追加導入は行わない。秘密情報、zenoの履歴、Denoキャッシュにはアクセスしていない。
+
+次は[SQLiteエラーの確認手順](setup/dependencies.md#zenoのsqlite読み込みエラー)で、ライブラリの存在と一時指定でのzeno起動を実機確認する。新しい設定の限定適用は利用者が差分を確認して行う。Codex側では隔離テストを使い、Termuxでの実起動・適用は行っていない。
+
 ## 現在の状態とpkg導入の追加
 
 利用者はPR #14のマージ・取得後、修正版をTermuxへ適用し、chezmoi applyの正常終了を確認した。以下のシバン修正後のapply未確認という記述は当時の記録として読む。

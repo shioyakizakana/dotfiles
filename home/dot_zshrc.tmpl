@@ -31,6 +31,14 @@ if type mise > /dev/null; then
   eval "$(mise activate zsh)"
 fi
 
+{{ if get . "termux" -}}
+# zenoのSQLite FFIではLinux配布物ではなくTermuxの共有ライブラリを使う。
+if [[ -z "${DENO_SQLITE_PATH:-}" && "${PREFIX:-}" == /* &&
+      -r "$PREFIX/lib/libsqlite3.so" ]]; then
+  export DENO_SQLITE_PATH="$PREFIX/lib/libsqlite3.so"
+fi
+{{ end -}}
+
 source "$ZDIR/completion.zsh"
 source "$ZDIR/plugin.zsh"
 

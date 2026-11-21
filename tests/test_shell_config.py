@@ -49,11 +49,14 @@ class ShellConfigTests(unittest.TestCase):
         path.chmod(0o755)
         return path
 
-    def write_startup_files(self, proot=False):
+    def write_startup_files(self, proot=False, termux=None):
         source = self.base / "empty-source"
         source.mkdir(exist_ok=True)
         config = self.base / "config.json"
-        config.write_text(json.dumps({"data": {"prootUbuntu": proot}}))
+        data = {"prootUbuntu": proot}
+        if termux is not None:
+            data["termux"] = termux
+        config.write_text(json.dumps({"data": data}))
         rendered = subprocess.run(
             [CHEZMOI, "--config", str(config), "--source", str(source),
              "--destination", str(self.home), "--cache", str(self.base / "cache"),
@@ -105,6 +108,37 @@ class ShellConfigTests(unittest.TestCase):
             env={**self.environment, **environment, "TEST_COMMAND": command},
             capture_output=True, text=True, timeout=10,
         )
+
+    def test_zeno_child_uses_termux_sqlite_only_for_termux_without_override(self):
+        prefix = self.base / "termux prefix"
+        library = prefix / "lib/libsqlite3.so"
+        library.parent.mkdir(parents=True)
+        library.write_text("dummy library; never loaded\n")
+        self.environment["PREFIX"] = str(prefix)
+        self.stub("deno", 'printf "%s\\n" "${DENO_SQLITE_PATH:-unset}"\n')
+        for termux, proot, override, expected in (
+            (True, False, None, str(library)),
+            (True, False, "/custom/sqlite.so", "/custom/sqlite.so"),
+            (False, False, None, "unset"),
+            (False, True, None, "unset"),
+            (None, False, None, "unset"),
+        ):
+            with self.subTest(termux=termux, proot=proot, override=override):
+                self.write_startup_files(proot=proot, termux=termux)
+                (self.home / ".zsh/plugin.zsh").write_text("deno\n")
+                environment = {} if override is None else {"DENO_SQLITE_PATH": override}
+                result = self.run_shell("zsh", ":", **environment)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, expected + "\n", result.stderr)
+
+    def test_termux_does_not_select_missing_sqlite_or_relative_prefix(self):
+        self.write_startup_files(termux=True)
+        for prefix in ("", "relative/prefix", str(self.base / "absent prefix")):
+            with self.subTest(prefix=prefix):
+                result = self.run_shell("zsh", 'printf "%s\\n" "${DENO_SQLITE_PATH:-unset}"',
+                                        PREFIX=prefix)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, "unset\n")
 
     def test_snapshot_function_preserves_arguments_and_exit_status(self):
         script = self.local_bin / "nvim-snapshot.py"
