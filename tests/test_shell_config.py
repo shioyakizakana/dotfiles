@@ -1,6 +1,7 @@
 """隔離HOMEとダミーツールでBash・Zshの起動設定を検証する。"""
 
 import json
+import os
 from pathlib import Path
 import re
 import shlex
@@ -239,6 +240,67 @@ class ShellConfigTests(unittest.TestCase):
                 self.assertNotIn("no such file", result.stderr.lower())
                 paths = result.stdout.strip().split(":")
                 self.assertEqual(paths.count(str(self.local_bin)), 1)
+
+    def test_startup_without_npm_does_not_add_an_implicit_bin_path(self):
+        for shell in ("bash", "zsh"):
+            with self.subTest(shell=shell):
+                result = self.run_shell(shell,
+                    'printf "%s\\n" "${NPM_GLOBAL_PREFIX-unset}" "$PATH"')
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertNotIn("npm", result.stderr)
+                prefix, path = result.stdout.splitlines()
+                self.assertEqual(prefix, "unset")
+                self.assertNotIn("/bin", path.split(":"))
+
+    def test_explicit_npm_prefix_is_preserved_and_only_existing_absolute_bin_is_added(self):
+        prefix = self.base / "npm prefix with spaces"
+        (prefix / "bin").mkdir(parents=True)
+        # 存在する相対パスも候補にし、存在確認だけで追加されないことを確かめる。
+        relative = os.path.relpath(prefix)
+        self.stub("npm", 'printf "forbidden:npm\\n" >> "$TRACE"\nexit 91\n')
+        for shell in ("bash", "zsh"):
+            for value, expected in (
+                (str(prefix), True), (str(prefix) + "/", True),
+                ("", False), (relative, False), (str(self.base / "missing prefix"), False),
+            ):
+                with self.subTest(shell=shell, prefix=value):
+                    self.trace.write_text("")
+                    result = self.run_shell(shell,
+                        '. "$HOME/.config/shell/env.sh"\n'
+                        'printf "<%s>\\n%s\\n" "$NPM_GLOBAL_PREFIX" "$PATH"',
+                        NPM_GLOBAL_PREFIX=value)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertNotIn("forbidden:npm", self.trace.read_text())
+                    value_line, path = result.stdout.splitlines()
+                    self.assertEqual(value_line, f"<{value}>")
+                    self.assertEqual(path.split(":").count(str(prefix / "bin")), int(expected))
+                    self.assertNotIn("/bin", path.split(":"))
+                    self.assertNotIn(relative + "/bin", path.split(":"))
+
+    def test_common_path_keeps_termux_and_mise_paths_without_querying_npm(self):
+        native_bin = self.base / "termux prefix/bin"
+        runtime_bin = self.base / "mise runtime/bin"
+        native_bin.mkdir(parents=True)
+        runtime_bin.mkdir(parents=True)
+        self.environment["PATH"] += ":" + str(native_bin)
+        self.environment["PREFIX"] = str(native_bin.parent)
+        self.stub("npm", 'printf "forbidden:npm\\n" >> "$TRACE"\nexit 91\n')
+        activation = f'export PATH={shlex.quote(str(runtime_bin))}:"$PATH"'
+        self.stub("mise", f"printf '%s\\n' {shlex.quote(activation)}\n")
+        for termux in (False, True):
+            self.write_startup_files(proot=not termux, termux=termux)
+            for shell in ("bash", "zsh"):
+                with self.subTest(shell=shell, termux=termux):
+                    self.trace.write_text("")
+                    result = self.run_shell(shell,
+                        '. "$HOME/.config/shell/env.sh"\nprintf "%s\\n" "$PATH"')
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertNotIn("forbidden:npm", self.trace.read_text())
+                    paths = result.stdout.strip().split(":")
+                    self.assertEqual(paths[0], str(runtime_bin))
+                    self.assertEqual(paths.count(str(runtime_bin)), 1)
+                    self.assertEqual(paths.count(str(native_bin)), 1)
+                    self.assertLess(paths.index(str(native_bin)), paths.index(str(self.local_bin)))
 
     def test_explicit_tmpdir_and_available_editor_are_respected(self):
         self.stub("nvim", ":\n")

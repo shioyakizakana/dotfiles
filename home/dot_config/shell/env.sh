@@ -16,8 +16,12 @@ fi
 export GOPATH="$HOME/go"
 export PNPM_HOME="$HOME/.local/share/pnpm"
 export FZF_INSTALL="${ZDIR:-$HOME/.zsh}/plugin/plugins/fzf"
-export NPM_GLOBAL_PREFIX="$(npm prefix -g)"
 export NIMBLE_DIR="$HOME/.nimble"
+# ランタイムのPATHはmiseに任せ、npmのprefixは明示指定された場合だけ使う。
+_dotfiles_npm_bin=
+case "${NPM_GLOBAL_PREFIX:-}" in
+/*) _dotfiles_npm_bin="${NPM_GLOBAL_PREFIX%/}/bin" ;;
+esac
 for _dotfiles_dir in \
   "$HOME/.local/bin" \
   "$HOME/bin" \
@@ -28,7 +32,7 @@ for _dotfiles_dir in \
   "$GOPATH" \
   "$GOPATH/bin" \
   "$NIMBLE_DIR/bin" \
-  "$NPM_GLOBAL_PREFIX/bin" \
+  "$_dotfiles_npm_bin" \
   "$PNPM_HOME/bin"; do
   if [ -d "$_dotfiles_dir" ]; then
     case ":${PATH:-}:" in
@@ -37,7 +41,7 @@ for _dotfiles_dir in \
     esac
   fi
 done
-unset _dotfiles_dir
+unset _dotfiles_dir _dotfiles_npm_bin
 export PATH
 
 if command -v nvim >/dev/null 2>&1; then
