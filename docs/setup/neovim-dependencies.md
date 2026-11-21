@@ -115,9 +115,17 @@ NV-01はソース修正済み。利用者から設定の実適用成功報告が
 | NV-03 | Medium / Medium | 完了（確認済み環境・用途の範囲）。Mason依存宣言・setup・移行用切替を除去 | 23サーバーの登録と補完・整形を回帰検証。利用者が各確認用プロジェクトで接続・実行パス・root・補完・診断・保存時整形の維持とMason未読み込みを確認。sqlsのDB機能と他環境は未検証として残し、既存Masonデータは保持 |
 | NV-04 | Medium / Medium | 完了（確認済み環境・用途）。登録・Python選択・UIイベント・キー操作を修正しdebugpyを導入 | 回帰22件と全体unittest 269件・Bats 18件が成功。利用者がPython・Luaの停止・ステップ・変数表示・処理完了・UI・キー操作・正常終了を確認。[結果](../testing/neovim-dap-verification.md#通常uiの確認完了2026-11-15)を参照。他環境やPython版は別途確認 |
 | NV-05 | Medium / Medium | 完了（確認済み環境・用途）。スナップショット運用と実復旧後の主要機能を確認 | Neovim本体はlatestを維持し、miseの一括更新に含める。他環境と取得元消失時の復旧は別途確認 |
-| NV-06 | Low / Small | 旧LSP・整形と旧skkeletonの設定6ファイル、およびコメントアウトされた参照を削除 | 現行のLSP・Conform・skkeluaを使う。通常起動でのLSP接続・保存時整形・SKK切り替えは適用後に確認する |
+| NV-06 | Low / Small | 旧LSP・整形と旧skkeletonの設定6ファイル、およびコメントアウトされた参照を削除 | Termux本体の通常起動でLSP接続・保存時整形・SKK入力を確認済み |
 
 NV-01の修正後は、NV-02→NV-03の順で移行する。NV-04は別PRで並行可能。NV-05の版選定は設定と主要機能を確認した後に行う。Mason併存そのものを不具合として扱わず、移行中の状態として維持する。
+
+### NV-06適用後のTermux実機確認
+
+2026-11-21、利用者がTermux本体のNeovim 0.12.6で、Lua・Python・Bash・ZshのLSP接続、診断の発生と解消、保存時整形を確認した。skkeluaは `<C-j>` で切り替えられ、漢字変換を含む日本語入力ができた。
+
+- PythonはRuffの接続とimportに関する診断、保存時の未使用import削除を確認した。Goは `golangci-lint-langserver` 経由の `errcheck` 診断と、goimportsによるimport追加を確認した。
+- BiomeプロジェクトではBiome LSPが接続し、保存時整形には `biome-check` が選ばれた。Denoプロジェクトには `denols` が接続し、`vtsls` は接続しなかった。YAMLは確認用の `format-check.yaml` で保存時整形ができた。
+- Vueでは `vue_ls` と `vtsls` の接続を確認した。Svelteは `~/.local/bin/svelteserver` で接続し、診断と保存時整形を確認した。Tailwindは `~/.local/bin/tailwindcss-language-server` で接続し、クラス名の補完を確認した。
 
 ## Mason除去前の確認手順（履歴）
 
