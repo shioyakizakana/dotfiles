@@ -64,7 +64,11 @@ pre-pushで`make check`が実行済みなら、その結果を再利用する。
 
 Termux本体では `ja_JP.utf8` の指定で起動時に `E197` が発生した。chezmoiの `termux` フラグが有効な場合は `C.UTF-8` を指定する。proot Ubuntuなどでは従来の指定を使う。
 
-Termux本体のNeovimで、隔離環境に展開した基本設定の読み込みとUTF-8の文字コードを確認した。適用後は通常起動で `E197` が出ず、日本語のUTF-8ファイルを表示できることを確認する。
+Termux本体のNeovimで、隔離環境に展開した基本設定の読み込みとUTF-8の文字コードを確認した。PR #18の修正適用後、利用者は通常起動で `E197` が解消したことを確認した。
+
+### プロジェクト別Proton Passの確認
+
+Termux本体では、Androidが管理する親ディレクトリの権限が従来の条件に合わず、プロジェクト別の初期登録と鍵キャッシュのテストが失敗していた。Termux設定と実行時のAndroid判定が一致する場合に限り、標準のアプリ領域へのパス上で、指定の場所・所有者・グループ・モードを満たす親ディレクトリを許可する。秘密ファイルと専用領域には従来の権限条件を適用する。
 
 ## 結果の記録欄
 
@@ -75,9 +79,9 @@ Termux本体のNeovimで、隔離環境に展開した基本設定の読み込�
 | 確認日・対象コミット | 未実施 |
 | Termux本体 / proot Ubuntu、CPU、OS・Termuxの版 | 未実施 |
 | 基礎確認・不足ツール | 未実施 |
-| lefthookの版・直接起動 | 未実施 |
-| 通常commit・pushでのhook起動、PR番号 | 未実施 |
-| make checkの結果・件数・skip理由 | 未実施 |
+| lefthookの版・直接起動 | Termux本体で2.2.2。設定検証とpre-commitの直接起動に成功。直接起動時はステージ済みファイルがなく、差分検証はskip。利用者は `TMPDIR="$PREFIX/tmp" lefthook run pre-push --force` でテストの通過を確認した |
+| 通常commit・pushでのhook起動、PR番号 | コミット `c5d4aa6` でGitからpre-commitが起動し、差分検証に成功。通常のpushからの起動とPRは未実施 |
+| make checkの結果・件数・skip理由 | Termux本体で `TMPDIR="$PREFIX/tmp" make check` が成功。静的検証、unittest 361件、Bats 18件が通過し、skipは0件。Proton Passはダミーデータで確認した |
 | シェル・tmux | 未実施 |
 | Yazi・プレビュー・未導入プラグイン | 未実施 |
 | 残件・次の確認 | 未実施 |

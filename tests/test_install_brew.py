@@ -2,6 +2,7 @@
 
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -26,7 +27,7 @@ class HomebrewInstallTests(unittest.TestCase):
         self.brew = self.workspace / "bin/brew"
         self.brew.parent.mkdir()
         self.brew.write_text(
-            '#!/bin/bash\n'
+            f'#!{shutil.which("bash")}\n'
             'printf "brew" >> "$TRACE"\n'
             'printf " <%s>" "$@" >> "$TRACE"\n'
             'printf "\\n" >> "$TRACE"\n'

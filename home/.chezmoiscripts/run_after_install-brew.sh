@@ -44,7 +44,7 @@ main() {
         log "Homebrewインストーラーの取得に失敗しました。" >&2
         return 1
       fi
-      if ! /bin/bash -c "$installer"; then
+      if ! "$BASH" -c "$installer"; then
         log "Homebrewのインストールに失敗しました。" >&2
         return 1
       fi

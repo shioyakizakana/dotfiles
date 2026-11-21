@@ -7,6 +7,7 @@ import json
 import fcntl
 import io
 from pathlib import Path
+import stat
 import struct
 import subprocess
 import tempfile
@@ -50,6 +51,20 @@ class CurrentUserIdsTests(unittest.TestCase):
                 mock.patch.object(Path, "read_text", side_effect=error),
             ):
                 self.assertEqual(CACHE.current_user_ids(), {1001})
+
+
+class TermuxManagedParentTests(unittest.TestCase):
+    def test_requires_exact_path_permissions_and_owner(self):
+        for path, mode, uid, gid, expected in (
+            (CACHE.TERMUX_FILES, 0o771, os.getuid(), os.getgid(), True),
+            (CACHE.TERMUX_FILES / "other", 0o771, os.getuid(), os.getgid(), False),
+            (CACHE.TERMUX_FILES, 0o777, os.getuid(), os.getgid(), False),
+            (Path("/data/data"), 0o771, 1000, 1000, True),
+            (Path("/data/data"), 0o771, 1000, 1001, False),
+        ):
+            with self.subTest(path=path, mode=mode, uid=uid, gid=gid):
+                info = os.stat_result((stat.S_IFDIR | mode, 0, 0, 0, uid, gid, 0, 0, 0, 0))
+                self.assertEqual(CACHE.termux_managed_parent(path, info), expected)
 
 
 class CacheEnvironmentTests(unittest.TestCase):
@@ -201,11 +216,15 @@ class CacheEnvironmentTests(unittest.TestCase):
 
 class ProjectCacheTests(unittest.TestCase):
     def setUp(self):
+        termux = mock.patch.object(CACHE, "TERMUX_CONFIGURED", True)
+        termux.start()
+        self.addCleanup(termux.stop)
         for stream in ("stdout", "stderr"):
             patch = mock.patch.object(CACHE.sys, stream, io.StringIO())
             patch.start()
             self.addCleanup(patch.stop)
-        directory = tempfile.TemporaryDirectory(prefix="pass profile ")
+        # Termuxの一時ディレクトリでもUnixソケットのパス長制限に収める。
+        directory = tempfile.TemporaryDirectory(prefix="")
         self.addCleanup(directory.cleanup)
         self.home = Path(directory.name)
         self.env = {"HOME": str(self.home), "PATH": "/dummy/bin"}

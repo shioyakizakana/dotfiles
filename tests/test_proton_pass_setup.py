@@ -18,7 +18,7 @@ MAKE = shutil.which("make")
 
 class ProtonPassSetupTests(unittest.TestCase):
     def setUp(self):
-        directory = tempfile.TemporaryDirectory(prefix="provider setup ")
+        directory = tempfile.TemporaryDirectory(prefix="")
         self.addCleanup(directory.cleanup)
         self.base = Path(directory.name)
         self.bin = self.base / "bin"
@@ -204,6 +204,12 @@ main "$@"
 
     def test_project_bootstrap_uses_env_without_changing_global_keyring(self):
         identity = self.project_fixture()
+        # provider選択を検証し、保存先の権限検査は別のテストで実行する。
+        (self.bin / "python3").unlink()
+        self.stub("python3", '''
+[[ "$2" == --profile && "$3" == demo && "$4" == configure && "$#" == 4 ]] || exit 89
+printf '%s\\n' "$HOME/.local/share/proton-pass/projects/demo"
+''')
         for _ in range(2):
             self.trace.write_text("")
             result = self.run_setup("--profile", "demo", SETTINGS="wsl-ubuntu keyring")
@@ -211,9 +217,15 @@ main "$@"
             self.assertNotIn("keyring-check", self.trace.read_text())
             self.assertIn("wsl-ubuntu env", result.stdout)
         data = Path(self.env["HOME"]) / ".local/share/proton-pass"
-        self.assertTrue((data / "projects/demo/cli").is_dir())
         self.assertFalse((data / "token.age").exists())
         self.assertEqual(identity.read_text(), "dummy encrypted identity")
+
+    def test_termux_project_bootstrap_configures_private_storage(self):
+        self.project_fixture()
+        result = self.run_setup("--profile", "demo", SETTINGS="termux env")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        data = Path(self.env["HOME"]) / ".local/share/proton-pass/projects/demo"
+        self.assertEqual(data.joinpath("cli").stat().st_mode & 0o777, 0o700)
 
     def test_project_bootstrap_rejects_invalid_name_or_provider_before_secrets(self):
         self.project_fixture()
@@ -250,7 +262,7 @@ main "$@"
             ("executable_setup-proton-pass-project.tmpl", "bash"),
             ("private_executable_proton-pass-key-cache.py.tmpl", "python3"),
         )
-        with tempfile.TemporaryDirectory(prefix="termux-entry-", dir="/tmp") as directory:
+        with tempfile.TemporaryDirectory(prefix="entry-") as directory:
             prefix = Path(directory)
             (prefix / "bin").mkdir()
             for name, executable in (("env", shutil.which("env")), ("bash", BASH),
@@ -276,6 +288,9 @@ main "$@"
                         first_line = result.stdout.splitlines()[0]
                         expected = str(prefix / "bin/env") if flags.get("termux") else "/usr/bin/env"
                         self.assertEqual(first_line, f"#!{expected} {language}")
+                        if language == "python3":
+                            configured = "yes" if flags.get("termux") else ""
+                            self.assertIn(f"TERMUX_CONFIGURED = '{configured}'", result.stdout)
                         if flags.get("termux"):
                             probe = prefix / "probe"
                             body = 'print("dummy entry")' if language == "python3" else 'printf "dummy entry\\n"'

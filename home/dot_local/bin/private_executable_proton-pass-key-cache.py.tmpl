@@ -22,6 +22,8 @@ from pathlib import Path
 DEFAULT_TTL = 900
 MAX_TTL = 3600
 MAX_MSG = 4096
+TERMUX_CONFIGURED = '{{ if get . "termux" }}yes{{ end }}' == "yes"
+TERMUX_FILES = Path("/data/data/com.termux/files")
 
 
 def current_user_ids() -> set[int]:
@@ -92,7 +94,15 @@ def completion(arguments: list[str]) -> list[str]:
     return [candidate for candidate in candidates if candidate.startswith(current)]
 
 
-def project_paths(name: str, create: bool = False) -> tuple[Path, Path, Path]:
+def termux_managed_parent(parent: Path, info: os.stat_result) -> bool:
+    if not stat.S_ISDIR(info.st_mode) or stat.S_IMODE(info.st_mode) != 0o771:
+        return False
+    if parent == TERMUX_FILES:
+        return (info.st_uid, info.st_gid) == (os.getuid(), os.getgid())
+    return parent in (Path("/data"), Path("/data/data")) and (info.st_uid, info.st_gid) == (1000, 1000)
+
+
+def project_paths(name: str, create: bool = False, *, termux_configure: bool = False) -> tuple[Path, Path, Path]:
     if not re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,63}", name) or name == "global":
         fail("プロジェクト名が不正です")
     uids = current_user_ids()
@@ -112,6 +122,7 @@ def project_paths(name: str, create: bool = False) -> tuple[Path, Path, Path]:
             fail(f"{key}がプロジェクトの保存先と一致しません")
     if os.environ.get("PROTON_PASS_KEY_PROVIDER", "env") != "env":
         fail("プロジェクトではenvのみを使用します")
+    termux = sys.platform == "android" and (TERMUX_CONFIGURED or termux_configure)
     for path in (base, data, runtime, identity):
         if not path.is_absolute() or ".." in path.parts or "\n" in str(path):
             fail("プロジェクトの保存先は絶対パスで指定してください")
@@ -120,10 +131,12 @@ def project_paths(name: str, create: bool = False) -> tuple[Path, Path, Path]:
                 fail("プロジェクトの保存先にシンボリックリンクは使用できません")
             if parent.exists():
                 info = parent.lstat()
-                if info.st_mode & 0o022 and not (info.st_uid == 0 and info.st_mode & stat.S_ISVTX):
-                    fail("保存先の親が他者から書き込み可能です")
-                if info.st_uid != 0 and info.st_uid not in uids:
-                    fail("保存先の親の所有者が不正です")
+                # Termuxアプリ領域はAndroidが管理する既知の親階層だけを許可する。
+                if not (termux and path.is_relative_to(TERMUX_FILES) and termux_managed_parent(parent, info)):
+                    if info.st_mode & 0o022 and not (info.st_uid == 0 and info.st_mode & stat.S_ISVTX):
+                        fail("保存先の親が他者から書き込み可能です")
+                    if info.st_uid != 0 and info.st_uid not in uids:
+                        fail("保存先の親の所有者が不正です")
             if (parent / ".git").exists() or (parent / ".chezmoiroot").exists():
                 fail("プロジェクトの秘密情報をリポジトリ内へ保存できません")
     session = data / "cli/.session"
@@ -396,7 +409,10 @@ def main() -> None:
     if project:
         os.environ.pop("PROTON_PASS_PERSONAL_ACCESS_TOKEN", None)
         os.environ.pop("PROTON_PASS_ENCRYPTION_KEY", None)
-        data, identity, runtime = project_paths(args.profile, args.command == "configure")
+        configure = args.command == "configure"
+        data, identity, runtime = project_paths(
+            args.profile, configure, termux_configure=configure and cli_args == ["--termux"]
+        )
         encrypted = data / "encryption-key.age"
         os.environ["PROTON_PASS_CACHE_DIR"] = str(runtime)
         os.environ["PROTON_PASS_SESSION_DIR"] = str(data / "cli")
