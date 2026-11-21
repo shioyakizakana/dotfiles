@@ -89,7 +89,7 @@ Rust設定は`rustc`と`cargo`も呼ぶ（`after/lsp/rust_analyzer.lua:22-23,84-
 | `utils/`のその他のimport | lazygit.nvim、nvim-hlslens、snacks.nvim、which-key.nvim | lazygit.nvim・yazi.nvimの依存にplenary.nvimがある |
 | `lua/config/lazy.lua`の直接宣言 | plenary.nvim、web-devicons、vim-operator-replace、vim-operator-user、vimdoc-ja | ロックと復元は別途設計する |
 
-`plugins.skkeleton.index`はimportがコメントアウトされている。このimportが指定するdenops.vim・ddc.vim・pum.vim・skkeleton等を現行SKKの必須依存には含めない。`lsp/_index.lua`・`lsp/none-ls.lua`・`lsp/format.lua`にも別の宣言や処理が残るため、削除候補はrequireとimportを確認してから決める。
+旧skkeletonのimportはコメントアウトされており、現行のSKK入力はskkeluaが担当する。NV-06では参照元を確認した上で、旧skkeletonの設定と `lsp/_index.lua`・`lsp/none-ls.lua`・`lsp/format.lua` を削除した。
 
 UbuntuのAPT定義にはbuild-essential・cmake・makeがあるが、全プラグインのビルド成功を保証しない。tree-sitter CLIはmise、RustコンパイラーはmiseのRustが担当する。パーサー・補完のネイティブモジュールについては、採用revisionの要件を確認して必要なC/C++コンパイラー等を確定する。
 
@@ -106,7 +106,7 @@ UbuntuのAPT定義にはbuild-essential・cmake・makeがあるが、全プラ�
 
 ## 修正候補と推奨順序
 
-NV-01はソース修正済み。利用者から設定の実適用成功報告があり、初回取得・失敗復旧の実機確認は残る。NV-02は導入定義とVue連携を修正済み。利用者から4ツールの導入成功報告があり、Svelteは下記の復旧手順で実導入と隔離起動を確認した。Vueは利用者の通常操作と依存追加後の診断確認が成功した。NV-03は主力言語・汎用LSP・追加5サーバーの段階的な確認まで対応済み。Web分岐とBiome起動は利用者が確認し、Tailwindの依存を備えた構成の通常UI確認も成功し、Mason参照の除去はソースで対応済み。NV-03は確認済みの範囲で完了し、sqlsのDB機能と未確認環境は別途の確認対象として残す。NV-04は設定修正・依存導入と、確認済み環境での通常UI確認まで完了した。NV-05はPython CLI・共通関数・Git除外を実装し、実機の保存・復元準備と一時領域への原本復元を確認した。利用者がLazy restore後の主要機能も確認した。NV-06は未実装。ソース上の事実と、ダミーで再現した不具合、通常設定での実機確認を区別する。
+NV-01はソース修正済み。利用者から設定の実適用成功報告があり、初回取得・失敗復旧の実機確認は残る。NV-02は導入定義とVue連携を修正済み。利用者から4ツールの導入成功報告があり、Svelteは下記の復旧手順で実導入と隔離起動を確認した。Vueは利用者の通常操作と依存追加後の診断確認が成功した。NV-03は主力言語・汎用LSP・追加5サーバーの段階的な確認まで対応済み。Web分岐とBiome起動は利用者が確認し、Tailwindの依存を備えた構成の通常UI確認も成功し、Mason参照の除去はソースで対応済み。NV-03は確認済みの範囲で完了し、sqlsのDB機能と未確認環境は別途の確認対象として残す。NV-04は設定修正・依存導入と、確認済み環境での通常UI確認まで完了した。NV-05はPython CLI・共通関数・Git除外を実装し、実機の保存・復元準備と一時領域への原本復元を確認した。利用者がLazy restore後の主要機能も確認した。NV-06は旧LSP・整形・SKK設定を削除済み。ソース上の事実と、ダミーで再現した不具合、通常設定での実機確認を区別する。
 
 | ID | 重要度・工数 | 区分・現状 | 次の作業と受け入れ条件 |
 | --- | --- | --- | --- |
@@ -115,9 +115,17 @@ NV-01はソース修正済み。利用者から設定の実適用成功報告が
 | NV-03 | Medium / Medium | 完了（確認済み環境・用途の範囲）。Mason依存宣言・setup・移行用切替を除去 | 23サーバーの登録と補完・整形を回帰検証。利用者が各確認用プロジェクトで接続・実行パス・root・補完・診断・保存時整形の維持とMason未読み込みを確認。sqlsのDB機能と他環境は未検証として残し、既存Masonデータは保持 |
 | NV-04 | Medium / Medium | 完了（確認済み環境・用途）。登録・Python選択・UIイベント・キー操作を修正しdebugpyを導入 | 回帰22件と全体unittest 269件・Bats 18件が成功。利用者がPython・Luaの停止・ステップ・変数表示・処理完了・UI・キー操作・正常終了を確認。[結果](../testing/neovim-dap-verification.md#通常uiの確認完了2026-11-15)を参照。他環境やPython版は別途確認 |
 | NV-05 | Medium / Medium | 完了（確認済み環境・用途）。スナップショット運用と実復旧後の主要機能を確認 | Neovim本体はlatestを維持し、miseの一括更新に含める。他環境と取得元消失時の復旧は別途確認 |
-| NV-06 | Low / Small | 保守性・改善提案。現在importされない旧LSP・整形・SKK設定が残る | NV-03後に用途を確認し、維持・整理を選ぶ。現行importから未使用設定を呼ばないことを確認する |
+| NV-06 | Low / Small | 旧LSP・整形と旧skkeletonの設定6ファイル、およびコメントアウトされた参照を削除 | Termux本体の通常起動でLSP接続・保存時整形・SKK入力を確認済み |
 
 NV-01の修正後は、NV-02→NV-03の順で移行する。NV-04は別PRで並行可能。NV-05の版選定は設定と主要機能を確認した後に行う。Mason併存そのものを不具合として扱わず、移行中の状態として維持する。
+
+### NV-06適用後のTermux実機確認
+
+2026-11-21、利用者がTermux本体のNeovim 0.12.6で、Lua・Python・Bash・ZshのLSP接続、診断の発生と解消、保存時整形を確認した。skkeluaは `<C-j>` で切り替えられ、漢字変換を含む日本語入力ができた。
+
+- PythonはRuffの接続とimportに関する診断、保存時の未使用import削除を確認した。Goは `golangci-lint-langserver` 経由の `errcheck` 診断と、goimportsによるimport追加を確認した。
+- BiomeプロジェクトではBiome LSPが接続し、保存時整形には `biome-check` が選ばれた。Denoプロジェクトには `denols` が接続し、`vtsls` は接続しなかった。YAMLは確認用の `format-check.yaml` で保存時整形ができた。
+- Vueでは `vue_ls` と `vtsls` の接続を確認した。Svelteは `~/.local/bin/svelteserver` で接続し、診断と保存時整形を確認した。Tailwindは `~/.local/bin/tailwindcss-language-server` で接続し、クラス名の補完を確認した。
 
 ## Mason除去前の確認手順（履歴）
 

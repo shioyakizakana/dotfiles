@@ -109,9 +109,6 @@ assert(started)
     def test_legacy_disabled_flag_keeps_external_tools_and_completion(self):
         self.run_lua(PROVIDER_HARNESS, "disabled")
 
-    def test_legacy_lsp_spec_keeps_completion_without_mason(self):
-        self.run_lua(PROVIDER_HARNESS, "default", "_index.lua")
-
     def test_go_formatter_uses_goimports_and_keeps_lsp_fallback(self):
         self.run_lua(r'''
 vim = {api = {nvim_create_user_command = function() end}, g = {}, b = {[1] = {}}}
@@ -178,7 +175,7 @@ assert(#config.cmd == 1 and config.filetypes[1] == "nim")
 
 
 PROVIDER_HARNESS = r'''
-local root, mode, filename = arg[1], arg[2], arg[3] or "index.lua"
+local root, mode = arg[1], arg[2]
 local registered = {}
 local globals = {}
 if mode ~= "default" then globals.dotfiles_use_mason = mode == "enabled" end
@@ -186,13 +183,13 @@ vim = {g = globals, lsp = {enable = function(name) registered[name] = true end}}
 package.preload.mason = function()
   error("LSP登録にMasonを必要としない")
 end
-for _, module in ipairs({"diagnostic", "attach", "code-actions", "format"}) do
+for _, module in ipairs({"diagnostic", "attach", "code-actions"}) do
   package.preload["plugins.lsp." .. module] = function() return {} end
 end
 package.preload["plugins.lsp.server-register"] = function()
   return assert(loadfile(root .. "/lua/plugins/lsp/server-register.lua"))()
 end
-local specs = assert(loadfile(root .. "/lua/plugins/lsp/" .. filename))()
+local specs = assert(loadfile(root .. "/lua/plugins/lsp/index.lua"))()
 local lsp
 local imports = {}
 for _, spec in ipairs(specs) do
@@ -201,7 +198,7 @@ for _, spec in ipairs(specs) do
 end
 assert(lsp, "LSP設定本体を維持する")
 assert(imports["plugins.lsp.conform"], "整形連携を維持する")
-if filename == "index.lua" then assert(imports["plugins.lsp.lazydev"], "Lua補完連携を維持する") end
+assert(imports["plugins.lsp.lazydev"], "Lua補完連携を維持する")
 local dependencies = {}
 local function collect(spec)
   if type(spec) == "string" then dependencies[spec] = true; return end

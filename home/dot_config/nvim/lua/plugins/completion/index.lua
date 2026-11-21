@@ -22,7 +22,6 @@ return {
 			"Kaiser-Yang/blink-cmp-dictionary",
 			{ import = "plugins.completion.luasnip" },
 			"disrupted/blink-cmp-conventional-commits",
-			-- "rinx/cmp-skkeleton",
 		},
 		build = function()
 			require("blink.cmp").build():wait(60000)

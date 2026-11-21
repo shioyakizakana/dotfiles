@@ -133,11 +133,21 @@ Ubuntu系のmise管理ツールのうち、Termux公式のパッケージ定義�
 
 TermuxにはUbuntu用mise設定と導入スクリプトを展開しないため、この処理が同じツールをmiseでも導入することはない。mise本体は今後の環境変数・タスク管理などに利用できる。利用者が別途作成したmise設定や既存のmiseインストールは変更・削除しない。移行済みの環境では`type -a node python3 codex pass-cli`などでPATHを確認し、pkg管理の実行ファイルを使っているか確かめる。導入済みパッケージは自動更新せず、更新はpkg側で行う。
 
-pkg版のバージョンはリポジトリに従い、Ubuntuのmise固定版と同じとは限らない。Lua 5.1のコマンドはlua5.1、Pythonはpkgの提供版を使う。Python 3.13・3.12の併存、LuaRocks、debugpy、npm経由のLSP、lefthookなど、今回の一覧にないツールは自動導入しない。Zsh・fzfも引き続き別途準備する。NeovimのLSP・DAPやYaziプラグインの互換性は実機確認が必要。
+pkg版のバージョンはリポジトリに従い、Ubuntuのmise固定版と同じとは限らない。Lua 5.1のコマンドはlua5.1、Pythonはpkgの提供版を使う。Python 3.13・3.12の併存、LuaRocks、debugpy、lefthookなど、一覧にないツールは基礎導入の対象外。Zsh・fzfも別途準備する。Neovimの追加ツールは下記の専用ターゲットで導入できる。
 
 Homebrewと認証の自動実行は対象外。利用者から、pkg install proton-pass-cli後のbootstrap、PATログイン、保管庫一覧表示、ssh-agent起動の成功報告を受けている。シバン修正後のchezmoi applyも正常終了したとの報告がある。今回追加した開発ツール一括導入の実機確認は未実施。
 
 Makefileの既定のchezmoiは`~/.local/bin/chezmoi`であり、Termuxパッケージの配置先とは異なる。後続のMake操作では`CHEZMOI_BIN="$PREFIX/bin/chezmoi"`をコマンド引数に指定する。例えば`make CHEZMOI_BIN="$PREFIX/bin/chezmoi" require`で確認できるが、pass-cli未準備なら失敗する。適用・認証のターゲットは別途確認してから実行する。
+
+### Neovim用ツールの一括導入
+
+Termux本体で `make bootstrap-neovim-tools` を実行すると、LSP・フォーマッター・リンターの不足分を導入できる。Termux公式のpkgでLua、Rust、Goなどのツールを用意し、npmでbasedpyright、Bash・Web系LSP、Prettierとprettierdを、Goでgolangci-lint-langserverとsqlsを補う。npm・Go・NimLSPの実行ファイルは `~/.local/bin` から使う。
+
+TypeScriptが未導入の場合や、`~/.local/bin/tsc` が起動できない場合はTypeScript 6を導入する。Termuxで確認したTypeScript 7はAndroid向け実行ファイルを起動できなかった。既に起動できる版や、別の場所にある実行ファイルは置き換えない。
+
+NimLSPは動作確認済みのNim 2.4.2のコミットに合わせてビルドする。取得した一時ソースで、Androidの場合に既存の同期I/Oを使うよう変更する。ほかのNimの版で新規ビルドする場合や既存のNimLSPとNimの版が異なる場合は停止する。Nimを更新した後は対応するソースでの再検証が必要。
+
+導入後はNeovimを開き直し、対象言語で `:LspInfo` と `:ConformInfo`、サンプルファイルの診断と保存時整形を確認する。
 
 ### Batsの導入と更新
 

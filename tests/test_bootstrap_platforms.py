@@ -201,6 +201,43 @@ esac
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue(result.stdout.endswith("false true\n"))
 
+    def test_neovim_tools_install_missing_commands_only_on_termux(self):
+        for name in ("bash-language-server", "vtsls", "vue-language-server", "svelteserver",
+                     "astro-ls", "tailwindcss-language-server", "emmet-language-server",
+                     "vscode-css-language-server", "vscode-html-language-server",
+                     "vscode-json-language-server", "yaml-language-server",
+                     "prettierd", "prettier", "tsc", "sqls"):
+            self.stub(name, "exit 0\n")
+        self.stub("npm", '''
+[[ "$*" == "install --global --prefix $HOME/.local --no-audit --no-fund basedpyright" ]] || exit 89
+printf 'npm basedpyright\\n' >> "$TRACE"
+mkdir -p "$HOME/.local/bin"
+printf '#!%s\\nexit 0\\n' "$FIXTURE_BASH" > "$HOME/.local/bin/basedpyright-langserver"
+"$FIXTURE_CHMOD" 755 "$HOME/.local/bin/basedpyright-langserver"
+''')
+        self.stub("go", '''
+[[ "$*" == "install github.com/nametake/golangci-lint-langserver@v0.0.12" ]] || exit 89
+printf 'go golangci-lint-langserver\\n' >> "$TRACE"
+printf '#!%s\\nexit 0\\n' "$FIXTURE_BASH" > "$GOBIN/golangci-lint-langserver"
+"$FIXTURE_CHMOD" 755 "$GOBIN/golangci-lint-langserver"
+''')
+        (self.base / "install-termux-nimlsp.sh").write_text("exit 0\n")
+
+        result = self.run_script("main --neovim-tools", FIXTURE_OS="ubuntu")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(self.trace.read_text(), "")
+
+        result = self.run_script("main --neovim-tools")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue((self.state / "rust-analyzer").exists())
+        self.assertEqual(self.trace.read_text().splitlines()[-2:],
+                         ["npm basedpyright", "go golangci-lint-langserver"])
+
+        self.trace.write_text("")
+        result = self.run_script("main --neovim-tools")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.trace.read_text(), "")
+
     def test_resvg_switches_only_after_native_build_and_conversion(self):
         for name in ("mktemp", "rm", "mv"):
             (self.bin / name).symlink_to(shutil.which(name))
