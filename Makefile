@@ -26,7 +26,7 @@ PROTON_PASS_PROFILE ?= global
 
 .PHONY: help diff apply status require require-bootstrap wrapper bootstrap
 .PHONY: check test test-unit test-smoke lint
-.PHONY: bootstrap-tools update-bats update-resvg
+.PHONY: bootstrap-tools bootstrap-neovim-tools update-bats update-resvg
 
 # ========================================
 # help
@@ -41,6 +41,7 @@ help:
 		'  wrapper  : Proton Passラッパー・鍵キャッシュ・プロジェクト初期登録コマンドを限定展開' \
 		'  bootstrap   : chezmoi設定に従って認証の初期セットアップを実行' \
 		'  bootstrap-tools : 環境別の基礎ツールを導入（Termuxはpkg対応開発ツールも含む）' \
+		'  bootstrap-neovim-tools : Termux向けのLSP・整形・診断ツールを導入' \
 		'  update-bats  : TermuxのBatsをリポジトリ指定版に更新' \
 		'  update-resvg : Termuxのresvgをリポジトリ指定版に導入・更新' \
 		'  check       : 静的検査・単体テスト・配置テストを実行' \
@@ -127,6 +128,9 @@ wrapper: require
 # ========================================
 bootstrap-tools:
 	@bash "$(REPO_ROOT)/bootstrap/bootstrap-tools.sh" --install
+
+bootstrap-neovim-tools:
+	@bash "$(REPO_ROOT)/bootstrap/bootstrap-tools.sh" --neovim-tools
 
 update-bats:
 	@bash "$(REPO_ROOT)/bootstrap/bootstrap-tools.sh" --update-bats

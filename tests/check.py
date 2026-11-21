@@ -16,6 +16,7 @@ OPTIONAL_SKIPS = {
 }
 BASH_FILES = (
     "bootstrap/bootstrap-tools.sh",
+    "bootstrap/install-termux-nimlsp.sh",
     "bootstrap/setup-proton-pass.sh",
     "home/.chezmoiscripts/run_after_install-apt.sh",
     "home/.chezmoiscripts/run_after_install-brew.sh",

@@ -72,6 +72,7 @@ Options:
   --install    不足しているツールを導入（既定）
   --update-bats  TermuxのBatsをリポジトリ指定版に更新
   --update-resvg Termuxのresvgをリポジトリ指定版に導入・更新
+  --neovim-tools Termux向けのLSP・整形・診断ツールを導入
   -h, --help   ヘルプを表示
 EOF
 }
@@ -85,7 +86,7 @@ parse_args() {
     --install)
       MODE="install"
       ;;
-    --update-bats | --update-resvg)
+    --update-bats | --update-resvg | --neovim-tools)
       MODE="${1#--}"
       ;;
     -h | --help)
@@ -545,6 +546,65 @@ install_termux_resvg() (
 )
 
 # ------------------------------------------------------------
+# TermuxのNeovim用ツール
+# ------------------------------------------------------------
+
+install_termux_neovim_tools() {
+  install_termux_packages nodejs-lts npm golang clang nim curl git rust-analyzer \
+    lua-language-server marksman gopls goimports gofumpt golangci-lint \
+    stylua shfmt shellcheck ruff biome2 oxlint taplo ty deno
+
+  local entry name
+  local -a npm_packages=() commands=(
+    'basedpyright:basedpyright-langserver' 'bash-language-server:bash-language-server'
+    '@vtsls/language-server:vtsls' '@vue/language-server:vue-language-server'
+    'svelte-language-server:svelteserver' '@astrojs/language-server:astro-ls'
+    '@tailwindcss/language-server:tailwindcss-language-server'
+    '@olrtg/emmet-language-server:emmet-language-server'
+    'vscode-langservers-extracted:vscode-css-language-server'
+    'yaml-language-server:yaml-language-server' '@fsouza/prettierd:prettierd'
+    'prettier:prettier' 'typescript@6:tsc'
+  )
+  for entry in "${commands[@]}"; do
+    if ! has_tool "${entry#*:}"; then
+      npm_packages+=("${entry%%:*}")
+    fi
+  done
+  if has_tool tsc && ! tsc --version >/dev/null 2>&1; then
+    [[ "$(command -v tsc)" == "$BIN_DIR/tsc" ]] ||
+      die "別の場所にあるTypeScriptを起動できません。その導入元を確認してください"
+    npm_packages+=(typescript@6)
+  fi
+  for name in vscode-html-language-server vscode-json-language-server; do
+    if ! has_tool "$name" && has_tool vscode-css-language-server; then
+      npm_packages+=(vscode-langservers-extracted)
+      break
+    fi
+  done
+  if (("${#npm_packages[@]}")); then
+    "$PREFIX/bin/npm" install --global --prefix "$HOME/.local" --no-audit --no-fund "${npm_packages[@]}" ||
+      die "Neovim用npmパッケージの導入に失敗しました"
+  fi
+  for entry in "${commands[@]}" vscode-html-language-server vscode-json-language-server; do
+    has_tool "${entry#*:}" || die "導入後にコマンドが見つかりません: ${entry#*:}"
+  done
+  tsc --version >/dev/null || die "TypeScriptを起動できません。TermuxではTypeScript 6を使用してください"
+
+  mkdir -p -- "$BIN_DIR"
+  for entry in 'github.com/nametake/golangci-lint-langserver@v0.0.12' 'github.com/sqls-server/sqls@v0.2.48'; do
+    name="${entry##*/}"
+    name="${name%@*}"
+    if ! has_tool "$name"; then
+      GOBIN="$BIN_DIR" GOTOOLCHAIN=local "$PREFIX/bin/go" install "$entry" ||
+        die "$name のビルドに失敗しました"
+    fi
+  done
+  "$BASH" "${BASH_SOURCE[0]%/*}/install-termux-nimlsp.sh" ||
+    die "NimLSPの準備に失敗しました"
+  log "Termux向けNeovimツールを確認しました"
+}
+
+# ------------------------------------------------------------
 # メイン処理
 # ------------------------------------------------------------
 
@@ -570,6 +630,11 @@ main() {
   if [[ "$MODE" == "update-resvg" ]]; then
     [[ "$IS_TERMUX" == true ]] || die "--update-resvgはTermux本体専用です"
     install_termux_resvg
+    return
+  fi
+  if [[ "$MODE" == "neovim-tools" ]]; then
+    [[ "$IS_TERMUX" == true ]] || die "--neovim-toolsはTermux本体専用です"
+    install_termux_neovim_tools
     return
   fi
 
