@@ -139,6 +139,14 @@ Homebrewと認証の自動実行は対象外。利用者から、pkg install pro
 
 Makefileの既定のchezmoiは`~/.local/bin/chezmoi`であり、Termuxパッケージの配置先とは異なる。後続のMake操作では`CHEZMOI_BIN="$PREFIX/bin/chezmoi"`をコマンド引数に指定する。例えば`make CHEZMOI_BIN="$PREFIX/bin/chezmoi" require`で確認できるが、pass-cli未準備なら失敗する。適用・認証のターゲットは別途確認してから実行する。
 
+### Batsの導入と更新
+
+Termux本体では `make bootstrap-tools` が不足しているBatsを導入する。導入済みのBatsはそのまま使う。`bash bootstrap/bootstrap-tools.sh --check` でコマンドの有無を確認できる。
+
+更新する場合は、リポジトリルートで `make update-bats` を実行する。取得する版とコミットは `bootstrap/bootstrap-tools.sh` の `BATS_VERSION` と `BATS_COMMIT` で指定する。新しい版に対応するときは、公式リリースで両方の値を確認し、更新後に `TMPDIR="$PREFIX/tmp" make test-smoke` を実行する。
+
+導入時は公式リポジトリから取得する。取得したコミットが指定値と一致した場合にだけ、`~/.local/share/bats-core/` に用意した版別の領域へインストールする。本体と補助スクリプトのシバンを補正し、起動と版を確認した後で `~/.local/bin/bats` を切り替える。明示的な更新では、この場所に手動導入した実行ファイルも置き換える。失敗時は切り替え前のBatsを使い続けられる。以前のbootstrap導入分は残す。別の場所から実行しているBatsは、その導入元で更新する。
+
 ### zenoのSQLite読み込みエラー
 
 利用者はpkg導入後のZsh再起動で、zenoのソケットサーバーが起動せず、SQLite共有ライブラリの読み込みがlibm.so.6不足で失敗したと報告した。Deno用SQLiteライブラリが取得したLinux向け配布物をTermuxで読み込もうとしている。[該当する@db/sqlite 0.12.0の実装](https://github.com/denodrivers/sqlite3/blob/0.12.0/src/ffi.ts)は、DENO_SQLITE_PATHで共有ライブラリを指定できる。

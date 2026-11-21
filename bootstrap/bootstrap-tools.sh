@@ -36,6 +36,9 @@ readonly TERMUX_PACKAGES=(
   tree-sitter ty uv yazi yq zoxide
 )
 
+readonly BATS_VERSION="1.13.0"
+readonly BATS_COMMIT="3bca150ec86275d6d9d5a4fd7d48ab8b6c6f3d87"
+
 MODE="install"
 IS_PROOT=false
 IS_TERMUX=false
@@ -66,6 +69,7 @@ Usage: ${SCRIPT_NAME} [OPTION]
 Options:
   --check      インストール状況を確認
   --install    不足しているツールを導入（既定）
+  --update-bats  TermuxのBatsをリポジトリ指定版に更新
   -h, --help   ヘルプを表示
 EOF
 }
@@ -78,6 +82,9 @@ parse_args() {
       ;;
     --install)
       MODE="install"
+      ;;
+    --update-bats)
+      MODE="update-bats"
       ;;
     -h | --help)
       usage
@@ -210,6 +217,11 @@ check_tools() {
 
   if [[ "$IS_TERMUX" == true ]]; then
     printf '[SKIP] Homebrew: Termuxでは対象外\n'
+    if has_tool bats; then
+      printf '[OK] bats\n'
+    else
+      printf '[--] bats\n'
+    fi
     log "Termuxのpkg管理対象（バージョン・実行可否は別途確認）"
     for name in "${TERMUX_PACKAGES[@]}"; do
       if termux_package_installed "$name"; then
@@ -446,7 +458,55 @@ install_homebrew() {
 }
 
 # ------------------------------------------------------------
+# TermuxのBats
+# ------------------------------------------------------------
+
+install_termux_bats() (
+  if [[ "$MODE" != "update-bats" ]] && has_tool bats; then
+    return
+  fi
+
+  [[ "$(id -u)" != 0 ]] || die "Batsは通常ユーザーで導入してください"
+  local tool active
+  active="$(command -v bats || true)"
+  [[ -z "$active" || "$active" == "$BIN_DIR/bats" ]] ||
+    die "別の場所に導入されたBatsは、その導入元で更新してください"
+  for tool in git termux-fix-shebang; do
+    command -v "$tool" >/dev/null || die "Batsの導入に必要なコマンドがありません: $tool"
+  done
+
+  local releases="$HOME/.local/share/bats-core" work='' release='' entry
+  trap 'if [[ -n "$work" ]]; then command rm -rf -- "$work"; fi
+        if [[ -n "$release" && ! "$BIN_DIR/bats" -ef "$release/bin/bats" ]]; then
+          command rm -rf -- "$release"
+        fi' EXIT
+  mkdir -p -- "$BIN_DIR" "$releases" || die "Batsの導入先を作成できません"
+  work="$(mktemp -d "$BIN_DIR/.bats-XXXXXXXX")" || die "Batsの作業領域を作成できません"
+  release="$(mktemp -d "$releases/$BATS_VERSION-XXXXXXXX")" || die "Batsの版別領域を作成できません"
+  log "Bats $BATS_VERSION を準備"
+  git clone --depth 1 --branch "v$BATS_VERSION" \
+    https://github.com/bats-core/bats-core.git "$work/source" || die "Batsの取得に失敗しました"
+  [[ "$(git -C "$work/source" rev-parse HEAD)" == "$BATS_COMMIT" ]] ||
+    die "Batsのリリースコミットが一致しません"
+  "$BASH" "$work/source/install.sh" "$release" || die "Batsのインストールに失敗しました"
+  for entry in "$release/bin/bats" "$release/libexec/bats-core/"*; do
+    termux-fix-shebang "$entry" || die "Batsのシバン補正に失敗しました"
+  done
+  [[ "$(TMPDIR="$PREFIX/tmp" "$release/bin/bats" --version)" == "Bats $BATS_VERSION" ]] ||
+    die "導入したBatsの起動または版を確認できません"
+  ln -s -- "$release/bin/bats" "$work/bats" || die "Batsのリンクを作成できません"
+  if [[ "$MODE" == "update-bats" ]]; then
+    mv -fT -- "$work/bats" "$BIN_DIR/bats" || die "Batsの切り替えに失敗しました"
+  else
+    mv -nT -- "$work/bats" "$BIN_DIR/bats" || die "Batsを配置できません"
+    [[ ! -L "$work/bats" ]] || die "既存のBatsが見つかったため導入を中止しました"
+  fi
+  release=''
+)
+
+# ------------------------------------------------------------
 # メイン処理
+# ------------------------------------------------------------
 # ------------------------------------------------------------
 
 main() {
@@ -463,6 +523,11 @@ main() {
     check_tools
     return
   fi
+  if [[ "$MODE" == "update-bats" ]]; then
+    [[ "$IS_TERMUX" == true ]] || die "--update-batsはTermux本体専用です"
+    install_termux_bats
+    return
+  fi
 
   if [[ "$IS_TERMUX" != true ]]; then
     mkdir -p "$BIN_DIR"
@@ -472,6 +537,9 @@ main() {
   install_proton_pass
   install_mise
   install_homebrew
+  if [[ "$IS_TERMUX" == true ]]; then
+    install_termux_bats
+  fi
 
   check_tools
 

@@ -81,6 +81,7 @@ done
 ''')
         self.environment["FIXTURE_BASH"] = BASH
         self.environment["FIXTURE_CHMOD"] = CHMOD
+        self.stub("bats", 'printf "Bats 1.13.0\\n"\n')
 
     def stub(self, name, code):
         path = self.bin / name
@@ -91,6 +92,7 @@ done
     def run_script(self, body='main --install', **environment):
         return subprocess.run(
             [BASH, "-c", '''source "$1"
+export BATS_VERSION BATS_COMMIT
 read_os_release() { ID="${FIXTURE_OS:-}"; PRETTY_NAME="${FIXTURE_OS:-Termux}"; }
 ''' + body, "--", str(self.source)],
             env={**self.environment, **environment}, input="",
@@ -137,9 +139,61 @@ read_os_release() { ID="${FIXTURE_OS:-}"; PRETTY_NAME="${FIXTURE_OS:-Termux}"; }
         self.assertIn("[--] pkg:proton-pass-cli", result.stdout)
         self.assertIn("[--] pkg:codex", result.stdout)
         self.assertIn("[SKIP] Homebrew", result.stdout)
+        self.assertIn("[OK] bats", result.stdout)
         self.assertEqual(self.trace.read_text(), "")
         self.assertEqual(list(self.home.iterdir()), [])
         self.assertEqual(list(self.state.iterdir()), [])
+
+    def test_bats_install_and_failed_update_preserve_active_version(self):
+        (self.bin / "bats").unlink()
+        result = self.run_script("main --check")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("[--] bats", result.stdout)
+        self.assertEqual(list(self.home.iterdir()), [])
+        self.assertEqual(self.trace.read_text(), "")
+        for name in ("mktemp", "rm", "ln", "mv"):
+            (self.bin / name).symlink_to(shutil.which(name))
+        self.stub("termux-fix-shebang", 'printf "shebang\\n" >> "$TRACE"\n')
+        self.stub("git", '''
+case "$1" in
+  clone)
+    [[ "$4" == --branch && "$5" == "v$BATS_VERSION" &&
+       "$6" == https://github.com/bats-core/bats-core.git ]] || exit 89
+    mkdir -p "$7"
+    cat > "$7/install.sh" <<'EOF'
+mkdir -p "$1/bin" "$1/libexec/bats-core"
+printf '#!%s\\nprintf "Bats %%s\\\\n" "%s"\\n' "$FIXTURE_BASH" "$BATS_VERSION" > "$1/bin/bats"
+"$FIXTURE_CHMOD" 755 "$1/bin/bats"
+printf '#!%s\\n' "$FIXTURE_BASH" > "$1/libexec/bats-core/bats"
+EOF
+    ;;
+  -C) printf '%s\\n' "${BATS_FIXTURE_COMMIT:-$BATS_COMMIT}" ;;
+  *) exit 89 ;;
+esac
+''')
+        result = self.run_script()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        entry = self.home / ".local/bin/bats"
+        first = entry.resolve(strict=True)
+        self.assertEqual(self.trace.read_text().splitlines().count("shebang"), 2)
+
+        self.trace.write_text("")
+        result = self.run_script()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.trace.read_text(), "")
+        self.assertEqual(entry.resolve(strict=True), first)
+
+        result = self.run_script("main --update-bats", BATS_FIXTURE_COMMIT="unexpected")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("コミットが一致しません", result.stderr)
+        self.assertEqual(entry.resolve(strict=True), first)
+        self.assertEqual(list(first.parents[1].parent.iterdir()), [first.parents[1]])
+        self.assertEqual(list(entry.parent.iterdir()), [entry])
+
+        result = self.run_script("main --update-bats")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotEqual(entry.resolve(strict=True), first)
+        self.assertTrue(first.is_file())
 
     def test_ubuntu_guest_takes_precedence_over_inherited_termux_prefix(self):
         result = self.run_script('check_environment; printf "%s %s\\n" "$IS_TERMUX" "$IS_PROOT"',
