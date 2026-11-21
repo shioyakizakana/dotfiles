@@ -358,6 +358,7 @@ print("NVIM v0.12.6")
     def test_shared_parents_allow_traversal_but_snapshots_remain_private(self):
         shared = self.home / ".local/state/dotfiles"
         shared.mkdir(parents=True, mode=0o755)
+        shared.chmod(0o755)
         shared.parent.chmod(0o755)
         identifier, directory = self.saved()
         self.assertEqual(shared.stat().st_mode & 0o777, 0o755)

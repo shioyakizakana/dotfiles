@@ -22,6 +22,8 @@ ID_PATTERN = re.compile(r"[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}\Z")
 COMMIT_PATTERN = re.compile(r"(?:[0-9a-f]{40}|[0-9a-f]{64})\Z")
 LIMIT = 8 * 1024 * 1024
 DIRECTORY_FLAGS = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+# Termuxでは親ディレクトリの通過が許可されても読み取りは拒否される。
+WALK_FLAGS = getattr(os, "O_PATH", os.O_RDONLY) | os.O_DIRECTORY | os.O_NOFOLLOW
 
 
 class SnapshotError(Exception):
@@ -61,11 +63,11 @@ def private(info):
 @contextmanager
 def storage(root, state, create=False):
     # 各階層をdir_fdとO_NOFOLLOWで開き、検証後のリンク差し替えを避ける。
-    fd = os.open("/", DIRECTORY_FLAGS)
+    fd = os.open("/", WALK_FLAGS)
     try:
         for index, part in enumerate(root.parts[1:], 1):
             try:
-                child = os.open(part, DIRECTORY_FLAGS, dir_fd=fd)
+                child = os.open(part, WALK_FLAGS, dir_fd=fd)
             except FileNotFoundError:
                 if not create:
                     raise
@@ -73,7 +75,7 @@ def storage(root, state, create=False):
                     os.mkdir(part, mode=0o700, dir_fd=fd)
                 except FileExistsError:
                     pass
-                child = os.open(part, DIRECTORY_FLAGS, dir_fd=fd)
+                child = os.open(part, WALK_FLAGS, dir_fd=fd)
             os.close(fd)
             fd = child
             info = os.fstat(fd)
@@ -83,7 +85,11 @@ def storage(root, state, create=False):
                 # XDGとdotfilesの共用親は公開可能だが、他者の書き込みは拒否する。
                 require(info.st_uid == os.getuid() and not stat.S_IMODE(info.st_mode) & 0o022,
                         "保存先の親ディレクトリの所有者・書き込み権限を確認してください。")
-        yield fd
+        directory = os.open(".", DIRECTORY_FLAGS, dir_fd=fd)
+        try:
+            yield directory
+        finally:
+            os.close(directory)
     finally:
         os.close(fd)
 
