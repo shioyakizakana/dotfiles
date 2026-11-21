@@ -93,8 +93,6 @@ require("lazy").setup({
 		{ import = get_utils("nvim-treesitter") },
 		{ import = get_utils("snacks.index") },
 		{ import = get_utils("which-key") },
-		-- skk
-		-- { import = "plugins.skkeleton.index" },
 		-- 補完系
 		{ import = "plugins.completion.index" },
 		-- LSP

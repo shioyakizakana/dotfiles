@@ -19,7 +19,6 @@ return {
       require("plugins.lsp.server-register")
     end,
   },
-  -- { import = "plugins.lsp.none-ls" },
   { import = "plugins.lsp.conform" },
   { import = "plugins.lsp.lazydev" },
 }
