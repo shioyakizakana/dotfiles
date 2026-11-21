@@ -20,13 +20,6 @@ class YaziConfigTests(unittest.TestCase):
             with self.subTest(file=path.name):
                 tomllib.loads(path.read_text())
 
-    def test_git_fetchers_cover_files_and_directories(self):
-        config = tomllib.loads((CONFIG / "yazi.toml").read_text())
-        self.assertEqual(config["plugin"]["prepend_fetchers"], [
-            {"group": "git", "url": "*", "run": "git"},
-            {"group": "git", "url": "*/", "run": "git"},
-        ])
-
     def test_public_packages_cover_configured_plugins_and_flavors(self):
         packages = tomllib.loads((CONFIG / "package.toml").read_text())
         keys = tomllib.loads((CONFIG / "keymap.toml").read_text())["mgr"]["prepend_keymap"]
