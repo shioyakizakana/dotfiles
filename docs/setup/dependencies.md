@@ -147,6 +147,16 @@ Termux本体では `make bootstrap-tools` が不足しているBatsを導入す�
 
 導入時は公式リポジトリから取得する。取得したコミットが指定値と一致した場合にだけ、`~/.local/share/bats-core/` に用意した版別の領域へインストールする。本体と補助スクリプトのシバンを補正し、起動と版を確認した後で `~/.local/bin/bats` を切り替える。明示的な更新では、この場所に手動導入した実行ファイルも置き換える。失敗時は切り替え前のBatsを使い続けられる。以前のbootstrap導入分は残す。別の場所から実行しているBatsは、その導入元で更新する。
 
+### TermuxでのSVGプレビューと変換
+
+Termux本体のYaziは、SVGのプレビューと先読みに組み込みの `magick` を使う。TermuxのImageMagickにはlibrsvgが含まれる。設定を適用した後、新しく起動したYaziで確認用のSVGを選ぶ。
+
+SVGを単体で変換するためにresvgを使う場合は、リポジトリルートで `make update-resvg` を実行する。初回導入にも使える。TermuxのCargoとRustでcrates.ioから指定版をビルドし、`~/.local/bin/resvg` に配置する。
+
+新しい版に対応するときは、[公式リリース](https://github.com/linebender/resvg/releases)とRustの要件を確認し、`bootstrap/bootstrap-tools.sh` の `RESVG_VERSION` を更新する。指定版が入っていればビルドを省く。版とSVGからPNGへの変換を確認してから実行ファイルを切り替えるため、ビルドや変換に失敗しても既存の実行ファイルは残る。別の場所に入れたresvgは、その導入元で更新する。
+
+導入後に `resvg --version` を確認する。
+
 ### zenoのSQLite読み込みエラー
 
 利用者はpkg導入後のZsh再起動で、zenoのソケットサーバーが起動せず、SQLite共有ライブラリの読み込みがlibm.so.6不足で失敗したと報告した。Deno用SQLiteライブラリが取得したLinux向け配布物をTermuxで読み込もうとしている。[該当する@db/sqlite 0.12.0の実装](https://github.com/denodrivers/sqlite3/blob/0.12.0/src/ffi.ts)は、DENO_SQLITE_PATHで共有ライブラリを指定できる。
