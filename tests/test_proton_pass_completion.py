@@ -17,7 +17,7 @@ CHEZMOI = shutil.which("chezmoi")
 
 class ProtonCompletionTests(unittest.TestCase):
     def setUp(self):
-        directory = tempfile.TemporaryDirectory(prefix="pass-completion-", dir="/tmp")
+        directory = tempfile.TemporaryDirectory(prefix="")
         self.addCleanup(directory.cleanup)
         self.base = Path(directory.name)
         self.home = self.base / "home with spaces"

@@ -18,7 +18,7 @@ MAKE = shutil.which("make")
 
 class ProtonPassSetupTests(unittest.TestCase):
     def setUp(self):
-        directory = tempfile.TemporaryDirectory(prefix="provider setup ")
+        directory = tempfile.TemporaryDirectory(prefix="")
         self.addCleanup(directory.cleanup)
         self.base = Path(directory.name)
         self.bin = self.base / "bin"
@@ -250,7 +250,7 @@ main "$@"
             ("executable_setup-proton-pass-project.tmpl", "bash"),
             ("private_executable_proton-pass-key-cache.py.tmpl", "python3"),
         )
-        with tempfile.TemporaryDirectory(prefix="termux-entry-", dir="/tmp") as directory:
+        with tempfile.TemporaryDirectory(prefix="entry-") as directory:
             prefix = Path(directory)
             (prefix / "bin").mkdir()
             for name, executable in (("env", shutil.which("env")), ("bash", BASH),

@@ -205,7 +205,8 @@ class ProjectCacheTests(unittest.TestCase):
             patch = mock.patch.object(CACHE.sys, stream, io.StringIO())
             patch.start()
             self.addCleanup(patch.stop)
-        directory = tempfile.TemporaryDirectory(prefix="pass profile ")
+        # Termuxの一時ディレクトリでもUnixソケットのパス長制限に収める。
+        directory = tempfile.TemporaryDirectory(prefix="")
         self.addCleanup(directory.cleanup)
         self.home = Path(directory.name)
         self.env = {"HOME": str(self.home), "PATH": "/dummy/bin"}
