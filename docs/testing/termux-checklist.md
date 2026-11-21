@@ -92,8 +92,9 @@ Termux本体では、Androidが管理する親ディレクトリの権限が従�
 | 基礎確認・不足ツール | 未実施 |
 | lefthookの版・直接起動 | Termux本体で2.2.2。設定検証とpre-commitの直接起動に成功。直接起動時はステージ済みファイルがなく、差分検証はskip。利用者は `TMPDIR="$PREFIX/tmp" lefthook run pre-push --force` でテストの通過を確認した |
 | 通常commit・pushでのhook起動、PR番号 | Gitからpre-commitとpre-pushが起動し、検証に成功。PR #19のGitHub Actionsも利用者が成功を確認した |
-| make checkの結果・件数・skip理由 | Termux本体で `TMPDIR="$PREFIX/tmp" make check` が成功。静的検証、unittest 361件、Bats 18件が通過し、skipは0件。Proton Passはダミーデータで確認した |
+| make checkの結果・件数・skip理由 | Termux本体で `TMPDIR="$PREFIX/tmp" make check` が成功。SVG対応後の `49dc9ec` では静的検証、unittest 362件、Bats 18件が通過し、skipは0件。Proton Passはダミーデータで確認した |
 | シェル・tmux | 利用者がTermux本体の通常設定でZshの起動、ウィンドウの追加・削除、ペイン分割を確認 |
 | Yazi・プレビュー・プラグイン | 利用者が `ya pkg install` でプラグインを導入し、PNG・PDFのプレビューに成功。Termux向けの `magick` 設定を適用した後、通常起動したYaziでSVGのプレビューにも成功。確認済みのプラグインとflavorは上記に記載 |
+| resvgの導入・更新 | 隔離HOMEで、旧版を模した実行ファイルからTermuxでビルドした0.50.0への切り替えとSVGからPNGへの変換に成功。同じ版では再ビルドせず、依存を取得できない場合は旧実行ファイルが残ることを確認 |
 | Neovimスナップショット | 展開済みコマンドと実際のlockfileを使い、一時保存先に保存して一覧に表示されることを確認 |
 | プロジェクト別Proton Pass | 展開済みコマンドで、隔離HOMEのダミーデータを使って登録準備と `status` に成功。通常環境では補完にプロジェクト候補がなく、実認証は未実施 |
