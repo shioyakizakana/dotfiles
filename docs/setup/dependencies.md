@@ -138,3 +138,26 @@ pkg版のバージョンはリポジトリに従い、Ubuntuのmise固定版と�
 Homebrewと認証の自動実行は対象外。利用者から、pkg install proton-pass-cli後のbootstrap、PATログイン、保管庫一覧表示、ssh-agent起動の成功報告を受けている。シバン修正後のchezmoi applyも正常終了したとの報告がある。今回追加した開発ツール一括導入の実機確認は未実施。
 
 Makefileの既定のchezmoiは`~/.local/bin/chezmoi`であり、Termuxパッケージの配置先とは異なる。後続のMake操作では`CHEZMOI_BIN="$PREFIX/bin/chezmoi"`をコマンド引数に指定する。例えば`make CHEZMOI_BIN="$PREFIX/bin/chezmoi" require`で確認できるが、pass-cli未準備なら失敗する。適用・認証のターゲットは別途確認してから実行する。
+
+### zenoのSQLite読み込みエラー
+
+利用者はpkg導入後のZsh再起動で、zenoのソケットサーバーが起動せず、SQLite共有ライブラリの読み込みがlibm.so.6不足で失敗したと報告した。Deno用SQLiteライブラリが取得したLinux向け配布物をTermuxで読み込もうとしている。[該当する@db/sqlite 0.12.0の実装](https://github.com/denodrivers/sqlite3/blob/0.12.0/src/ffi.ts)は、DENO_SQLITE_PATHで共有ライブラリを指定できる。
+
+TermuxのZsh設定では、DENO_SQLITE_PATHが空で、PREFIXが絶対パスかつlib/libsqlite3.soが読み取り可能なら、そのファイルを使う。明示済みの指定は変更しない。Ubuntu・prootにはこの設定を追加しない。この環境変数はZshの子プロセスへ引き継がれるため、zeno以外の同ライブラリを使うDeno処理にも適用される。
+
+libsqliteは既存の[Termux版Pythonの依存](https://github.com/termux/termux-packages/blob/master/packages/python/build.sh)に含まれる。追加パッケージの導入や、Denoキャッシュ・zenoの履歴データの削除は行わない。ライブラリが存在しなければ自動指定せず、導入済みパッケージを確認する。
+
+Termuxで一時的に試す場合は、次を実行する。新しいZshでzenoの起動を確認し、exitで元のシェルへ戻る。以下は利用者向けの実機手順であり、自動テストでは実行しない。
+
+```shell
+test -r "$PREFIX/lib/libsqlite3.so" && printf 'SQLite library: OK\n'
+DENO_SQLITE_PATH="$PREFIX/lib/libsqlite3.so" zsh
+```
+
+恒久的な設定は、修正版を取得して.zshrcの差分を確認した後、次のように限定適用する。
+
+```shell
+chezmoi apply --include=files --refresh-externals=never "$HOME/.zshrc"
+```
+
+新しいZshを起動して確認する。隔離テストでは、子プロセスへのパス引き継ぎ、明示指定の保持、Ubuntu・prootへの影響、ライブラリ不在時の動作を確認する。Termux上での実SQLiteの読み込みとzeno起動の成功は未確認。
