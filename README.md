@@ -97,6 +97,11 @@ Codex CLIではこのリポジトリ内から`/skills`や`$スキル名`で選�
 | `aliases.sh` | コマンド置換、eza、ホーム・chezmoiへの移動、LazyGit起動、upd |
 
 BashもZshと同じ共通設定を使う。PATHは存在するディレクトリだけを末尾へ追加し、再読み込みで同じ項目を増やさない。
+
+共通の`env.sh`ではnpmを実行せず、mise管理のランタイムやCLIのPATHは各シェルの`mise activate`に任せる。Termuxのpkg由来のPATHも維持する。
+mise外のnpmグローバル導入を使う場合は、共通設定の読み込み前に`NPM_GLOBAL_PREFIX`を明示する。絶対パスで、その配下の`bin`が存在するときだけPATHへ追加する。未設定・空・相対パスの場合は追加せず、指定済みの値も変更しない。Nodeの版ごとに切り替えるツールはmiseで管理し、共通設定にはインストール先を固定しない。
+旧設定が自動取得した値がシェルに残る場合は、手動指定していないことを確認して`unset NPM_GLOBAL_PREFIX`を実行し、新しいシェルで確認する。
+
 `upd`は管理対象の`~/.local/bin/update_apps`を呼ぶ。例えば`upd apt`のように更新対象を指定する。コマンド置換のエイリアスは、対応するツールがPATHにある場合だけ定義する。導入担当と手動準備は[設定の依存一覧](docs/setup/dependencies.md)を参照する。
 reload、プロンプト、補完、キー操作、mise・zoxide・atuinなどのシェル別初期化は各シェルの設定に残す。SSH_AUTH_SOCKも既存どおりZsh側だけで設定する。
 
