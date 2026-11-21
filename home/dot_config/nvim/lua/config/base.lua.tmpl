@@ -7,7 +7,11 @@ vim.opt.timeoutlen = 500
 
 
 -- 言語設定
+{{ if get . "termux" -}}
+vim.cmd.language("C.UTF-8")
+{{ else -}}
 vim.cmd.language("ja_JP.utf8")
+{{ end -}}
 vim.opt.helplang = { "ja", "en" }
 if vim.fn.has("gui_running") == 1 then
     vim.o.guifont = "HackGen Console NF:h14"
