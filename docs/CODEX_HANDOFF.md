@@ -1,18 +1,41 @@
 # Codex開発引き継ぎ
 
-作成日：2026-11-17。対象：`/home/shioyaki/.local/share/chezmoi`。
+作成日：2026-11-17。最終更新：2026-11-22。対象は各環境のdotfiles作業コピー。
 
 この文書は会話とリポジトリを確認してまとめた作業記録。作業規約と操作承認はAGENTS.mdに従い、再開時にはGit状態を再確認する。秘密情報の実値は記載していない。
 
-## 初期化テンプレートの配置修正（2026-11-19）
+## 現在の到達点（2026-11-22）
+
+ローカルの `main` はPR #22を取り込んだ `92d9336`。再開する環境ごとに作業コピーのブランチ、HEAD、未コミット変更を確認する。以下の「作業履歴」と1〜7節には当時のブランチ名、テスト件数、未完了の記述が残っている。
+
+| 環境 | 確認済みの範囲と参照先 |
+| --- | --- |
+| Termux本体 | 基礎パッケージ導入、Bats、共通テスト、通常のpushからのpre-push、tmux、YaziのPNG・PDF・SVG表示、グローバルとプロジェクト別Proton Passの切り替えを確認済み。NeovimのNV-06も適用後にLSP・保存時整形・SKK入力を確認した。[Termux版の引き継ぎ](CODEX_TERMUX_HANDOFF.md)・[実機チェックリスト](testing/termux-checklist.md)・[Neovim実機確認](setup/neovim-dependencies.md#nv-06適用後のtermux実機確認) |
+| proot Ubuntu | プロジェクト別Proton Passの認証切り替え・保管庫の参照範囲・補完・鍵キャッシュを確認済み。NeovimのLSP、DAP、スナップショットは個別の検証記録にある範囲で確認済み。[Proton Pass手順書](setup/proton-pass.md#現在の状態)・[Neovimの依存と検証記録](setup/neovim-dependencies.md) |
+| WSL2・ネイティブ・QEMUのUbuntu | 対応する環境フラグと導入方法は[環境別の検証範囲](testing/environment-matrix.md)を参照。GitHub ActionsのUbuntuで共通テストは通っている。各環境の通常起動、アプリ操作、実認証の結果は個別に確認する。 |
+
+### 別環境で再開する手順
+
+1. 対象環境の中で `git status --short --branch`、`git log -3 --oneline`、`uname -sm` を実行する。proot Ubuntuはゲスト側の作業コピーを使い、Termux本体の生成hookや実行ファイルを共用しない。
+2. リポジトリと対象ディレクトリの規約を読み、[初期構築手順](../README.md)と[環境別の検証範囲](testing/environment-matrix.md)を確認する。Termux本体ではpkgと専用bootstrapを使う。Ubuntu系ではAPTと既存のmise設定に従い、prootではHomebrewの自動導入を省く。TermuxとprootのProton Pass providerはenv。
+3. 必要に応じて `bash bootstrap/bootstrap-tools.sh --check` で基礎ツールを確認する。終了コードと併せて不足表示を見る。必要な依存が揃った環境で `make check` を実行し、結果を環境・コミットごとに記録する。導入、設定適用、認証はAGENTS.mdに従う。[共通検証手順](testing/checks.md)
+
+### 保留と後続作業
+
+- ツール未導入のTermuxを用意できないため、`make bootstrap-neovim-tools` の初回一括導入は保留。既存環境での再実行と、隔離HOMEでのNimLSP初回ビルドは確認済み。[一括導入の手順](setup/dependencies.md#neovim用ツールの一括導入)
+- PATの期限切れ・更新・復旧、複数プロジェクトの同時利用、sqlsの実DB接続は別途確認する。SOPSとmiseの連携は、対象プロジェクトが決まってから鍵の保管・復旧とタスクへの値の渡し方を設計する。[Proton Passの残件](setup/proton-pass.md#現在の状態)
+
+## 作業履歴
+
+### 初期化テンプレートの配置修正（2026-11-19）
 
 Termuxでclone後に設定入力が出ないとの報告を受け、初期設定テンプレートをhome/.chezmoi.toml.tmplへ移動した。.chezmoirootがhomeを指定するため、従来のリポジトリ直下ではinitの探索対象にならなかった。本文評価だけだったテストに、隔離した実initで設定生成を確認する回帰テストを追加した。実機への適用・再初期化は別途行う。
 
-## Termux検証への引き継ぎ（2026-11-19）
+### Termux検証への引き継ぎ（2026-11-19）
 
 PR #10はmainへマージ済みで、ローカルの基点はc3fce78。利用者はmain更新後に旧作業ブランチを削除した。次はTermux本体でのdotfiles構築・検証を進める。[Termux側Codexへの引き継ぎ](CODEX_TERMUX_HANDOFF.md)に現在の状態、確認手順、承認条件と完了条件を記載した。以下の2026-11-18の作業ブランチ・PR作成前の記述は当時の記録として読む。
 
-## 最新状態への案内（2026-11-18）
+### プロジェクト別PATの実装記録（2026-11-18）
 
 プロジェクト別PATは、その後の合意を経て実装され、利用者による実環境への適用・動作確認まで進んでいる。最新の仕様、検証範囲、残件は[Proton Pass手順書の「現在の状態」](setup/proton-pass.md#現在の状態)を参照する。1〜7節は2026-11-17の引き継ぎ作成時点の記録であり、「未承認」「未実装」やmainブランチに関する記述は当時の状態を示す。
 
@@ -145,7 +168,7 @@ PR #9のコミットは、2563be9（Python CLI・テスト）、311ee38（共通
 - **Git運用**：mainはPRとcheck必須にしたと利用者から報告済み。auto-mergeとブランチ自動削除も有効化報告あり。直pushや自動マージを勝手に行わない。
 - **認証の過去事例**：このセッションのSSH pushはpublickeyエラーになり、ghの既存認証を使うHTTPS pushで成功した。originのSSH URLや認証設定は変更していない。今の認証状態を保証する記述ではない。トークンの取り出し・表示で解決しない。
 
-## 6. 次セッションで行う作業
+## 6. プロジェクト別PATの設計案（実装前の記録）
 
 ### 最優先：プロジェクト別PAT対応の設計
 
