@@ -366,9 +366,13 @@ Bashは~/.config/bash/completions/proton-pass.bashを.bashrcから読む。Zsh�
 
 [PRootの公式マニュアル](https://github.com/termux/proot/blob/master/doc/proot/manual.txt)では、実行ユーザーやファイル所有者のUIDを仮想化し、所有者変更の成功を模擬する場合がある。今回の暗号文のUIDはプロセスのホスト側UIDと一致しており、仮想UIDだけとの比較では同じユーザーを拒否していた。ファイル情報が変換前・変換後のどちらで返るかの差を考慮する必要がある。
 
+### 所有者と接続元UIDの判定
+
 鍵キャッシュスクリプトは、os.getuidの値と、同一プロセスの/proc/self/statusから取得した実UIDを所有者判定に用いる。任意のUIDを設定値で許可する方法は追加しない。通常Linuxでは両者が一致し、従来どおりの判定になる。procの値を取得・検証できなければ、os.getuidだけを使う。
 
 ファイル、ディレクトリ、実行ロック、キャッシュソケットと接続元UIDに同じ判定を適用する。別ユーザーのUID、公開された権限、リンク、空の暗号文は引き続き拒否する。proot内の仮想ユーザー間に、ホストの別ユーザーと同じアクセス隔離があるとは扱わない。
+
+### 適用後の確認と再ログイン
 
 利用者はUID対応版を再適用し、infoの成功を確認済み（10節）。次は修正を適用する際の操作例であり、Codexは適用・認証を行っていない。
 
@@ -380,6 +384,8 @@ proton-pass --profile pat-test info
 ログアウト済みなら、同じプロファイルを指定してloginする。既存のPAT・CLI暗号化鍵・共有identityは再生成せず、chownやchmodを繰り返す必要もない。
 
 初期構築で同じidentityのパスフレーズを3回求める処理は、identityと公開鍵の一致確認、PATの復号、CLI暗号化鍵の復号を別々に実行する仕様。UID不一致とは分けて扱う。
+
+### UID修正の回帰検証と未実施の操作
 
 UID変換の混在はダミーで修正前の失敗を再現し、修正後の成功と、無関係なUID・不適切な権限の拒否を確認した。procの欠落・不正値、保存領域と接続元UIDも回帰検証した。UID修正段階のmake checkはunittest 347件・Bats 18件が成功し、skipなし。proot上の使い捨てソケットとダミー鍵でも保存・取得・ロックが成功した。textlintも成功し、natural-japaneseの統計指摘は手順と技術用語の明確さを優先して維持した。Codexによる実鍵の変更・復号、実認証、適用は未実施。
 
@@ -452,7 +458,11 @@ proton-pass --profile pat-test vault list
 
 ラッパーが存在していても、シバンに指定したインタプリタが存在しなければ同じエラーになる。従来の関連コマンドは/usr/bin/envを指定していた。[Termux公式の実行環境資料](https://github.com/termux/termux-packages/wiki/Termux-execution-environment)でも、シバン補正を利用できない起動ではこの形式が失敗し得ると説明されている。利用者の追加確認では、ラッパーは実行可能で、先頭行は#!/usr/bin/env bashだった。/usr/bin/envは実行不可、PREFIX/bin/envは実行可能だった。存在するラッパーのシバン先を実行できない状態が確認できたため、今回の直接起動失敗の原因をシバン不整合として記録する。修正後の限定適用と通常applyの成功確認は残す。
 
+### 環境別シバンの修正
+
 修正後はtermuxフラグがtrueの場合だけ、proton-pass、init-proton-pass、setup-proton-pass-project、proton-pass-key-cache.pyのシバンをPREFIX/bin/envへ展開する。PREFIXが空または相対パスなら展開を停止する。Linux・prootでは/usr/bin/envを維持し、Bash・Pythonの選択は引き続きPATHに従う。provider、PAT、セッション、キャッシュの配置は変えない。
+
+### 限定適用と再確認
 
 修正版を取得した利用者は、Termuxで差分を確認してから関連4ファイルだけを適用する。以下は利用者向けの操作例であり、Codexは実行していない。
 
@@ -467,5 +477,7 @@ head -n 1 "$HOME/.local/bin/proton-pass-key-cache.py"
 ```
 
 先頭行がTermuxの絶対パスのenvを指すことを確認後、通常のchezmoi applyを再試行する。出力に秘密値が含まれる可能性があるため、共有ログへ貼らない。セッションが有効なら、今回の修正のための再ログイン・鍵再生成・ssh-agent再起動は不要。
+
+### シバン修正の隔離検証
 
 隔離したPREFIX・HOMEとダミー処理で、関連4コマンドのシバン、補正ライブラリなしの直接起動、chezmoi経由の起動を確認した。Linux・prootでPREFIXを引き継いでも既存形式を維持することも確認した。make checkはunittest 353件・Bats 18件が成功し、skipは0件。実PAT・実鍵・実セッションは使用していない。

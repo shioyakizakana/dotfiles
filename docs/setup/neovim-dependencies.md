@@ -108,7 +108,11 @@ UbuntuのAPT定義にはbuild-essential・cmake・makeがあるが、全プラ�
 
 ## 修正候補と推奨順序
 
-NV-01はソース修正済み。利用者から設定の実適用成功報告があり、初回取得・失敗復旧の実機確認は残る。NV-02は導入定義とVue連携を修正済み。利用者から4ツールの導入成功報告があり、Svelteは下記の復旧手順で実導入と隔離起動を確認した。Vueは利用者の通常操作と依存追加後の診断確認が成功した。NV-03は主力言語・汎用LSP・追加5サーバーの段階的な確認まで対応済み。Web分岐とBiome起動は利用者が確認し、Tailwindの依存を備えた構成の通常UI確認も成功し、Mason参照の除去はソースで対応済み。NV-03は確認済みの範囲で完了し、sqlsのDB機能と未確認環境は別途の確認対象として残す。NV-04は設定修正・依存導入と、確認済み環境での通常UI確認まで完了した。NV-05はPython CLI・共通関数・Git除外を実装し、実機の保存・復元準備と一時領域への原本復元を確認した。利用者がLazy restore後の主要機能も確認した。NV-06は旧LSP・整形・SKK設定を削除済み。ソース上の事実と、ダミーで再現した不具合、通常設定での実機確認を区別する。
+NV-01はソース修正済み。利用者から設定の実適用成功報告があり、初回取得・失敗復旧の実機確認は残る。NV-02は導入定義とVue連携を修正済み。利用者から4ツールの導入成功報告があり、Svelteは下記の復旧手順で実導入と隔離起動を確認した。Vueは利用者の通常操作と依存追加後の診断確認が成功した。
+
+NV-03は主力言語・汎用LSP・追加5サーバーの段階的な確認まで対応済み。Web分岐とBiome起動は利用者が確認し、Tailwindの依存を備えた構成の通常UI確認も成功し、Mason参照の除去はソースで対応済み。NV-03は確認済みの範囲で完了し、sqlsのDB機能と未確認環境は別途の確認対象として残す。
+
+NV-04は設定修正・依存導入と、確認済み環境での通常UI確認まで完了した。NV-05はPython CLI・共通関数・Git除外を実装し、実機の保存・復元準備と一時領域への原本復元を確認した。利用者がLazy restore後の主要機能も確認した。NV-06は旧LSP・整形・SKK設定を削除済み。ソース上の事実と、ダミーで再現した不具合、通常設定での実機確認を区別する。
 
 | ID | 重要度・工数 | 区分・現状 | 次の作業と受け入れ条件 |
 | --- | --- | --- | --- |
@@ -174,15 +178,21 @@ NV-01修正後のmake checkは静的確認・unittest全198件・Bats全18件が
 | `npm:oxlint` | [Oxlint公式CLI](https://oxc.rs/docs/guide/usage/linter/cli)に`--lsp`があり、[nvim-lspconfigの設定](https://github.com/neovim/nvim-lspconfig/blob/master/lsp/oxlint.lua)がnpmのoxlintを案内する |
 | `go:golang.org/x/tools/cmd/goimports` | [Go公式パッケージ資料](https://pkg.go.dev/golang.org/x/tools/cmd/goimports)で導入パスと整形・import更新の役割を確認した |
 
+### Vueとvtslsの連携・探索
+
 [Vue公式のNeovim案内](https://github.com/vuejs/language-tools/wiki/Neovim)と[nvim-lspconfigのvtsls設定例](https://github.com/neovim/nvim-lspconfig/blob/master/lsp/vtsls.lua)に従い、vtslsの対象filetypesへvueを追加し、globalPluginsへ`@vue/typescript-plugin`を登録した。Vueの依存に含まれるプラグインを使うため、別の直接依存は追加しない。vue_lsの要求転送はnvim-lspconfig側へ任せ、独自のon_initを重ねない。実機にあるnvim-lspconfigの版がこの連携に対応するかは別途確認する。
 
 `after/lsp/vtsls.lua`はPATH上のvue-language-serverをrealpathで解決する。JavaScript本体へのリンクなら親パッケージを使い、aubeのnode_modules/.binランチャーなら隣接する@vue/language-serverのリンクを解決する。miseやMasonのインストール先を固定しない。package.jsonとサーバー本体を確認できなければ警告し、通常のTypeScript設定を返す。ランチャーや外部コマンドは実行せず、パッケージの自動導入も呼ばない。
 
 miseのshimは実体へのシンボリックリンクとは限らないため、shimしか見えない場合はVue支援を設定できない。利用者はmiseでツールを準備し、実ツールのbinがPATHにあるシェルからNeovimを起動する。GUIや別の起動方法でも同じPATHを確認する。Masonが先にPATHへ追加されるとMason側を選ぶ可能性があるため、NV-03ではMasonなしの環境で再確認する。
 
+### 他サーバーと環境別の制約
+
 SvelteとOxlintの独自cmdは追加せず、nvim-lspconfigの既存定義を使う。[Svelte設定](https://github.com/neovim/nvim-lspconfig/blob/master/lsp/svelte.lua)のプロジェクト内サーバー優先も維持する。JS/TSファイルからSvelteへの参照・リネーム等の追加連携や、Oxlintの型情報を使う診断に必要な依存は今回追加していない。プロジェクト別に必要性を判断する。
 
 NodeとTypeScriptは既存のmise定義を維持した。閲覧したSvelteとVueのpackage.jsonにはTypeScriptのpeerDependenciesがあるため、実導入時は採用版との整合も確認する。TermuxにはこのUbuntu用mise設定を展開しない方針を維持する。特にOxlintのネイティブ配布物や各バックエンドのAndroid対応は未確認で、自動導入に対応済みとはしない。
+
+### NV-02の回帰検証と未確認範囲
 
 `tests/test_neovim_lsp.py`はTOMLの導入定義、対象LSPの登録、Go整形の選択、Vueの実体解決をダミーで検証する。空白を含むパス、shim、実行ファイルの欠落、realpathの失敗、package.jsonの欠落を含む8件が成功した。通常設定の実起動やサーバーとの接続は行っていない。
 
@@ -234,6 +244,8 @@ NV-03の切替追加後のmake checkはunittest全209件・Bats全18件が成功
 
 利用者のmise 2026.10.25・Linux ARM64のログでは、vtsls・Vue・Oxlint・goimportsは導入に成功し、Svelte Language Server 0.18.6だけが`aube install failed: failed to resolve dependencies`で失敗した。chezmoiのmise導入スクリプトが終了コード1で停止したことは、部分失敗を成功扱いしない既存の動作である。goimportsの最初の3秒タイムアウトは、その後の導入成功と分けて記録する。
 
+### 単体再試行と適用範囲
+
 利用者の明示承認後、Codexは次のコマンドでSvelteだけを再試行し、導入に成功した。miseによる管理とソースのlatest指定は維持し、再試行だけをログと同じ0.18.6へ限定した。他のツールの再インストール、mise本体の更新、chezmoi applyは実行していない。
 
 ```shell
@@ -243,7 +255,11 @@ MISE_NPM_PACKAGE_MANAGER=npm \
 
 この環境変数は当該コマンドだけに適用する。[mise v2026.10.25の設定定義](https://github.com/jdx/mise/blob/v2026.10.25/settings.toml#L2372-L2389)でnpmの選択と環境変数名を確認した。既存の全npmツールに影響する`npm.package_manager`の恒久設定は追加していない。今後の新規環境でも同じ失敗が発生した場合は、対象版を記録してこの単体再試行を使う。npmで導入できた理由がaubeの不具合によるものかは、詳細ログがないため未確定。
 
+### 依存警告と原因の未確定部分
+
 npmの出力には、svelte-language-serverがSvelte 4を依存に持つ一方、別名のprettier-plugin-svelte4がSvelte 5をpeer dependencyとして要求する警告が出た。npmは警告を表示して55パッケージの導入を完了した。元のaubeエラーには依存名の詳細がないため、この不整合がその失敗原因だったかは未確定。強制フラグ、peer dependencyを無視する設定、信頼ポリシーの例外は追加していない。
+
+### Svelteの隔離検証と残件
 
 実導入後は一時HOME・一時プロジェクトと限定した環境変数でsvelteserverを起動し、LSPのinitialize、検証用App.svelteの整形応答（編集1件）、shutdown・exit（終了コード0）を確認した。実際の個人プロジェクト、秘密情報、Mason、Neovimの通常設定は使っていない。Vue・TypeScript連携、Svelte全機能、各環境の動作を確認した結果ではない。
 
@@ -255,11 +271,17 @@ npmの出力には、svelte-language-serverがSvelte 4を依存に持つ一方�
 
 利用者からMason無効化モードでもVueの警告が出る報告があった。読み取り確認ではPATHがmiseのVueパッケージを選んでいたが、node_modules/.bin/vue-language-serverはシンボリックリンクではなく、aubeが生成したシェルランチャーだった。従来の探索はrealpathがbin/vue-language-server.jsで終わることを要求しており、この正常な導入形式を見つけられなかった。以前のMasonやPATHを原因とする説明は、この形式を確認する前の推測だった。
 
+### ランチャー探索処理の修正
+
 node_modules/.bin形式では、隣接するnode_modules/@vue/language-serverのリンクを解決してパッケージを探すよう修正した。JavaScript本体へのリンク形式も維持し、package.jsonとbin/vue-language-server.jsがファイルとして存在することを確認する。シェルランチャーの内容は解析・実行しない。miseの汎用shimはパッケージの配置が異なるため、aubeの.bin形式と区別する。
+
+### Vue探索のダミー・隔離検証
 
 `tests/test_neovim_lsp.py`へaube形式、manifest欠落、サーバー本体欠落、パッケージのリンク切れを追加した。修正前は関連15件中aube形式の1件だけが失敗し、修正後は15件すべて成功した。空白を含むパスとpeer dependencyによる格納ディレクトリの違いもダミーで確認する。
 
 実導入済みVue Language Server 3.3.14についても、一時HOME・限定PATHのNeovimを-u NONE・--noplugin・-i NONEで起動し、ソースの探索処理だけを評価した。警告なしで@vue/language-serverのパッケージを特定できた。通常のNeovim設定、Mason、Vueサーバー本体は実行しておらず、この時点ではVueファイルの補完・診断・定義ジャンプは未確認だった。その後の利用者による確認と、Vue依存追加後の再検証は[実機確認記録](../testing/neovim-lsp-verification.md)へ記録した。
+
+### Vue探索修正の適用手順と全体検証
 
 利用者は修正したafter/lsp/vtsls.luaのソースを確認して別途展開し、新しいNeovimプロセスをMason無効化モードで起動する。この不具合に対するPATH変更や再インストールは不要。Mason削除の判断は、警告の消失だけでなく各言語の接続・操作結果から行う。
 
