@@ -1,8 +1,27 @@
 # Termux実環境のdotfiles検証：Codex引き継ぎ
 
-作成日：2026-11-19。対象はTermux本体で動くCodexとdotfilesの作業コピー。まず1〜4節を読み、変更を伴わない現状確認から始める。導入・設定適用・認証は、実施対象と承認状況を確認してから進める。
+作成日：2026-11-19。最終更新：2026-11-22。対象はTermux本体で動くCodexとdotfilesの作業コピー。proot Ubuntuなどで再開する場合は[全体版の環境別手順](CODEX_HANDOFF.md#別環境で再開する手順)を参照する。
 
-## zenoのSQLite読み込みエラー（2026-11-21）
+## 現在の到達点（2026-11-22）
+
+ローカルの `main` はPR #22を取り込んだ `92d9336`。作業再開時は、対象端末内でブランチ、HEAD、未コミット変更を確認する。
+
+- Termux本体で基礎パッケージ導入、設定適用、lefthook 2.2.2とBats 1.13.0の動作を確認した。PR #22の通常pushでpre-pushが起動し、静的検証・unittest 362件・Bats 18件が通過した。skipは0件。[実機チェックリスト](testing/termux-checklist.md)・[共通テストの手順](testing/checks.md)
+- 利用者が、設定適用後にzenoのソケット不具合が再発していないことを確認した。展開済みの共通PATH設定はソースと一致し、隔離Bash・ZshのPATH回帰テストは5件通過した。tmuxのウィンドウ操作・ペイン分割と、YaziのPNG・PDF・SVGプレビュー、報告済みのプラグイン操作も確認した。TermuxのSVG表示にはImageMagickを使う。[実機チェックリスト](testing/termux-checklist.md)・[SVGプレビューの手順](setup/dependencies.md#termuxでのsvgプレビューと変換)
+- 利用者がプロジェクト別PATを登録し、グローバル、テスト用プロファイル、グローバルの順に認証先を確認した。前後のグローバルの認証先は一致し、テスト用プロファイルでは許可した保管庫1件だけが表示された。[実機チェックリスト](testing/termux-checklist.md)
+- PR #22でNeovimの旧LSP・整形・SKK設定を整理した。適用後の通常起動でLSP接続・保存時整形・skkeluaによる日本語入力を確認した。Svelte・Tailwindの起動パスも確認済み。[NV-06の実機結果](setup/neovim-dependencies.md#nv-06適用後のtermux実機確認)
+
+### 次に確認すること
+
+ツール未導入のTermuxを用意できないため、`make bootstrap-neovim-tools` の初回一括導入は保留。導入済み環境で不足分の再取得がないことと、隔離HOMEでのNimLSP初回ビルド・配置は確認済み。新規環境を用意できたときは、初回実行から再実行まで確認する。[一括導入の手順](setup/dependencies.md#neovim用ツールの一括導入)
+
+PATの期限切れ・更新・復旧、複数プロジェクトの同時利用、sqlsの実DB接続は別途確認する。SOPSの鍵保護とmise連携の設計は別タスク。[後続作業と別環境への引き継ぎ](CODEX_HANDOFF.md#保留と後続作業)
+
+## 作業履歴
+
+以下は各時点の状況と確認手順。未完了の記述や当時のブランチ名は、上の到達点と照らし合わせる。導入・設定適用・認証はAGENTS.mdの承認条件に従う。
+
+### zenoのSQLite読み込みエラー（2026-11-21）
 
 利用者はPR #15のマージ・取得後、Termuxでbootstrap-tools.sh --checkとmake bootstrap-toolsを実行し、各種ツールを導入したと報告した。Zsh再起動では、zenoが取得したSQLite共有ライブラリの依存libm.so.6を読み込めず、ソケットサーバーの起動に失敗した。以下のpkg一括導入前の記録は当時の状態として読む。
 
@@ -10,7 +29,7 @@
 
 次は[SQLiteエラーの確認手順](setup/dependencies.md#zenoのsqlite読み込みエラー)で、ライブラリの存在と一時指定でのzeno起動を実機確認する。新しい設定の限定適用は利用者が差分を確認して行う。Codex側では隔離テストを使い、Termuxでの実起動・適用は行っていない。
 
-## 現在の状態とpkg導入の追加
+### pkg導入の追加（当時の記録）
 
 利用者はPR #14のマージ・取得後、修正版をTermuxへ適用し、chezmoi applyの正常終了を確認した。以下のシバン修正後のapply未確認という記述は当時の記録として読む。
 
@@ -18,7 +37,7 @@
 
 次は[Termuxの導入手順](setup/dependencies.md#termuxでの導入と実機確認)で対象一覧と不足を確認し、利用者の承認範囲でbootstrapを実行する。make bootstrap-toolsでも実行可能。既存のローカルmise設定と導入済みツールは削除しないため、PATHの競合、pkg版の違い、LSP・DAPの不足を確認する。新しい一括導入はモック検証の対象であり、Termux実機での成功はまだ確認していない。
 
-## chezmoiからのラッパー起動失敗と修正（2026-11-20追記）
+### chezmoiからのラッパー起動失敗と修正（2026-11-20追記）
 
 PR #13はmainへ取り込み済み。別セッションのハードリンク対応後、利用者はTermuxでpkg install proton-pass-cliを実施し、基礎bootstrap、ラッパー経由のPATログイン、保管庫一覧表示、ssh-agent起動の成功を報告した。続くchezmoi applyは.gitconfigのprotonPassからラッパーを直接起動する段階で停止した。以下のbootstrap成功前の記録は当時の状態として読む。
 
@@ -26,7 +45,7 @@ PR #13はmainへ取り込み済み。別セッションのハードリンク対�
 
 次は修正版を取得し、[Proton Pass手順書13節](setup/proton-pass.md#13-termuxでchezmoiからラッパーを起動できない場合2026-11-20)に従って関連4ファイルを限定適用した後、通常のapplyを再試行する。既存の認証情報を移行・削除しない。Codex側では実認証・秘密値の取得・実環境への適用を行っていない。
 
-## Termux初期構築の停止と修正案（2026-11-20）
+### Termux初期構築の停止と修正案（2026-11-20）
 
 PR #12はmainへ取り込み済み。利用者はTermuxで再度chezmoi initを実行し、promptStringOnceが正常に動作したと報告した。次のbootstrapはidentity生成後のファイル確定で停止したため、fix/termux-bootstrap-publishをmainの1c43852から作成した。
 
@@ -34,7 +53,7 @@ PR #12はmainへ取り込み済み。利用者はTermuxで再度chezmoi initを�
 
 修正案はmv -nTによる上書き禁止の確定処理で、保存先や暗号化方式を変えず、既存ファイルの再利用と不正な宛先の拒否を維持する。ローカルの関連テスト24件と、make checkのunittest 352件・Bats 18件が成功し、skipは0件。詳細は[Proton Pass手順書の追加記録](setup/proton-pass.md#12-termux初期構築のファイル確定2026-11-20)を参照する。Termuxでの修正後の再試行・実認証は未実施。既存鍵や暗号文は削除しない。以下の11月19日の未実施記録は当時の状態として読む。
 
-## 現在の再開位置（2026-11-19追記）
+### 再開位置（2026-11-19追記）
 
 PR #11はmainへ取り込み済みで、今回の修正ブランチはinvestigate/chezmoi-init-template-path、基点はe92a5c7。初期設定テンプレートの移動と関連修正、生成物のGit除外をまとめてcommit・push・PR作成するよう利用者から依頼済み。反映状況はGit履歴とPRで確認する。Termux側では、配置修正を含むコミットを取得してから検証を再開する。下記の「文書作成時点」の表は初版の記録として残す。
 
@@ -141,4 +160,4 @@ Termuxの基礎準備、環境別除外、共通テスト、hook、アプリに�
 
 次の報告には、変更ファイル、Termux上の実行結果、適用の有無、未確認事項を含める。実機では確認できない箇所は利用者へ手順を渡す。commit・push・PR作成は、その時点の明示依頼に従う。
 
-SOPS用鍵の保護とmise連携、PAT期限切れ・更新・復旧の追加確認、複数プロジェクトの同時利用、Neovim旧設定整理（NV-06）は別タスクとして残す。これらはTermux検証の開始を妨げない。
+最新の保留事項と後続作業は、冒頭の[次に確認すること](#次に確認すること)を参照する。
