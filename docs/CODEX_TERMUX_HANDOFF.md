@@ -4,7 +4,7 @@
 
 ## 現在の到達点（2026-11-22）
 
-ローカルの `main` はPR #22を取り込んだ `92d9336`。作業再開時は、対象端末内でブランチ、HEAD、未コミット変更を確認する。
+今回の文書整理で確認した基点は、PR #23を取り込んだ `main` の `c859580`。PR #22の `92d9336` からこの基点までの変更は引き継ぎ文書2本だけで、下記の実機結果は既存の記録を引き継いでいる。今回、Termuxでの再検証は行っていない。作業再開時は、対象端末内でブランチ、HEAD、未コミット変更を確認する。
 
 - Termux本体で基礎パッケージ導入、設定適用、lefthook 2.2.2とBats 1.13.0の動作を確認した。PR #22の通常pushでpre-pushが起動し、静的検証・unittest 362件・Bats 18件が通過した。skipは0件。[実機チェックリスト](testing/termux-checklist.md)・[共通テストの手順](testing/checks.md)
 - 利用者が、設定適用後にzenoのソケット不具合が再発していないことを確認した。展開済みの共通PATH設定はソースと一致し、隔離Bash・ZshのPATH回帰テストは5件通過した。tmuxのウィンドウ操作・ペイン分割と、YaziのPNG・PDF・SVGプレビュー、報告済みのプラグイン操作も確認した。TermuxのSVG表示にはImageMagickを使う。[実機チェックリスト](testing/termux-checklist.md)・[SVGプレビューの手順](setup/dependencies.md#termuxでのsvgプレビューと変換)
@@ -60,6 +60,10 @@ PR #11はmainへ取り込み済みで、今回の修正ブランチはinvestigat
 修正後はhome/.chezmoi.toml.tmplが存在し、リポジトリ直下の同名ファイルは存在しないことを確認する。本文は移動前と一致する。隔離した実initで設定ファイルの生成を確認し、同じ回帰テストで旧配置の失敗も再現した。ローカルのmake checkはunittest 348件・Bats 18件が成功、skip 0件。Termux本体での修正後の初期化確認は未実施。
 
 .gitignoreにはPythonのバイトコードと__pycache__、作業コピー直下の.venv、node_modulesを追加した。依存定義とhome/.chezmoi.toml.tmplはGit管理対象に残す。これはGitへの追加を除外する設定であり、chezmoiの展開対象を指定するhome/.chezmoiignoreとは役割が異なる。
+
+## 初版の目的と実装記録（2026-11-19）
+
+以下の1・2節と初期化テンプレートの説明は、初版時点の目的・Git状態・確認範囲を残した記録。Termuxでの未実施の記述は当時の状態を示す。現在の到達点と残件は冒頭、再開時に使う規約・手順は3〜7節を参照する。
 
 ## 1. 今回の目的と開始位置
 
