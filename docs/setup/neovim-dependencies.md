@@ -1,6 +1,8 @@
 # Neovimの依存関係とmiseへの移行
 
-Masonからmiseへの段階的な移行を進めるため、管理ソースにある依存と導入担当を整理した。調査日は2026-11-13。
+Masonからmiseへの段階的な移行に伴い、管理ソースにある依存と導入担当を整理した。初回調査は2026-11-13、現行説明の整理は2026-11-22。
+
+冒頭の依存一覧とNVタスク表は現行構成を示す。「Mason除去前の確認手順（履歴）」以降は、各作業時点の設計・検証記録であり、当時の未完了や版固定案を現在の残件として扱わない。
 
 現在の管理ソースはMasonに依存せず、LSPの実行ファイルをmise・補助導入・プロジェクト依存で用意する。23サーバーの登録を維持し、Mason依存宣言・setup・移行用切替を除去した。利用者の各確認用プロジェクトで、適用後の通常起動とMason未読み込みを確認済み。過去の切替検証は履歴として保持する。
 
@@ -21,10 +23,10 @@ Masonからmiseへの段階的な移行を進めるため、管理ソースに�
 | LSPの設定 | `lua/plugins/lsp/index.lua`と`after/lsp/*.lua`、nvim-lspconfig | 実行ファイルの導入とNeovimへの登録を区別する |
 | LSPの有効化 | `lua/plugins/lsp/server-register.lua`の23件を`vim.lsp.enable` | リストの全件について提供元・実行パスを確認する |
 | Mason | 依存宣言・setup・移行用切替を除去済み | 既存のプラグイン・ツールデータは削除しない |
-| LSPのプラグイン依存 | nvim-lspconfigとblink.cmpを維持。Mason連携と、その依存配下だったnone-ls.nvimの宣言を除去 | Conform・lazydevを維持。旧_index.luaからもMason宣言を除去 |
+| LSPのプラグイン依存 | nvim-lspconfigとblink.cmpを維持。Mason連携と、その依存配下だったnone-ls.nvimの宣言を除去 | Conform・lazydevを維持。旧_index.luaはNV-06で削除済み |
 | Go・npm等のツール | miseのTOML、`home/.chezmoiscripts/run_after_install-mise.sh:100-139` | Ubuntu対象でmise installと不足分の補助導入を行う |
 
-`lua/config/lazy.lua`は`plugins.lsp.index`を明示的にimportする。別ファイルの`lua/plugins/lsp/_index.lua`や、indexでimportがコメントアウトされた`none-ls.lua`を、現在の明示的なimportから読み込むとは扱わない。ただしnone-ls.nvim自体の依存宣言は残る。実際のlazy.nvimによる読み込み結果は未確認。
+`lua/config/lazy.lua`は`plugins.lsp.index`を明示的にimportし、LSP設定からConform・lazydevを読み込む。Mason関連とnone-ls.nvimの依存宣言は除去済み。旧 `lsp/_index.lua`・`lsp/none-ls.lua`・`lsp/format.lua` はNV-06で削除した。
 
 ## LSPの23件を導入定義と対応させる
 
@@ -41,7 +43,7 @@ Masonからmiseへの段階的な移行を進めるため、管理ソースに�
 | gopls | 独自cmdなし | mise `go:golang.org/x/tools/gopls` | `after/lsp/gopls.lua:1-9` |
 | lua_ls | `lua-language-server` | mise `lua-language-server` | `after/lsp/lua_ls.lua:16` |
 | nimls | `nimlsp` | miseのNimを前提に、補助処理の`nimble install -y nimlsp` | `after/lsp/nimls.lua:3`、導入スクリプト82-93行 |
-| oxlint | nvim-lspconfigの`oxlint --lsp` | mise `npm:oxlint`を追加。実導入は未実施 | `server-register.lua:13` |
+| oxlint | nvim-lspconfigの`oxlint --lsp` | mise `npm:oxlint`。導入・診断の確認範囲は[追加LSPの検証記録](../testing/neovim-extra-lsp-validation.md)を参照 | `server-register.lua:13` |
 | marksman | `marksman server` | mise `marksman` | `after/lsp/marksman.lua:3` |
 | basedpyright | `basedpyright-langserver --stdio` | mise `npm:basedpyright` | `after/lsp/basedpyright.lua`。型解析・補完・定義ジャンプを担当 |
 | ruff | `ruff server` | mise `ruff` | `after/lsp/ruff.lua:3` |
@@ -51,7 +53,7 @@ Masonからmiseへの段階的な移行を進めるため、管理ソースに�
 | tailwindcss | 独自cmd・同名の追加設定ファイルなし | mise `npm:@tailwindcss/language-server` | `server-register.lua:21` |
 | taplo | `taplo lsp stdio` | mise `taplo` | `after/lsp/taplo.lua:3` |
 | vtsls | `vtsls --stdio` | mise `npm:@vtsls/language-server`を追加。Vue用プラグインの配置を解決する設定も追加 | `server-register.lua:23`、`after/lsp/vtsls.lua` |
-| vue_ls | nvim-lspconfigの`vue-language-server --stdio` | mise `npm:@vue/language-server`を追加。vtslsとの実接続は未確認 | `server-register.lua:24` |
+| vue_ls | nvim-lspconfigの`vue-language-server --stdio` | mise `npm:@vue/language-server`。vue_ls・vtslsの接続は[実機確認記録](../testing/neovim-lsp-verification.md)と下記のNV-06で確認 | `server-register.lua:24` |
 | yamlls | `yaml-language-server --stdio` | mise `npm:yaml-language-server` | `after/lsp/yamlls.lua:3` |
 
 `after/lsp/ts_ls.lua:4`は`typescript-language-server`を指定するが、有効化リストは`vtsls`で、`ts_ls`を含まない。NV-02ではvtslsを継続し、ts_lsを同時有効化しない。`eslint.lua`も有効化リストにない。miseの`pipx:ty`・`npm:@astrojs/language-server`には、このリストでの同名LSP有効化がない。他用途の可能性があるため削除しない。
@@ -62,7 +64,7 @@ Rust設定は`rustc`と`cargo`も呼ぶ（`after/lsp/rust_analyzer.lua:22-23,84-
 
 | 機能 | 外部依存と導入担当 | 根拠・未確認事項 |
 | --- | --- | --- |
-| Lua・Python・シェル整形 | miseのstylua・ruff・shfmt | `lua/plugins/lsp/conform.lua:33-43`。複数ruff処理とZsh整形の実動作は未確認 |
+| Lua・Python・シェル整形 | miseのstylua・ruff・shfmt | `lua/plugins/lsp/conform.lua`。Pythonの処理順序は[専用手順](python-lsp.md)、Termuxでの保存時整形は下記のNV-06の確認範囲を参照 |
 | Go整形 | mise `go:golang.org/x/tools/cmd/goimports`を追加 | 同ファイル35行。goplsやgofumptの定義と区別する |
 | Web整形 | Biome設定があれば`biome-check`を優先し、なければ`prettierd` | `conform.lua`のWeb用関数。Biomeはプロジェクト内の実行ファイルによる実整形を隔離確認済み |
 | Deno整形 | ConformのWebリストを空にしてLSPへfallback | `config/web-project.lua`。編集中のファイルからdeno.json/jsonc/lockを探索し、入れ子のNode lockfileを境界にする |
@@ -72,7 +74,7 @@ Rust設定は`rustc`と`cargo`も呼ぶ（`after/lsp/rust_analyzer.lua:22-23,84-
 | SKK | lazy.nvimのskkelua.nvimと`~/.skk/dic/SKK-JISYO.*` | `lua/plugins/completion/skkelua.lua:8-15`。辞書取得定義は今回の管理ソースでは見つからない。rank.jsonは利用時の保存データとして内容を読まない |
 | 補完用辞書 | 管理ソースの`dict/user_dict.txt` | `lua/plugins/completion/sources.lua:49-50`。実機の個人辞書は読まない |
 | Python DAP | miseのpipx:debugpy専用環境と、プロジェクト側の対象Python | dap/adapters.lua。debugpy-adapterをPATHから起動し、対象はvenv・.venv・PATHで選ぶ。[導入と確認](neovim-dap.md) |
-| Lua DAP | lazy.nvimのone-small-step-for-vimkindとnluaアダプター | 同ファイル3-17行。実接続・API互換性は未確認 |
+| Lua DAP | lazy.nvimのone-small-step-for-vimkindとnluaアダプター | 同ファイル3-17行。確認済み環境での停止・ステップ・変数表示・正常終了は[NV-04の結果](../testing/neovim-dap-verification.md#通常uiの確認完了2026-11-15)を参照 |
 
 ## プラグイン本体とビルドはlazy.nvimが担当する
 
@@ -81,15 +83,15 @@ Rust設定は`rustc`と`cargo`も呼ぶ（`after/lsp/rust_analyzer.lua:22-23,84-
 | 設定ファイル（`lua/plugins/`以下） | 主なプラグイン・直接依存 | 導入時の注意 |
 | --- | --- | --- |
 | `completion/index.lua`・`luasnip.lua`・`skkelua.lua` | blink.cmp、blink.compat、blink-cmp-dictionary、blink-cmp-conventional-commits、LuaSnip、friendly-snippets、skkelua.nvim | blink.cmpはbuild関数を60000ms待つ。LuaSnipは`make install_jsregexp`を呼ぶ。採用版のビルド要件・Android対応は未確認 |
-| `lsp/index.lua`・`conform.lua`・`lazydev.lua` | lspkind.nvim、nvim-lspconfig、Mason関連3件、none-ls.nvim、blink.cmp、conform.nvim、lazydev.nvim | サーバー実行ファイルとプラグイン本体を別管理にする |
+| `lsp/index.lua`・`conform.lua`・`lazydev.lua` | lspkind.nvim、nvim-lspconfig、blink.cmp、conform.nvim、lazydev.nvim | サーバー実行ファイルとプラグイン本体を別管理にする |
 | `utils/nvim-treesitter.lua`・`editor/treesj.lua` | nvim-treesitter、nvim-treesitter-context、treesj | mainブランチ、`:TSUpdate`、config内の14言語install呼び出しがある |
 | `dap/index.lua` | nvim-dap-view、nvim-dap、one-small-step-for-vimkind、nvim-dap-virtual-text | プラグイン導入だけでPythonデバッグ環境は完成しない |
 | `editor/`のその他のimport | csvview.nvim、in-and-out.nvim、lsp_signature.nvim、md-render.nvim、budoux.lua、mini.surround、mini.test、nvim-autopairs、tiny-cmdline.nvim | md-renderのweb-devicons・budouxは依存宣言でoptionalとコメントされている |
 | `ui/`のimport | barbar.nvim、gitsigns.nvim、web-devicons、catppuccin/nvim、indent-blankline.nvim、lualine.nvim、no-neck-pain.nvim、nvim-scrollbar、oil.nvim、quicker.nvim、rainbow-delimiters.nvim、toggleterm.nvim、winresizer、yazi.nvim | アイコン用フォントとクリップボードはOS・端末側も確認する |
 | `utils/`のその他のimport | lazygit.nvim、nvim-hlslens、snacks.nvim、which-key.nvim | lazygit.nvim・yazi.nvimの依存にplenary.nvimがある |
-| `lua/config/lazy.lua`の直接宣言 | plenary.nvim、web-devicons、vim-operator-replace、vim-operator-user、vimdoc-ja | ロックと復元は別途設計する |
+| `lua/config/lazy.lua`の直接宣言 | plenary.nvim、web-devicons、vim-operator-replace、vim-operator-user、vimdoc-ja | lockfileの保存と復旧は下記のNV-05のスナップショット運用を使う |
 
-旧skkeletonのimportはコメントアウトされており、現行のSKK入力はskkeluaが担当する。NV-06では参照元を確認した上で、旧skkeletonの設定と `lsp/_index.lua`・`lsp/none-ls.lua`・`lsp/format.lua` を削除した。
+現行のSKK入力はskkeluaが担当する。NV-06では旧skkeletonの設定とコメントアウトされた参照、および `lsp/_index.lua`・`lsp/none-ls.lua`・`lsp/format.lua` を削除した。
 
 UbuntuのAPT定義にはbuild-essential・cmake・makeがあるが、全プラグインのビルド成功を保証しない。tree-sitter CLIはmise、RustコンパイラーはmiseのRustが担当する。パーサー・補完のネイティブモジュールについては、採用revisionの要件を確認して必要なC/C++コンパイラー等を確定する。
 
@@ -99,25 +101,29 @@ UbuntuのAPT定義にはbuild-essential・cmake・makeがあるが、全プラ�
 | --- | --- | --- |
 | ネイティブUbuntu・WSL Ubuntu | mise設定とAPT導入処理の対象 | PATH、LSP起動、保存整形、補完、クリップボード。WSLではWindows連携を別確認 |
 | proot Ubuntu | Ubuntu用mise・APTの対象、Homebrewは除外 | ゲスト内の実行ファイルを選ぶこと、ビルド、clipboard、デバッグ接続。ホストのPREFIXとの混同を避ける |
-| Termux本体 | Neovim設定は除外していないがUbuntu用mise設定と導入3スクリプトは除外 | AndroidネイティブのNeovim・Node・サーバー・ビルドツールを個別準備。Linux ARM64配布物の流用成功を前提にしない |
+| Termux本体 | Neovim設定は除外していないがUbuntu用mise設定と導入3スクリプトは除外 | 専用bootstrapと `make bootstrap-neovim-tools` で不足分を導入する。[導入手順](dependencies.md#neovim用ツールの一括導入)に従い、Linux ARM64配布物の流用成功を前提にしない |
 | その他のLinux | Neovim設定は除外していないがUbuntu用mise・APTは対象外 | OS側の導入担当を先に決める。systemd・keyringを本タスクの前提にしない |
 
 根拠は`home/.chezmoiignore:17-30`とAPT・mise導入スクリプト。Termuxではmise本体の初期導入と、Ubuntu向けツール一覧の適用を区別する。
 
 ## 修正候補と推奨順序
 
-NV-01はソース修正済み。利用者から設定の実適用成功報告があり、初回取得・失敗復旧の実機確認は残る。NV-02は導入定義とVue連携を修正済み。利用者から4ツールの導入成功報告があり、Svelteは下記の復旧手順で実導入と隔離起動を確認した。Vueは利用者の通常操作と依存追加後の診断確認が成功した。NV-03は主力言語・汎用LSP・追加5サーバーの段階的な確認まで対応済み。Web分岐とBiome起動は利用者が確認し、Tailwindの依存を備えた構成の通常UI確認も成功し、Mason参照の除去はソースで対応済み。NV-03は確認済みの範囲で完了し、sqlsのDB機能と未確認環境は別途の確認対象として残す。NV-04は設定修正・依存導入と、確認済み環境での通常UI確認まで完了した。NV-05はPython CLI・共通関数・Git除外を実装し、実機の保存・復元準備と一時領域への原本復元を確認した。利用者がLazy restore後の主要機能も確認した。NV-06は旧LSP・整形・SKK設定を削除済み。ソース上の事実と、ダミーで再現した不具合、通常設定での実機確認を区別する。
+NV-01はソース修正済み。利用者から設定の実適用成功報告があり、初回取得・失敗復旧の実機確認は残る。NV-02は導入定義とVue連携を修正済み。利用者から4ツールの導入成功報告があり、Svelteは下記の復旧手順で実導入と隔離起動を確認した。Vueは利用者の通常操作と依存追加後の診断確認が成功した。
+
+NV-03は主力言語・汎用LSP・追加5サーバーの段階的な確認まで対応済み。Web分岐とBiome起動は利用者が確認し、Tailwindの依存を備えた構成の通常UI確認も成功し、Mason参照の除去はソースで対応済み。NV-03は確認済みの範囲で完了し、sqlsのDB機能と未確認環境は別途の確認対象として残す。
+
+NV-04は設定修正・依存導入と、確認済み環境での通常UI確認まで完了した。NV-05はPython CLI・共通関数・Git除外を実装し、実機の保存・復元準備と一時領域への原本復元を確認した。利用者がLazy restore後の主要機能も確認した。NV-06は旧LSP・整形・SKK設定を削除済み。ソース上の事実と、ダミーで再現した不具合、通常設定での実機確認を区別する。
 
 | ID | 重要度・工数 | 区分・現状 | 次の作業と受け入れ条件 |
 | --- | --- | --- | --- |
 | NV-01 | Medium / Small | 信頼性・ソース修正済み。利用者から設定の適用成功報告あり。修正前の取得失敗時に未定義の`out`を表示してエラーになることをダミーで再現した | 同じ親ディレクトリの一時領域へ取得し、成功後に配置する。失敗時は自分の一時領域だけを削除して非0で終了する。回帰テスト10件が成功。実通信と実機確認は未実施 |
-| NV-02 | Medium / Medium | DF-09後続・実機確認中。承認されたmise定義5件とVue/vtsls連携を追加 | 回帰テスト8件が成功。その後Svelteの実導入と隔離LSPを確認。主要言語の接続とBiomeのフォルダ内・別cwdでの起動は利用者が確認済み。残る追加サーバーと環境別の範囲はNV-03で整理する |
+| NV-02 | Medium / Medium | DF-09後続・導入定義とVue/vtsls連携は修正済み。確認範囲はNV-03・NV-06を参照 | 回帰テスト8件が成功。その後Svelteの実導入と隔離LSPを確認。主要言語の接続とBiomeのフォルダ内・別cwdでの起動は利用者が確認済み。残る追加サーバーと環境別の範囲はNV-03で整理する |
 | NV-03 | Medium / Medium | 完了（確認済み環境・用途の範囲）。Mason依存宣言・setup・移行用切替を除去 | 23サーバーの登録と補完・整形を回帰検証。利用者が各確認用プロジェクトで接続・実行パス・root・補完・診断・保存時整形の維持とMason未読み込みを確認。sqlsのDB機能と他環境は未検証として残し、既存Masonデータは保持 |
 | NV-04 | Medium / Medium | 完了（確認済み環境・用途）。登録・Python選択・UIイベント・キー操作を修正しdebugpyを導入 | 回帰22件と全体unittest 269件・Bats 18件が成功。利用者がPython・Luaの停止・ステップ・変数表示・処理完了・UI・キー操作・正常終了を確認。[結果](../testing/neovim-dap-verification.md#通常uiの確認完了2026-11-15)を参照。他環境やPython版は別途確認 |
 | NV-05 | Medium / Medium | 完了（確認済み環境・用途）。スナップショット運用と実復旧後の主要機能を確認 | Neovim本体はlatestを維持し、miseの一括更新に含める。他環境と取得元消失時の復旧は別途確認 |
 | NV-06 | Low / Small | 旧LSP・整形と旧skkeletonの設定6ファイル、およびコメントアウトされた参照を削除 | Termux本体の通常起動でLSP接続・保存時整形・SKK入力を確認済み |
 
-NV-01の修正後は、NV-02→NV-03の順で移行する。NV-04は別PRで並行可能。NV-05の版選定は設定と主要機能を確認した後に行う。Mason併存そのものを不具合として扱わず、移行中の状態として維持する。
+移行開始時はNV-02→NV-03を先行し、NV-04を別PR、NV-05の版選定を後続とする案だった。現在はNV-03〜NV-06の実装と確認済み範囲での実機確認を終え、Neovim本体の固定はNV-05の残件から外している。残件はNV-01の初回取得・失敗復旧、sqlsの実DB機能、他環境の検証、取得元消失時の復旧として個別に扱う。
 
 ### NV-06適用後のTermux実機確認
 
@@ -129,7 +135,7 @@ NV-01の修正後は、NV-02→NV-03の順で移行する。NV-04は別PRで並�
 
 ## Mason除去前の確認手順（履歴）
 
-以下は次回以降の利用者向け手順であり、今回実行していない。通常設定の起動やcheckhealthには通信・取得・ビルドの可能性があるため、自動検証とは分ける。
+以下はMason除去前に作成した比較手順の記録。移行用切替は既に除去済みであり、現在の設定にそのまま適用する手順ではない。通常設定の起動やcheckhealthには通信・取得・ビルドの可能性があるため、自動検証とは分ける。
 
 1. 使用言語と対象環境を一覧表に追記する。各LSPを「mise・補助導入」「プロジェクト依存」「その環境の手動導入」「意図して無効化」のいずれかにする。登録だけが残るサーバーをなくす。
 2. 下記の検証モードでMasonの依存宣言とsetupを無効化し、Masonを含まないPATHで新しく起動する。Codexのダミーテストは一時HOMEと空のPATHを使う。実機で隔離HOMEを使う場合も、必要な設定・公開プラグイン・ツールは別途準備する。実環境のMasonデータやプラグインを削除しない。
@@ -172,15 +178,21 @@ NV-01修正後のmake checkは静的確認・unittest全198件・Bats全18件が
 | `npm:oxlint` | [Oxlint公式CLI](https://oxc.rs/docs/guide/usage/linter/cli)に`--lsp`があり、[nvim-lspconfigの設定](https://github.com/neovim/nvim-lspconfig/blob/master/lsp/oxlint.lua)がnpmのoxlintを案内する |
 | `go:golang.org/x/tools/cmd/goimports` | [Go公式パッケージ資料](https://pkg.go.dev/golang.org/x/tools/cmd/goimports)で導入パスと整形・import更新の役割を確認した |
 
+### Vueとvtslsの連携・探索
+
 [Vue公式のNeovim案内](https://github.com/vuejs/language-tools/wiki/Neovim)と[nvim-lspconfigのvtsls設定例](https://github.com/neovim/nvim-lspconfig/blob/master/lsp/vtsls.lua)に従い、vtslsの対象filetypesへvueを追加し、globalPluginsへ`@vue/typescript-plugin`を登録した。Vueの依存に含まれるプラグインを使うため、別の直接依存は追加しない。vue_lsの要求転送はnvim-lspconfig側へ任せ、独自のon_initを重ねない。実機にあるnvim-lspconfigの版がこの連携に対応するかは別途確認する。
 
 `after/lsp/vtsls.lua`はPATH上のvue-language-serverをrealpathで解決する。JavaScript本体へのリンクなら親パッケージを使い、aubeのnode_modules/.binランチャーなら隣接する@vue/language-serverのリンクを解決する。miseやMasonのインストール先を固定しない。package.jsonとサーバー本体を確認できなければ警告し、通常のTypeScript設定を返す。ランチャーや外部コマンドは実行せず、パッケージの自動導入も呼ばない。
 
 miseのshimは実体へのシンボリックリンクとは限らないため、shimしか見えない場合はVue支援を設定できない。利用者はmiseでツールを準備し、実ツールのbinがPATHにあるシェルからNeovimを起動する。GUIや別の起動方法でも同じPATHを確認する。Masonが先にPATHへ追加されるとMason側を選ぶ可能性があるため、NV-03ではMasonなしの環境で再確認する。
 
+### 他サーバーと環境別の制約
+
 SvelteとOxlintの独自cmdは追加せず、nvim-lspconfigの既存定義を使う。[Svelte設定](https://github.com/neovim/nvim-lspconfig/blob/master/lsp/svelte.lua)のプロジェクト内サーバー優先も維持する。JS/TSファイルからSvelteへの参照・リネーム等の追加連携や、Oxlintの型情報を使う診断に必要な依存は今回追加していない。プロジェクト別に必要性を判断する。
 
 NodeとTypeScriptは既存のmise定義を維持した。閲覧したSvelteとVueのpackage.jsonにはTypeScriptのpeerDependenciesがあるため、実導入時は採用版との整合も確認する。TermuxにはこのUbuntu用mise設定を展開しない方針を維持する。特にOxlintのネイティブ配布物や各バックエンドのAndroid対応は未確認で、自動導入に対応済みとはしない。
+
+### NV-02の回帰検証と未確認範囲
 
 `tests/test_neovim_lsp.py`はTOMLの導入定義、対象LSPの登録、Go整形の選択、Vueの実体解決をダミーで検証する。空白を含むパス、shim、実行ファイルの欠落、realpathの失敗、package.jsonの欠落を含む8件が成功した。通常設定の実起動やサーバーとの接続は行っていない。
 
@@ -232,6 +244,8 @@ NV-03の切替追加後のmake checkはunittest全209件・Bats全18件が成功
 
 利用者のmise 2026.10.25・Linux ARM64のログでは、vtsls・Vue・Oxlint・goimportsは導入に成功し、Svelte Language Server 0.18.6だけが`aube install failed: failed to resolve dependencies`で失敗した。chezmoiのmise導入スクリプトが終了コード1で停止したことは、部分失敗を成功扱いしない既存の動作である。goimportsの最初の3秒タイムアウトは、その後の導入成功と分けて記録する。
 
+### 単体再試行と適用範囲
+
 利用者の明示承認後、Codexは次のコマンドでSvelteだけを再試行し、導入に成功した。miseによる管理とソースのlatest指定は維持し、再試行だけをログと同じ0.18.6へ限定した。他のツールの再インストール、mise本体の更新、chezmoi applyは実行していない。
 
 ```shell
@@ -241,7 +255,11 @@ MISE_NPM_PACKAGE_MANAGER=npm \
 
 この環境変数は当該コマンドだけに適用する。[mise v2026.10.25の設定定義](https://github.com/jdx/mise/blob/v2026.10.25/settings.toml#L2372-L2389)でnpmの選択と環境変数名を確認した。既存の全npmツールに影響する`npm.package_manager`の恒久設定は追加していない。今後の新規環境でも同じ失敗が発生した場合は、対象版を記録してこの単体再試行を使う。npmで導入できた理由がaubeの不具合によるものかは、詳細ログがないため未確定。
 
+### 依存警告と原因の未確定部分
+
 npmの出力には、svelte-language-serverがSvelte 4を依存に持つ一方、別名のprettier-plugin-svelte4がSvelte 5をpeer dependencyとして要求する警告が出た。npmは警告を表示して55パッケージの導入を完了した。元のaubeエラーには依存名の詳細がないため、この不整合がその失敗原因だったかは未確定。強制フラグ、peer dependencyを無視する設定、信頼ポリシーの例外は追加していない。
+
+### Svelteの隔離検証と残件
 
 実導入後は一時HOME・一時プロジェクトと限定した環境変数でsvelteserverを起動し、LSPのinitialize、検証用App.svelteの整形応答（編集1件）、shutdown・exit（終了コード0）を確認した。実際の個人プロジェクト、秘密情報、Mason、Neovimの通常設定は使っていない。Vue・TypeScript連携、Svelte全機能、各環境の動作を確認した結果ではない。
 
@@ -253,11 +271,17 @@ npmの出力には、svelte-language-serverがSvelte 4を依存に持つ一方�
 
 利用者からMason無効化モードでもVueの警告が出る報告があった。読み取り確認ではPATHがmiseのVueパッケージを選んでいたが、node_modules/.bin/vue-language-serverはシンボリックリンクではなく、aubeが生成したシェルランチャーだった。従来の探索はrealpathがbin/vue-language-server.jsで終わることを要求しており、この正常な導入形式を見つけられなかった。以前のMasonやPATHを原因とする説明は、この形式を確認する前の推測だった。
 
+### ランチャー探索処理の修正
+
 node_modules/.bin形式では、隣接するnode_modules/@vue/language-serverのリンクを解決してパッケージを探すよう修正した。JavaScript本体へのリンク形式も維持し、package.jsonとbin/vue-language-server.jsがファイルとして存在することを確認する。シェルランチャーの内容は解析・実行しない。miseの汎用shimはパッケージの配置が異なるため、aubeの.bin形式と区別する。
+
+### Vue探索のダミー・隔離検証
 
 `tests/test_neovim_lsp.py`へaube形式、manifest欠落、サーバー本体欠落、パッケージのリンク切れを追加した。修正前は関連15件中aube形式の1件だけが失敗し、修正後は15件すべて成功した。空白を含むパスとpeer dependencyによる格納ディレクトリの違いもダミーで確認する。
 
 実導入済みVue Language Server 3.3.14についても、一時HOME・限定PATHのNeovimを-u NONE・--noplugin・-i NONEで起動し、ソースの探索処理だけを評価した。警告なしで@vue/language-serverのパッケージを特定できた。通常のNeovim設定、Mason、Vueサーバー本体は実行しておらず、この時点ではVueファイルの補完・診断・定義ジャンプは未確認だった。その後の利用者による確認と、Vue依存追加後の再検証は[実機確認記録](../testing/neovim-lsp-verification.md)へ記録した。
+
+### Vue探索修正の適用手順と全体検証
 
 利用者は修正したafter/lsp/vtsls.luaのソースを確認して別途展開し、新しいNeovimプロセスをMason無効化モードで起動する。この不具合に対するPATH変更や再インストールは不要。Mason削除の判断は、警告の消失だけでなく各言語の接続・操作結果から行う。
 

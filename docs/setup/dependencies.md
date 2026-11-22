@@ -97,9 +97,15 @@ textlint-ja /path/to/document.md
 
 APT/dpkg方式のTermuxを対象とする。Pacman方式、rootでのpkg操作、他のLinuxディストリビューションは導入対象にしない。Ubuntuゲストの判定を先に行うため、prootへTermuxのPREFIXが引き継がれていてもUbuntuの導入処理を使う。Termux側のPREFIXやパッケージ管理ツールが確認できない場合は停止する。
 
-基礎パッケージに加え、Proton Pass CLIとpkg対応の開発ツールを導入する。対象一覧は`bootstrap/bootstrap-tools.sh`の`TERMUX_PACKAGES`で管理する。`make bootstrap-tools`も同じ処理を実行する。配置先はTermuxのパッケージに従う。公式の[chezmoi](https://github.com/termux/termux-packages/blob/master/packages/chezmoi/build.sh)・[age](https://github.com/termux/termux-packages/blob/master/packages/age/build.sh)・[mise](https://github.com/termux/termux-packages/blob/master/packages/mise/build.sh)のビルド定義と、[OpenSSLコマンドのサブパッケージ](https://github.com/termux/termux-packages/blob/master/packages/openssl/openssl-tool.subpackage.sh)を確認している。ただし、端末で選択しているミラーにすべての候補があるかは実機で確認する。
+### 導入対象と不足分の判定
+
+基礎パッケージに加え、Proton Pass CLIとpkg対応の開発ツールを導入する。対象一覧は`bootstrap/bootstrap-tools.sh`の`TERMUX_PACKAGES`で管理する。`make bootstrap-tools`も同じ処理を実行する。配置先はTermuxのパッケージに従う。
+
+公式の[chezmoi](https://github.com/termux/termux-packages/blob/master/packages/chezmoi/build.sh)・[age](https://github.com/termux/termux-packages/blob/master/packages/age/build.sh)・[mise](https://github.com/termux/termux-packages/blob/master/packages/mise/build.sh)のビルド定義と、[OpenSSLコマンドのサブパッケージ](https://github.com/termux/termux-packages/blob/master/packages/openssl/openssl-tool.subpackage.sh)を確認している。ただし、端末で選択しているミラーにすべての候補があるかは実機で確認する。
 
 導入済みかどうかはローカルのdpkg情報で判断する。不足がある場合だけpkgで一覧を更新し、不足分を導入する。一覧更新はスクリプト内では1回にまとめ、pkg upgradeは実行しない。導入失敗や導入後のパッケージ確認失敗は異常終了とし、Linux向けバイナリの取得へは切り替えない。依存解決による既存パッケージの更新まで禁止するものではない。
+
+### 実機での確認手順
 
 利用者はTermux端末上で、次の順に確認する。以下は実機での操作手順であり、自動テストでは実行しない。
 
@@ -131,11 +137,17 @@ Ubuntu系のmise管理ツールのうち、Termux公式のパッケージ定義�
 
 導入対象は[Termux公式のパッケージ定義](https://github.com/termux/termux-packages/tree/master/packages)で確認した。選択中のミラーやCPUでの候補は実機で確認する。候補がない場合は異常終了し、Linux向けインストーラーへは切り替えない。
 
+#### 既存のmise設定とPATH
+
 TermuxにはUbuntu用mise設定と導入スクリプトを展開しないため、この処理が同じツールをmiseでも導入することはない。mise本体は今後の環境変数・タスク管理などに利用できる。利用者が別途作成したmise設定や既存のmiseインストールは変更・削除しない。移行済みの環境では`type -a node python3 codex pass-cli`などでPATHを確認し、pkg管理の実行ファイルを使っているか確かめる。導入済みパッケージは自動更新せず、更新はpkg側で行う。
+
+#### 版の違いと対象外ツール
 
 pkg版のバージョンはリポジトリに従い、Ubuntuのmise固定版と同じとは限らない。Lua 5.1のコマンドはlua5.1、Pythonはpkgの提供版を使う。Python 3.13・3.12の併存、LuaRocks、debugpy、lefthookなど、一覧にないツールは基礎導入の対象外。Zsh・fzfも別途準備する。Neovimの追加ツールは下記の専用ターゲットで導入できる。
 
 Homebrewと認証の自動実行は対象外。利用者から、pkg install proton-pass-cli後のbootstrap、PATログイン、保管庫一覧表示、ssh-agent起動の成功報告を受けている。シバン修正後のchezmoi applyも正常終了したとの報告がある。今回追加した開発ツール一括導入の実機確認は未実施。
+
+#### Make操作で使うchezmoi
 
 Makefileの既定のchezmoiは`~/.local/bin/chezmoi`であり、Termuxパッケージの配置先とは異なる。後続のMake操作では`CHEZMOI_BIN="$PREFIX/bin/chezmoi"`をコマンド引数に指定する。例えば`make CHEZMOI_BIN="$PREFIX/bin/chezmoi" require`で確認できるが、pass-cli未準備なら失敗する。適用・認証のターゲットは別途確認してから実行する。
 

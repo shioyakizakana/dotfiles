@@ -23,9 +23,13 @@
 | bunny | `keymap.toml:12`の`e`、私的設定例内 | 公開候補は`stelcodes/bunny`。手動準備 | 現在の個人設定がこの提供元を使うかは未確認。ブックマーク表示とfzfによる検索を分けて確認する |
 | bunny-private | `init.lua:44` | 利用者がローカルに置く任意設定 | 読み込み失敗は続行する。公開候補のbunnyと同一物ではない。実内容は読まず、Gitへ取り込まない |
 
+### 提供元を確認した資料
+
 組み込みの確認根拠はYazi v26.9.1の[session](https://github.com/sxyazi/yazi/blob/v26.9.1/yazi-plugin/preset/plugins/session.lua)、[zoxide](https://github.com/sxyazi/yazi/blob/v26.9.1/yazi-plugin/preset/plugins/zoxide.lua)、[fzf](https://github.com/sxyazi/yazi/blob/v26.9.1/yazi-plugin/preset/plugins/fzf.lua)。zoxideの`update_db`は外部コマンドを使い、対話選択にもfzfを使うため、組み込みだけで機能が完結するとは扱わない。
 
-公式追加プラグインの提供元は[公式一覧](https://github.com/yazi-rs/plugins)。個別の設定は[git](https://github.com/yazi-rs/plugins/tree/main/git.yazi)、[full-border](https://github.com/yazi-rs/plugins/tree/main/full-border.yazi)、[smart-enter](https://github.com/yazi-rs/plugins/tree/main/smart-enter.yazi)、[toggle-pane](https://github.com/yazi-rs/plugins/tree/main/toggle-pane.yazi)、[chmod](https://github.com/yazi-rs/plugins/tree/main/chmod.yazi)で確認した。bunnyは[作者の説明](https://github.com/stelcodes/bunny.yazi)を確認したが、既存の私的設定との対応は確定していない。
+公式追加プラグインの提供元は[公式一覧](https://github.com/yazi-rs/plugins)。個別の設定は[git](https://github.com/yazi-rs/plugins/tree/main/git.yazi)、[full-border](https://github.com/yazi-rs/plugins/tree/main/full-border.yazi)、[smart-enter](https://github.com/yazi-rs/plugins/tree/main/smart-enter.yazi)、[toggle-pane](https://github.com/yazi-rs/plugins/tree/main/toggle-pane.yazi)、[chmod](https://github.com/yazi-rs/plugins/tree/main/chmod.yazi)で確認した。
+
+bunnyは[作者の説明](https://github.com/stelcodes/bunny.yazi)を確認したが、既存の私的設定との対応は確定していない。
 
 ## テーマとその他のコマンド
 

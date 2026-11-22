@@ -6,13 +6,27 @@
 
 ## 現在の到達点（2026-11-22）
 
-ローカルの `main` はPR #22を取り込んだ `92d9336`。再開する環境ごとに作業コピーのブランチ、HEAD、未コミット変更を確認する。以下の「作業履歴」と1〜7節には当時のブランチ名、テスト件数、未完了の記述が残っている。
+今回の文書整理で確認した基点は、PR #23を取り込んだ `main` の `c859580`。PR #22の `92d9336` からこの基点までの変更は引き継ぎ文書2本だけで、実装の変更はない。再開する環境ごとに作業コピーのブランチ、HEAD、未コミット変更を確認する。
+
+現行仕様と残件は本節を参照する。「作業履歴」と1〜7節は当時の記録であり、ブランチ名、テスト件数、未実装・未決定の記述を現在の状態として扱わない。過去の操作承認も、再開後の作業への承認を意味しない。
 
 | 環境 | 確認済みの範囲と参照先 |
 | --- | --- |
 | Termux本体 | 基礎パッケージ導入、Bats、共通テスト、通常のpushからのpre-push、tmux、YaziのPNG・PDF・SVG表示、グローバルとプロジェクト別Proton Passの切り替えを確認済み。NeovimのNV-06も適用後にLSP・保存時整形・SKK入力を確認した。[Termux版の引き継ぎ](CODEX_TERMUX_HANDOFF.md)・[実機チェックリスト](testing/termux-checklist.md)・[Neovim実機確認](setup/neovim-dependencies.md#nv-06適用後のtermux実機確認) |
 | proot Ubuntu | プロジェクト別Proton Passの認証切り替え・保管庫の参照範囲・補完・鍵キャッシュを確認済み。NeovimのLSP、DAP、スナップショットは個別の検証記録にある範囲で確認済み。[Proton Pass手順書](setup/proton-pass.md#現在の状態)・[Neovimの依存と検証記録](setup/neovim-dependencies.md) |
 | WSL2・ネイティブ・QEMUのUbuntu | 対応する環境フラグと導入方法は[環境別の検証範囲](testing/environment-matrix.md)を参照。GitHub ActionsのUbuntuで共通テストは通っている。各環境の通常起動、アプリ操作、実認証の結果は個別に確認する。 |
+
+### 現行仕様の参照先
+
+| 対象 | 確定済みの仕様と参照先 |
+| --- | --- |
+| 構築と環境制御 | 展開ソースは `home/`。Termuxは専用bootstrapとpkg、Ubuntu系はAPT・miseを使い、prootではHomebrewを除外する。[README](../README.md)・[環境別制御](testing/environment-matrix.md) |
+| Proton Pass | `--profile NAME` で明示選択し、指定なしはグローバル利用。プロジェクトごとにPAT暗号文・CLIセッション・暗号化鍵・鍵キャッシュを分離する。プロジェクト側はenv限定で、既存のPAT用identityを共有する。[仕様・実装記録](setup/proton-pass.md) |
+| 鍵キャッシュ | CLI暗号化鍵だけを保持し、PATとidentityはキャッシュしない。既定15分、15・30・45・60分を選択できる。[操作手順](setup/proton-pass.md#7-プロジェクト別patとキャッシュ期限の実装2026-11-18) |
+| Neovim | Mason依存の除去、DAP修正、NV-06の旧設定整理は実装済み。本体はlatestを維持する。[NVタスク一覧](setup/neovim-dependencies.md#修正候補と推奨順序)・[版管理方針](setup/tool-version-policy.md) |
+| スナップショット | `lazy-lock.json` はGit・chezmoi管理から除外し、必要時に手動保存する。`save`・`list`・`show`・`prepare` を備え、復元は別の明示操作で行う。[設計と確認記録](setup/neovim-dependencies.md#nv-05のスナップショット設計2026-11-17) |
+
+直近のTermuxでの共通検証記録は、unittest 362件・Bats 18件成功、skip 0件。今回の文書整理では全体テストを再実行しておらず、現在環境での動作確認結果ではない。[Termuxの検証記録](CODEX_TERMUX_HANDOFF.md#現在の到達点2026-11-22)
 
 ### 別環境で再開する手順
 
@@ -48,6 +62,10 @@ PR #10はmainへマージ済みで、ローカルの基点はc3fce78。利用者
 2026-11-18に差分の最終レビューとコミット前のmake checkを実施し、unittest 347件・Bats 18件（skip 0件）が成功した。表示変更と認証切り替えの関連テスト・隔離検証も成功済み。本ブランチの実装・文書整理・最終検証は完了している。実機で未確認の範囲は手順書冒頭に記載した。
 
 SOPS用鍵のローカル保護方法とmise・SOPS連携は後続の設計・実装対象。下記のNeovim関連の次作業案は、今回のPAT対応とは別の作業として扱う。
+
+## 初版の引き継ぎ記録（2026-11-17）
+
+以下の1〜7節は初版を基にした履歴。プロジェクト別PATの実装前の検討、NV-06の未完了、当時のGit状態と検証結果を残している。現在の作業を選ぶときは、冒頭の「現行仕様の参照先」と「保留と後続作業」を使う。
 
 ## 1. プロジェクトの目的と現在の範囲
 
@@ -90,7 +108,7 @@ chezmoiを中心に、複数Linux環境のdotfiles、開発ツール、初期構
 
 ### Proton Passの現在の実装
 
-以下はソース確認済みの現行仕様。複数PATの新仕様は第6節の未決事項を確認してから決める。
+以下は2026-11-17のソース確認時点の仕様。第6節の未決事項は、その後のプロジェクト別PAT対応で決定・実装された。現行仕様は冒頭の参照先を確認する。
 
 | 対象 | 現状 |
 | --- | --- |

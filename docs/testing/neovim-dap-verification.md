@@ -59,6 +59,8 @@ python3 -B -m unittest discover -s tests -p test_neovim_dap.py -v
 
 設定をconfigurations・type・pythonPathで登録し、PythonアダプターをPATHのdebugpy-adapterで起動するよう修正した。対象Pythonはcwdのvenv・.venv、PATHのpython3・pythonの順に選ぶ。UIはevent_initialized後に開き、Lua接続では自動表示しない。関数キーを正しい表記へ直し、ログポイントをleader + dL、REPLをleader + drに分けた。
 
+### 回帰テストと隔離実接続
+
 再現時の診断用互換処理を除去し、厳密なAPIだけで22件すべてが成功した。追加した回帰条件は、専用アダプターの選択・未導入時のエラー、仮想環境の優先順位とfallback、UIのPython/Lua別動作と再読み込み、ログポイントとREPLの独立操作である。
 
 | 検証 | 結果 |
@@ -71,9 +73,13 @@ python3 -B -m unittest discover -s tests -p test_neovim_dap.py -v
 
 実接続はLinux aarch64・Neovim v0.12.6、実プラグインを使い、通常設定を起動せず専用HOME・XDGディレクトリと確認用ファイルで行った。Python用依存は承認を得てmiseへdebugpy 1.8.22を導入した。アダプター環境はPython 3.13.18、対象の.venvもPython 3.13.18で、対象にはdebugpyを入れていない。Luaは既存のOSVを使い、127.0.0.1の動的ポートで接続した。作成したNeovimプロセスは終了済み。
 
+### 初期化・終了警告と再導入
+
 初回の隔離インストールではPythonの定義を省いたため、uvがOS側のPython 3.14を選んだ。初期化が4秒を超える警告と終了時のアダプターコード1が出た。UIを外しても終了警告は再現したため、UIだけが原因とは扱わない。既存Pythonを明示して専用環境を3.13へ再構築し、最後の実接続では終了警告は出なかった。この結果だけでPython 3.14全般を非対応とは判断しない。
 
 初期化警告までの猶予はアダプターに限って20秒へ調整した。導入時に確認した待機時間を基にした値で、接続成功を保証する変更ではない。Python3.13を指定した最初の再導入は、隔離mise設定にPythonの定義がなく失敗した。既存Python 3.13.18とuv 0.13.8を明示して再実行し、追加のPython取得なしで導入できた。
+
+### ログの所在と残る通常UI確認
 
 実接続のプロジェクトと最終ログは/tmp/neovim-dap-check-w1w9oy58にある。python-final-result.logとlua-result.logが最終結果で、通常UIの記入先はRESULTS.md。以前の警告ログも比較記録として保持している。一時領域のため永続保存は保証しない。
 

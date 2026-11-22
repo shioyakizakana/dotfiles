@@ -98,9 +98,13 @@ Codex CLIではこのリポジトリ内から`/skills`や`$スキル名`で選�
 
 BashもZshと同じ共通設定を使う。PATHは存在するディレクトリだけを末尾へ追加し、再読み込みで同じ項目を増やさない。
 
+#### PATHとランタイムの扱い
+
 共通の`env.sh`ではnpmを実行せず、mise管理のランタイムやCLIのPATHは各シェルの`mise activate`に任せる。Termuxのpkg由来のPATHも維持する。
 mise外のnpmグローバル導入を使う場合は、共通設定の読み込み前に`NPM_GLOBAL_PREFIX`を明示する。絶対パスで、その配下の`bin`が存在するときだけPATHへ追加する。未設定・空・相対パスの場合は追加せず、指定済みの値も変更しない。Nodeの版ごとに切り替えるツールはmiseで管理し、共通設定にはインストール先を固定しない。
 旧設定が自動取得した値がシェルに残る場合は、手動指定していないことを確認して`unset NPM_GLOBAL_PREFIX`を実行し、新しいシェルで確認する。
+
+#### 共通の操作と任意拡張
 
 `upd`は管理対象の`~/.local/bin/update_apps`を呼ぶ。例えば`upd apt`のように更新対象を指定する。コマンド置換のエイリアスは、対応するツールがPATHにある場合だけ定義する。導入担当と手動準備は[設定の依存一覧](docs/setup/dependencies.md)を参照する。
 reload、プロンプト、補完、キー操作、mise・zoxide・atuinなどのシェル別初期化は各シェルの設定に残す。SSH_AUTH_SOCKも既存どおりZsh側だけで設定する。
@@ -139,6 +143,8 @@ bash bootstrap/bootstrap-tools.sh --install
 
 `make bootstrap-tools`でも同じ導入処理を実行できる。既存の`make bootstrap`は認証の初期構築用として維持する。
 
+##### 確認・導入の対象範囲
+
 `--check`はディレクトリを作成せずにコマンドの存在を表示する。Termuxではpkg管理対象の導入状況も表示する。Python・Zsh・fzf・LuaRocksなども確認するが、バージョンや動作の互換性は別途確認する。
 
 | 実行環境 | `--install`の導入範囲 |
@@ -149,6 +155,8 @@ bash bootstrap/bootstrap-tools.sh --install
 
 Termuxでは通常ユーザーで実行する。導入済みパッケージは省き、不足がある場合だけ一覧更新と導入を行う。APT・pkgとも、依存解決によって既存パッケージが更新される場合がある。一括upgradeは実行しない。詳細と実機での確認手順は[依存一覧](docs/setup/dependencies.md#termuxでの導入と実機確認)を参照する。
 prootで自動判定が難しい場合は`BOOTSTRAP_PROOT=1`を付ける。prootのHomebrew新規導入は省く。
+
+##### チェックアウト前の起動
 
 リポジトリを取得する前でも、GitHubからスクリプトを取得して起動できる。取得にBash・curlと有効なCA証明書が必要になる。次のコマンドは取得に成功した場合だけ確認処理を実行する。
 
@@ -164,6 +172,8 @@ bash -c "$bootstrap_script" bootstrap-tools.sh --install
 ```
 
 実行する内容を固定したい場合は、取得URLの`refs/heads/main`を対象コミットのSHAへ置き換える。
+
+##### 認証との区別とTermuxのMake操作
 
 導入にはProton Passの認証、dotfilesの初期化・適用、miseによるツール導入は含まれない。Termuxではpkg対応分を導入し、Ubuntu用mise設定と適用後スクリプトを除外して重複導入を防ぐ。既存のローカルmise設定や導入済みツールは削除しない。導入成功後も各ツールの版と実行可否を確認する。
 
@@ -499,7 +509,11 @@ proton-pass --profile demo login
 
 初期登録コマンドは既存のage identityとrecipientを共有し、プロジェクト用PATとCLI暗号化鍵を暗号化保存してログインする。再実行では既存ファイルを再利用する。dotfilesのチェックアウトが必要で、`make bootstrap PROTON_PASS_PROFILE=demo`でも登録できる。
 
+#### プロジェクト名と保存先
+
 プロジェクト名は英小文字・数字で始まる64文字以内とし、以降は英小文字・数字・ハイフン・アンダースコアを使う。`global`は予約名。保存先は標準で`~/.local/share/proton-pass/projects/NAME/`となり、`token.age`、`encryption-key.age`、CLIセッションの`cli/.session/`を対象ごとに分ける。`XDG_DATA_HOME`を指定した場合はその配下を使う。鍵キャッシュは`~/.cache/proton-pass-key-cache/projects/NAME/`に分ける。
+
+#### 日常利用と鍵キャッシュ
 
 無指定または`--profile global`は従来のグローバル利用。作業ディレクトリによる自動切り替えは行わない。プロジェクト側はenv方式に限定し、グローバル側の既存providerを維持する。プロジェクトの強制ログアウトは受け付けない。
 
@@ -510,6 +524,8 @@ proton-pass-key-cache.py --profile demo --ttl-minutes 30 unlock
 proton-pass-key-cache.py --profile demo status
 proton-pass-key-cache.py --profile demo lock
 ```
+
+#### 補完と後続作業
 
 Bash・Zshでは、`proton-pass`、`proton-pass-key-cache.py`、`setup-proton-pass-project`のプロファイル名・サブコマンド・TTL候補などをTab補完できる。補完にはシェル設定と補完ファイルの適用も必要で、`make wrapper`だけでは反映しない。CLI固有の下位オプションは補完対象に含めない。
 
@@ -575,6 +591,8 @@ D-BusセッションおよびSecret Serviceが利用可能か確認する。
 
 ## 11. 検証と改善状況
 
+### 共通テストと確認範囲
+
 Python unittestは、隔離したHOME・ダミーコマンド・モックで認証周辺、環境分岐、導入失敗、再試行などを検証する。Batsは主にファイル配置を確認する。
 
 ```shell
@@ -586,9 +604,13 @@ make lint        # 静的検査のみ
 検証ターゲットは必須ツールを事前確認し、予期しないskipや全件skipを失敗として扱う。Yazi実起動の1件だけは任意検証で、skipした理由を明示する。必要なツール、個別実行、対象を限定した静的検証の範囲は[検証手順](docs/testing/checks.md)を参照する。
 実サービスへの認証、パッケージ導入、AndroidのBionicなどはモックの成功だけでは確認できない。環境ごとの手動確認範囲は[環境別テストの説明](docs/testing/environment-matrix.md)に記載している。
 
+### CIとGit hooks
+
 GitHub ActionsもUbuntu 24.04上で同じ`make check`を実行する。検証用依存の導入はCIジョブの準備段階だけで行い、ローカルの検証ターゲットからは実行しない。GitHub上での初回実行結果と、必須チェックへの登録は別途確認する。
 
 Git hooksはルートの`lefthook.yml`で管理し、pre-commitでステージ済み差分の空白エラー、pre-pushで`make check`を実行する。lefthook 2.2.2を使い、既存hookとcore.hooksPathを確認した後、各作業コピーで`lefthook install pre-commit pre-push`を実行する。Termuxのシバン補正とPATH、個別確認の手順は[Git hooksの説明](docs/testing/git-hooks.md)を参照する。
+
+### PR・規約・改善記録
 
 変更は作業ブランチからPRを作成し、必須チェック`check`の成功を確認して`main`へ取り込む。GitHub CLIでのPR作成・自動マージ予約・ブランチ整理は[PRの運用手順](docs/testing/pull-requests.md)を参照する。
 

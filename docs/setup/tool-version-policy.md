@@ -25,13 +25,19 @@ Termux本体にはこのUbuntu向けmise設定を展開しない。Termuxのpkg�
 
 ## Nimの配布物を固定する理由と更新手順
 
+この節の導入・検証結果は2026-11-14時点の記録。後続のNimLSPの再ビルドと通常起動の確認は、[復旧手順](nimlsp-recovery.md)と[Neovimの依存・検証記録](neovim-dependencies.md)を参照する。
+
 2026-11-14、Linux ARM64でNim 2.4.0の取得が404になる報告を受けた。従来の定義はx64向け一覧から版を選び、ほかのCPUにも同じ版のファイルがあると仮定してURLを生成していた。[公式の導入一覧](https://nim-lang.org/install.html)には2.4.0のLinux ARM64配布リンクがなく、2.4.2には存在した。
 
 Nimは2.4.2に固定し、日付とコミットを含む公式リリースのURLを各環境へ指定した。SHA256は[GitHubのリリースAPI](https://api.github.com/repos/nim-lang/nightlies/releases/tags/2026-11-13-version-2-4-b27dcb4f70883978e984e427cc24b64eeb7c875f)の各asset.digestを使う。Linux ARM64のアーカイブへのHEADは200だったが、付随する.sha256のURLは404だったため、チェックサムURLの推測はやめた。全アーカイブの取得・展開・実行は未実施。
 
 Linux・macOSはARM64とx64を指定する。Windows ARM64は従来と同じx64配布物を指定しており、ARM64ネイティブ対応を意味しない。Termux本体へは展開せず、proot内での実行も別途確認する。[miseのHTTPバックエンド仕様](https://mise.jdx.dev/dev-tools/backends/http.html)に従い、直接指定したchecksumを使用する。
 
+### 版・URL・SHA256の更新
+
 更新時は、先に公式一覧から各環境の配布物を確認する。同じリリースの版・URL・SHA256と、公開メタデータを記録したtests/test_nim_config.pyをまとめて更新し、回帰テストを実行する。版だけを変更すると別の配布物と組み合わさるため、個別には変更しない。
+
+### Nimだけを適用・導入する手順
 
 利用者が適用・導入する場合は、次の順でNimだけを対象にする。この手順をCodexは実行していない。その後、利用者からchezmoi applyと導入スクリプトによるNim導入成功の報告があった。
 
@@ -44,7 +50,11 @@ mise --cd "$HOME" exec nim@2.4.2 -- nim --version
 
 その後、新しいシェルでcommand -v nimlspを確認し、Mason無効化モードのNeovimでNimの接続と診断を確認する。~/.nimble/binのPATH追加は利用者が行っており、この修正では変更していない。コンパイラ更新だけで既存nimlspの互換性まで確認したとは扱わず、必要な再ビルドはエラーを確認してから判断する。
 
-修正前に回帰テストの不一致を確認し、修正後は3件すべて成功した。実HOMEの外にある/tmpの一時設定で、mise ls --no-global nim --jsonをMISE_OFFLINE=1にして実行し、2.4.2が未導入の版として選ばれた。同じ隔離環境のmise lockでも、全6環境のURLとSHA256が一致し、通信・導入なしで解決できた。生成したlockfileは一時領域だけに置き、リポジトリへは追加していない。HOME内の一時フォルダでは祖先の設定を探索するため、隔離確認には使わない。make checkは静的検証、unittest全216件、Bats全18件が成功し、skipなし。修正時のCodex検証では実インストールを行っていない。その後のNim導入成功は利用者が確認した。nimlspの接続は引き続き未確認。
+### Nim固定時の隔離検証
+
+修正前に回帰テストの不一致を確認し、修正後は3件すべて成功した。実HOMEの外にある/tmpの一時設定で、mise ls --no-global nim --jsonをMISE_OFFLINE=1にして実行し、2.4.2が未導入の版として選ばれた。同じ隔離環境のmise lockでも、全6環境のURLとSHA256が一致し、通信・導入なしで解決できた。生成したlockfileは一時領域だけに置き、リポジトリへは追加していない。HOME内の一時フォルダでは祖先の設定を探索するため、隔離確認には使わない。
+
+make checkは静的検証、unittest全216件、Bats全18件が成功し、skipなし。修正時のCodex検証では実インストールを行っていない。その後のNim導入成功は利用者が確認した。この時点ではnimlspの接続は未確認だった。
 
 ## 通常導入と更新を区別する
 
@@ -72,9 +82,9 @@ mise --cd "$HOME" exec nim@2.4.2 -- nim --version
 
 | 残件 | 実装・検証の方針 |
 | --- | --- |
-| 固定値の選定 | Yaziは[依存一覧と固定候補](yazi-dependencies.md)から確認する。Neovimも実機で動作する組合せを記録し、選定理由と戻し方をPRへ記載する。未確認の版を新しい基準として採用しない |
+| 固定値の選定・見直し | Yaziは26.9.1の指定を維持し、見直す場合は[依存一覧と固定候補](yazi-dependencies.md)で互換性を確認する。その他の候補も確認済みの組合せと戻し方をPRへ記録する。Neovim本体はlatestを維持し、追加固定の対象に含めない |
 | 再現性の追加対策 | 必要性が確認された場合に限りlockfileを評価する。複数環境・CPU・バックエンドの対応確認を先行し、今回は追加しない |
 
 `tests/test_update_apps.py`はAPTとmiseの明示的更新をダミーで検証する。miseでは空白を含むHOMEと別プロジェクトを用意し、対象・実行順序・更新候補の表示・非0終了時の停止・失敗集計・mise欠落時の省略を確認する。`tests/test_mise_helpers.py`の通常導入テストとは区別する。`make check`の成功だけで、実際の更新・配布物・プラグイン互換性が確認できたとは扱わない。
 
-NeovimのLSP・プラグイン・ビルド依存と固定前の確認事項は[Neovim依存一覧](neovim-dependencies.md)を参照する。Masonからmiseへの移行を先行し、本体とプラグインの組合せを確認してから固定値を選ぶ。
+NeovimのLSP・プラグイン・ビルド依存と確認範囲は[Neovim依存一覧](neovim-dependencies.md)を参照する。Mason依存の除去は確認済み環境・用途で完了している。本体はlatestを維持し、プラグインの復旧には必要時の手動スナップショットを使う。

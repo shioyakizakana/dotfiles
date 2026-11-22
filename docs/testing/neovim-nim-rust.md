@@ -70,6 +70,8 @@ rust-analyzerがshimの場合は、同じrust/フォルダのシェルでRUSTUP_
 
 ハイライトは、既存のTree-sitter導入一覧へnimを追加した。現在のプラグインの定義ではnim_format_stringも依存として導入される。[Tree-sitterの公式説明](https://github.com/nvim-treesitter/nvim-treesitter)と[使用するNim文法](https://github.com/alaviss/tree-sitter-nim)を参照する。
 
+### 設定適用と通常起動の確認
+
 利用者は、次の2ファイルを適用してからNeovimを起動する。これは利用者向け手順で、Codexは今回実行していない。
 
 ```shell
@@ -87,8 +89,12 @@ nvim --cmd 'lua vim.g.dotfiles_use_mason = false' src/diagnostics.nim
 
 LspInfoでcmdが既定配置の絶対パスを指すことを確認し、保存して診断を確認する。診断用ファイルを修正済みなら、再度意図的な型エラーを入れて試し、確認後は直す。ハイライトは:InspectTreeで構文木を開けること、キーワード等の上で:InspectにTree-sitterのcaptureが表示されることを確認する。色の違いだけで判断しない。
 
+### 隔離検証と回帰テスト
+
 今回の隔離検証では、NimbleをPATHに入れず、修正ソースの既定配置探索から実NimLSPを起動して診断を取得した。Nimとnim_format_stringを一時領域だけへ取得・ビルドし、再起動後に構文エラーのない解析、ハイライト開始、capture 24件を確認した。実HOMEへのパーサー導入と設定の適用は未実施。適用後のTermux + proot Ubuntuでの通常起動と表示は利用者の確認待ち。
 
 関連unittestは22件、make check全体はunittest 232件・Bats 18件が成功し、skipなし。PATH優先、既定配置、空白を含むNIMBLE_DIR、欠落時の動作、Nimの導入・ハイライト開始をモックで確認する。回帰テストとCIからパーサーを取得することはない。
+
+### 適用後の利用者確認
 
 その後、利用者が共通env.shへNIMBLE_DIRとPATHを設定し、通常起動でNimのハイライト適用を確認した。env.shの管理ソースと展開先は一致。その後、通常起動でのLSP接続、保存時の診断5件、フロート表示、修正後の診断解消も利用者が確認した。今回のNim対応は完了とする。

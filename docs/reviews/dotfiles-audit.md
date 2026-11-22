@@ -161,10 +161,16 @@ systemdの起動は共通前提ではない。`systemd-detect-virt`は存在時�
 - 判断・影響：環境別の除外不足、tmuxのパス固定、APTのroot実行失敗と更新失敗後の継続を隔離環境で再現した。後続対応で通常適用からOS全体のupgradeを外し、不足がなければ対話と導入を省くようにした。実機の通信・導入は未実施。
 - 対応方針：既存環境フラグで対象を選び、root・sudoの前提を明示する。OS更新と設定適用を分離し、初回導入・構成変更・日常更新に適した実行条件を選ぶ。
 - 注意・検証：全てを`run_once_`にすると追加ツールが反映されない。順序と再実行条件の変更リスクはMedium。環境、権限、sudo有無、再適用、非対話入力をモックで検証する。
+
+#### 段階別の対応計画
+
 - DF-03後の進め方：下記の3段階に分ける。親IDは維持し、各段階の実装は別途指示を受けて進める。
   1. 環境別の実行可否。修正済み・未適用。Termux・未知環境の一括導入を除外し、prootでは既存brewのBundleも含めて除外する。APTのroot・sudo処理、Homebrewのroot時の新規導入禁止、tmuxのPATHに応じたシェル選択を実装した。
   2. 初回導入・再適用・日常更新の分離。コード修正済み・未適用。APTは不足分だけを導入し、Homebrewは自動refresh・明示的upgrade・cleanupを抑止する。miseはTOMLを参照して不足分を導入する。更新は既存update_appsへ分け、rootのAPT更新にも対応した。
   3. 操作と終了状態。コード修正済み・未適用。不足なしは入力不要。辞退は中止を表示し、EOF・確認失敗・導入失敗は非0で停止する。run_afterを維持して毎回状態を再評価し、辞退や部分的失敗を永久的な完了記録にしない。
+
+#### 環境別制御の実装と検証
+
 - 対応状況：コードとモックで対応可能な3段階を修正済み・未適用。実機検証は残件。第1段階は`8e7beb6`・`e09d1d1`、第2・第3段階は`23d34dc`・`6505297`へコミットした。実環境への適用は未実施。
 - 実装：`.chezmoiignore`は既存フラグで対象を選び、スクリプトはrun_after属性を除いた名前で除外する。TermuxではUbuntu向けmise設定も対象外にする。tmux設定を`home/dot_config/tmux/tmux.conf.tmpl`へ移し、展開先は維持する。Linux版chezmoiからTermux・prootを選べるよう初期入力の案内を補足した。
 - 再現テスト：第1段階では環境・権限を含むunittest全40件が成功した。後続対応では再適用・更新分離・対話を追加し、全83件が成功。Termux相当のPREFIXとPATH、ARM64メタデータ、Android版chezmoiのUbuntuゲスト利用、未知環境も引き続き検証する。手順と限界は[環境別テストの説明](../testing/environment-matrix.md)に記録した。
@@ -190,6 +196,9 @@ systemdの起動は共通前提ではない。`systemd-detect-virt`は存在時�
 - 対応方針：TOMLを正本とし、導入時は設定を変更しない操作を中心にする。Rustコンポーネントなどの補助処理は残す。重要ツールから固定方針を決める。
 - 注意・検証：全ツールの厳密固定は更新負担を増やす。DF-09で依存を確定後、新規導入・再導入・更新・失敗後再開と設定差分を検証する。変更リスクはMedium。
 - 前提の追加：DF-04で環境別の導入対象を決め、DF-05で導入済み判定を直してから集約する。Homebrewを省く環境の代替ツールはDF-09で決める。
+
+#### ツール一覧の集約と更新処理
+
 - 対応状況：対応中。一覧集約を`6505297`へコミットした。通常導入をmise installへ変更し、Python 3.13・3.12をTOML側で維持した。chafaはその後、導入失敗のため利用者がmise一覧から除外している。Brewfileの指定は残る。Rust・LuaRocks・nimlspの補助処理は一覧取得後に不足だけを導入する。ツール別の固定・更新方針と実機の互換性確認は残件。
 - Git hooks導入時の追加対応：lefthookだけは検証版2.2.2へ固定し、mise設定とCIの取得版をそろえた。その他のツールの固定方針は変更していない。Termux本体では共通mise設定を展開しないため、ネイティブ実行できる版の手動準備と実機確認を必要とする。
 - 2026-11-10の追加対応：[固定・更新方針](../setup/tool-version-policy.md)を追加。既存の厳密固定・系列指定・latest維持を分類し、Yazi・Neovimを追加固定の優先候補とした。動作確認済みの版を選ぶため、今回はTOMLを変更していない。
@@ -197,6 +206,9 @@ systemdの起動は共通前提ではない。`systemd-detect-virt`は存在時�
 - 回帰検証：ダミーmiseを別プロジェクトから呼び出すテストで、修正前は確認失敗後の更新継続と対象の不一致を再現した。修正後は既存APTを含む更新テスト12件が成功。空白を含むHOME、確認の終了コード1・17、更新失敗、他ターゲットへの継続、mise欠落時の省略を確認した。
 - 全体検証：更新処理修正後のmake checkで、静的検証・unittest全171件・Bats全18件が成功し、skipはなかった。実環境への適用・実更新・Termux実機確認は未実施。
 - 残る制約：確認したmise v2026.10.25では、一部の確認失敗を警告だけで扱う。この修正はコマンドの非0終了だけを停止条件とし、全バックエンドの確認成功までは保証しない。追加固定値と実機の更新互換性は残件として維持する。
+
+#### 固定候補の整理
+
 - 2026-11-11の固定候補整理：[Yazi依存一覧](../setup/yazi-dependencies.md)を追加。本体・yaの26.9.1を評価候補とし、追加プラグイン・flavorのrevisionは未選定。package.tomlによる公開依存管理を第一候補とするが、今回は取得・生成・版指定変更を行っていない。
 - 同日の追加対応（YZ-03）：公開プラグイン6件・flavor 2件を一時HOMEで取得し、ya生成ハッシュと完全SHAを使う`home/dot_config/yazi/package.toml`を追加。別の空HOMEへ固定manifestだけから復元できた。Yazi・ya 26.9.1で初期化・モジュール読み込み・明暗両flavorの一覧描画と正常終了を確認し、miseのYaziも26.9.1へ固定した。本体ディレクトリはplugins・flavorsともchezmoi対象外。実環境への導入・適用は未実施。
 
@@ -206,6 +218,9 @@ systemdの起動は共通前提ではない。`systemd-detect-virt`は存在時�
 - 判断・影響：静的に確認した不整合。Makefile経由でprovider未指定なら停止し、設定不一致は認証後に判明する。WSL等でenvを選ぶ初期プロンプトもない。
 - 対応方針：対応環境でproviderを選択できるようにし、同じ値を呼び出し元から渡す。検証を書き込み・認証前へ移す。未展開ラッパーの扱いも明示する。
 - 注意・検証：ソースのテンプレートを直接実行する解決策は避ける。認証方式変更には承認が必要。環境・provider・不一致・PATH条件をダミー設定で検証する。
+
+#### provider整合性の修正と検証
+
 - 対応状況：修正済み・未適用。Ubuntu系は初期化時にenv／keyringを選択し、Termux・prootはenvを維持する。再初期化ではboolのlinuxEnvを環境名として使わず、既存フラグから復元する。
 - 修正内容：bootstrapはchezmoiの環境・providerを既定値とし、引数・環境変数との不一致をロック・鍵作成・復号・認証前に拒否する。Makefileは対象リポジトリとchezmoi実行ファイルを渡す。bootstrapに先行してラッパーを展開する依存は外した。
 - 初回導入：設定は管理対象のラッパー展開先を参照する。`make wrapper`は現在、ラッパー・鍵キャッシュ・プロジェクト初期登録コマンドを展開し、スクリプト実行・externals更新を除外する。通常ラッパーとinitラッパーも異なるproviderの上書きを復号前に拒否する。
@@ -232,22 +247,48 @@ systemdの起動は共通前提ではない。`systemd-detect-virt`は存在時�
 - 対応方針：必須の自動導入、手動準備、任意機能を分けて設定と対応させる。私的設定は公開せず、欠落時の安全な省略か案内を実装する。
 - 注意・検証：外部依存の追加は事前承認が必要。空のHOMEと不足コマンドのモックで診断と起動を確認する。変更リスクはMedium。
 - DF-03後の確認対象：Brewfileに並ぶCLI・フォント・Go・npm関連の項目を、対象環境と導入担当に分けて確認する。Homebrewを省く環境ではchafa・resvgなどの必要性と代替手段を検討する。Bundleのモック成功を実パッケージの導入保証として扱わない。
+
+#### 任意依存の保護
+
 - 対応状況：コード修正済み・未適用。`home/dot_config/shell/aliases.sh:4-27`でコマンドの存在を確認してからエイリアスを定義する。Zsh外部プラグインは読み取り可能なものだけ読み込み、fzfは実行ファイルとシェル設定、zenoはそれらとdenoが準備できた場合だけ連携する。`home/dot_config/yazi/init.lua:10-22`は追加プラグインの読み込み失敗を名前だけ通知して続行し、setupの失敗は隠さない。`home/dot_config/tmux/tmux.conf.tmpl:55-73`は補助コマンドがある場合だけキーを定義する。textlintとLuaRocksの不足時には準備方法を案内する。
 - 依存の整理：[依存一覧と手動準備](../setup/dependencies.md)へ導入担当・環境差・任意機能を記録した。新しい自動導入や提供元の推測は行っていない。利用者によるchafaのmise設定削除を保持し、古い説明を修正した。
+
+#### Yaziの調査と設定修正
+
+##### fetcherの登録と初回検証
+
 - 2026-11-11のYazi調査：組み込み3件、追加の公開プラグイン、任意のbunny-private、flavorと外部コマンドを[専用一覧](../setup/yazi-dependencies.md)へ整理した。`prepend_feachers`と正式キー`prepend_fetchers`の不一致をYZ-01、full-borderの非推奨オプションをYZ-02、revision未管理をYZ-03として記録。初回の整理では設定を変更せず、実機障害の再現とは区別した。
 - YZ-01の追加修正：`home/dot_config/yazi/yazi.toml:5,10`を正式な`prepend_fetchers`へ修正し、`tests/test_yazi_config.py`へファイル・ディレクトリ用のgit fetcher登録を確認するテストを追加。修正前は正式キーが見つからずテストがエラーとなり、TOML構文確認だけでは検出できない不一致を再現した。修正済み・未適用。実プラグインの状態表示は未確認。
 - YZ-01修正後の検証：make checkで静的検証・unittest全172件・Bats全18件が成功し、skipはなかった。実プラグインの導入・設定適用は行っていない。
+
+##### 公開manifestとfull-borderの対応
+
 - YZ-02・YZ-03の追加対応：採用した公開revisionでfull-borderの`set = "rounded"`対応を確認し、設定とモックを更新した。共有manifestには公開依存だけを記録し、bunny-privateは含めない。既存manifestは自動統合されないため、適用前の利用者による退避・統合確認を[導入手順](../setup/dependencies.md#yazi)に追加した。各キー操作・Git状態表示・Termux実機確認は残件。
 - YZ-02・YZ-03の検証：修正前のモックで旧オプションの不一致を再現し、修正後はmake checkの静的検証・unittest全175件・Bats全18件が成功、skipなし。manifestの公開依存・固定形式と設定の対応、環境別の配布・除外を検証した。公開依存を使った隔離起動はLinux ARM64上の別確認として記録し、CIへ通信を追加していない。
 - 利用者確認：chezmoiで現状のdotfilesを適用してYaziを起動し、full-borderのroundedが反映されたとの報告を受けた。OS・実行版・他のキー操作は未記録とし、全環境の動作確認済みとは扱わない。
 - Yazi調査時の検証：既存のYazi設定テスト4件、任意依存テスト9件が成功し、skipはなかった。隔離したkeymap読み込みとモックでの初期化確認であり、実プラグイン・flavor全体や実機のキー操作は未確認。
+
+#### 初期構築・Termux対応と検証
+
+##### 確認表示と環境別導入
+
 - 追加対応：`bootstrap/bootstrap-tools.sh`の確認表示にPython・Zsh・fzf・LuaRocksなどを追加した。`--check`で行っていた`.local/bin`の作成を導入モードへ移し、確認だけならHOME内のファイルを作成しない。Ubuntuの自動導入対象と認証方式は維持している。存在確認だけなので、バージョン・Lua 5.1向けビルド・実機での互換性確認は必要。
 - Termux対応：APT/dpkg方式のTermuxを判定し、基礎パッケージ・chezmoi・Python・miseなどをpkgで導入する。ローカルの導入状態から不足分だけを選び、一覧更新の重複を避ける。Ubuntuゲストを先に判定するため、PREFIXを引き継いだprootでもAPTを選ぶ。Homebrewは対象外、pass-cliは手動準備・動作未確認として表示し、認証準備完了とは案内しない。Ubuntu用mise設定の除外は維持する。bash -c・標準入力による起動にも対応した。
+
+##### 初期構築の回帰検証とコミット
+
 - 検証：修正前にエイリアス失敗、Zshの欠落参照、Yazi初期化中断、textlintの案内不足を隔離環境で再現した。修正後はunittest全128件とBats全18件が成功。任意依存の欠落・存在、空白を含むHOME、Yaziのsetup失敗、textlintの引数と終了状態、Termux・prootでのtmuxキー生成をダミーで検証した。実プラグイン・実認証・実インストールは実行していない。
 - 追加検証：依存不足と、`--check`によるHOME内のディレクトリ作成を修正前に再現した。空のHOME・既存ファイルのあるHOMEを用いた回帰テストで、不足の表示とファイルを作成・変更しないことを確認した。環境判定と導入関数はモック化し、実インストールを防ぐ。
 - Termux対応の検証：`tests/test_bootstrap_platforms.py`で環境判定、不足分のpkg導入、再実行時の省略、失敗時の停止、導入後確認、確認モード、リモート起動形式をダミーで検証する。実インストール・外部インストーラー・実認証は使わない。既存テストとあわせunittest全147件・Bats全18件が成功し、skipはなかった。ShellCheck・shfmtも成功した。
 - コミット：確認モードの改善とTermux対応、関連する回帰テストを`010d6b0`へコミットした。
+
+##### 残る依存・実機確認
+
 - 残件：Ubuntuでの初期認証前のPython、Zsh・fzf・LuaRocksの手動準備、Yazi追加プラグインの提供元と互換性、tmux補助コマンドの提供元、Brewfileを使わない環境のプレビュー機能を実機で確認する。Termuxのパッケージ候補・実バイナリの動作・Proton Pass CLIの準備も[実機確認手順](../setup/dependencies.md#termuxでの導入と実機確認)に沿って確認する。Yaziのキー操作には未導入プラグインが残り得る。TOML記法はDF-10で修正済みだが、DF-09を全機能の動作確認済みとはしない。
+
+#### Neovimの依存整理と移行
+
+##### 初期調査とNV-01・NV-02
 
 - 2026-11-13のNeovim依存整理：[依存一覧とMason移行条件](../setup/neovim-dependencies.md)を追加。有効LSP23件をmise定義・補助導入・プロジェクト依存・担当未確定へ整理した。Masonは利用者の方針に従い移行完了まで維持する。導入定義の不足候補、初回取得の失敗処理、DAP、固定・復元、旧設定の整理をNV-01〜NV-06として記録した。設定変更・実導入・通常起動は行っておらず、各項目は未実装。
 
@@ -255,34 +296,64 @@ systemdの起動は共通前提ではない。`systemd-detect-virt`は存在時�
 
 - NV-02：公式資料で提供元を確認し、vtsls・Vue・Svelte・oxlint・goimportsのmise定義を追加。vtslsはVueのTypeScriptプラグインを実行ファイルの実体から解決し、Masonの固定パスを参照しない。ダミーの回帰テスト8件とmake checkのunittest全206件・Bats全18件が成功、skipなし。実導入・実接続・Termux互換性は未確認。
 
+##### Mason無効化による比較とSvelte・Vueの修正
+
 - NV-03は対応中。指定がなければMasonを維持し、明示した検証起動だけMasonの依存宣言と初期化を無効化する切替を追加した。3モードでLSP全23件の登録をダミー確認し、関連テスト11件とmake checkのunittest全209件・Bats全18件が成功、skipなし。実機での接続確認とMason完全削除は残件。比較・復帰手順を依存一覧へ記録した。
 
 - 利用者の実適用でSvelteだけがaubeの依存解決に失敗。明示承認後、Codexがmise管理下でnpmを指定し、svelte-language-server 0.18.6の実導入に成功した。Svelteのpeer dependency警告は残るが、隔離HOME・検証用ファイルでLSP初期化・整形・正常終了を確認した。復旧コマンドと検証範囲は[依存一覧](../setup/neovim-dependencies.md#svelteのaube依存解決失敗と復旧2026-11-13)へ記録。Mason完全削除と全言語の実機確認は残件。
 
 - 2026-11-14：Mason無効化時のVue警告を調査し、aubeの.binランチャーをJavaScript本体へのリンクとして扱っていた探索の不一致を修正。関連15件の回帰テストと、隔離Neovimによる実導入パッケージ3.3.14の探索が成功した。make checkもunittest全213件・Bats全18件が成功、skipなし。通常設定の起動・Vue操作・実環境への適用は未実施。
 
+##### 主力言語の確認とNim更新
+
 - NV-03の継続確認：Vueの利用者確認とVue 3.5.45追加後の型診断解消を記録。Linux aarch64の隔離環境で主力7サーバーの期待診断、うち6件の補完・定義ジャンプ、SvelteのLSP整形と5整形CLIを確認した。23サーバーの確認ではNimのPATH不足とpyright名でbasedpyrightが選ばれる状態が残る。Rustは導入済みcomponentと実バイナリの版を確認し、接続は未検証。結果と未検証範囲は[実機確認記録](../testing/neovim-lsp-verification.md)へ整理し、Mason完全削除は保留。
 - Nim更新失敗への対応：利用者による~/.nimble/binのPATH追加後、Linux ARM64の2.4.0取得で404が発生した。公式配布物を確認し、miseのNimを2.4.2の環境別URL・SHA256へ固定した。回帰テスト3件と隔離設定のオフライン読み込みが成功。その後、利用者が設定の適用とNim導入成功を確認した。nimlsp接続は未確認で、Mason完全削除は保留。[版の更新・導入手順](../setup/tool-version-policy.md)を参照する。
+
+##### LuaテストとNim・Rustの確認
+
 - Luaテストツールの見直し：利用者がNimの適用・導入成功を確認した後、vusetedの取得で停止した。開発用にはmini.testを採用し、誤記したLuaRocks対象を通常導入から除外。既存mini.test定義のoptsを修正し、v0.18.0のコミットへ固定した。通常導入と再適用をモック検証し、実mini.testの成功・失敗・依存不足も隔離Neovimで確認。[開発用の手順](../testing/neovim-plugin-tests.md)へ記録した。その後、利用者が実適用とMiniTestのtable表示を確認した。通常UIでのテスト実行とTermuxでの確認は残件。
 - Nim・Rustの利用者確認：Termux + proot Ubuntu、Neovim v0.12.6でRustの接続・補完・定義ジャンプ・診断が成功した。Nimは接続・補完・定義ジャンプが成功したが診断は失敗し、2.4.2とNimLSPのビルド時2.2.12の不一致が表示された。Nimの再ビルド方法と診断、別途ハイライトを調査する。実再導入とMason削除は未実施。[手動結果](../testing/neovim-lsp-verification.md#nimrustの手動確認結果2026-11-14)を参照。
+
+##### Nim診断・PATH・ハイライトの復旧
+
 - Nim診断の復旧：NimLSP 0.4.7をNim 2.4.2で隔離ビルドし、利用者の承認後、既存バイナリを永続退避して実体だけを切り替えた。実バイナリの隔離検証で型エラー2件、修正後0件、定義ジャンプ、版警告なしを確認。通常導入には版一致の確認と失敗時の案内を追加した。その後、利用者がPATH明示起動で通常UIの保存時診断5件、フロート表示、修正後の診断解消を確認した。通常起動時のPATH確認とハイライトは残件。[再ビルド・復元手順](../setup/nimlsp-recovery.md)を参照する。
 - NimのPATH・表示対応：nimls.luaへNIMBLE_DIRと既定配置の補助探索を追加し、既存Tree-sitter一覧へnimを追加した。修正前の回帰テスト失敗を確認し、修正後は関連22件・make checkのunittest 232件とBats 18件が成功、skipなし。PATHにNimbleを含めない実LSPの隔離起動・診断と、必須依存を含むNimパーサーの隔離ビルド・ハイライトも成功した。設定適用と実HOMEのパーサー導入は未実施。[利用者の確認手順](../testing/neovim-nim-rust.md#pathの補助探索とハイライトの適用)を参照する。
 - Nim対応の完了確認：利用者が設定適用後、PATHを明示しない通常起動でNimLSP接続・ハイライト、保存時の診断5件・フロート表示、修正後の診断解消を確認した。今回のNim対応は完了。NV-03全体はPythonの提供元と未確認言語の整理が残るため継続する。
+
+##### Python提供元の統一と実機確認
+
 - Pythonの提供元統一：basedpyrightを正式名で有効化し、Pyrightの重複したmise定義を除外。Ruffへlint・import整理・整形を集約し、既存コマンドの互換名を保持した。導入済みツールで実LSPとConformの隔離検証、プロジェクト設定の優先を確認。make checkはunittest 238件・Bats 18件成功、skipなし。追加インストールと実適用は未実施で、通常UI確認は残件。[移行手順](../setup/python-lsp.md)を参照する。
 - Python移行の実機確認：2026-11-15受領の利用者報告により、Termux + proot Ubuntuで両サーバーの接続・補完・定義ジャンプ、型エラーとlintの解消、保存時整形・import整理の成功を確認した。Python移行の通常UI確認は完了。Neovim版は利用者の訂正によりv0.12.6。報告のCLIパスとLSP起動コマンドを区別して記録。NV-03は未確認言語等の整理を継続する。
+
+##### Web分岐とBiomeの確認
+
 - NV-03の継続対応：通常Gitでもdenolsが選ばれる問題を再現して修正し、Deno・Node・Web整形をバッファ基準の共通判定へ変更した。Biomeはプロジェクト内の実体を優先し、起動cwdを指定した。汎用LSP6件の隔離接続・機能と実ConformのBiome整形が成功。回帰テスト8件を追加し、make checkはunittest全246件・Bats全18件が成功、skipなし。Biome LSPのデーモン接続と通常UI、追加サーバーの用途確認は残件。[検証記録](../testing/neovim-web-validation.md)を参照。
 - Web通常UIの追加報告：汎用LSP等の成功と、Node配下での二重接続・Biome起動失敗を記録した。読み取り比較で展開済みの4設定がソースと異なり、共通判定ファイルも未配置であることを確認。修正後の実適用・再確認は残件とし、追加のソース修正や適用操作は行っていない。[報告と再確認手順](../testing/neovim-web-validation.md#通常uiの報告と適用状態の確認2026-11-15)を参照。
 - Web修正の適用後確認：利用者がNode配下でvtslsのみ接続し、Biome LSPがフォルダ内・別cwdで接続することを確認した。続報でlist_formatters_to_run(0)の出力がbiome-checkのみであることも確認し、候補表示と実行予定を区別して記録した。[再確認結果](../testing/neovim-web-validation.md#設定適用後の再確認結果2026-11-15)を参照。Mason削除とNV-03全体の残件整理は継続する。
+
+##### 追加LSPとTailwindの確認
+
 - NV-03の追加LSP確認：導入済み5サーバーを隔離起動した。Emmetの補完、Oxlintとgolangci-lintの診断・修正後の解消、sqlsのDB接続なしの初期化が成功。Tailwindは補完候補を取得したがプロジェクト依存不足のため部分確認とした。設定や導入担当は変更せず、通常UI・用途・対象環境とMason削除の判断を残す。[追加検証記録](../testing/neovim-extra-lsp-validation.md)に手順と残件を整理した。
 - 追加LSPの通常UI確認：利用者が5サーバーすべての継続使用を選択。Emmetの補完、Oxlintとgolangci-lintの診断・修正後解消、sqlsのDB接続なしの初期化は成功した。Tailwindは接続NGで直接原因は未確定。プロジェクト依存と起動状態を次の確認対象とし、Mason削除は保留する。[手動結果](../testing/neovim-extra-lsp-validation.md#通常uiの手動確認結果2026-11-15)を参照。
 - Tailwindの依存・起動調査：元の確認用フォルダでは隔離自動接続が成功し、接続NGは再現しなかった。承認された検証用tailwindcss 3.4.17を別の一時フォルダへ導入し、依存解決・自動接続・標準クラスと独自色の補完・競合診断2件と解消を確認。LSP設定は変更せず、[通常UIの再確認](../testing/neovim-tailwind-validation.md)を残す。
 - Tailwindの通常UI再確認：利用者がTermux + proot Ubuntu・Neovim v0.12.6・Mason無効化モードで接続、root、mise管理の実行パス、標準クラスと独自色の補完、競合診断と修正・保存後の解消を確認した。検証用v3構成の確認は完了。以前の接続NGの直接原因は未特定のままとし、NV-03はMason削除の範囲とsqlsのDB機能・未確認環境の扱いを整理する。[利用者の結果](../testing/neovim-tailwind-validation.md#通常uiの手動確認結果2026-11-15)を参照。
+
+##### Mason依存の除去と通常起動
+
 - NV-03のMason依存除去：有効なLSP構成と旧_index.luaからMason宣言・初期化・移行用切替・インストール用コマンドを除去し、23サーバー・補完・整形連携を維持した。関連23テストとmake checkのunittest 247件・Bats 18件が成功、skipなし。実Neovimの隔離有効化も成功。既存データは削除せず、[適用後の通常起動確認](../setup/neovim-dependencies.md#利用者による適用と通常起動の確認)を残す。
 - Mason除去の通常起動報告：利用者のLSP・補完・診断・整形は成功したが、Mason読み込み判定はtrue。読み取り比較で展開済みLSP設定3件が旧版であり、Mason宣言・初期化が残っていることを確認した。追加のソース修正や適用操作は行わず、適用後の新規プロセス確認を残す。
 - NV-03の完了確認：利用者が各確認用プロジェクトでLSP接続・実行パス・root、補完・診断・保存時整形の維持とMason読み込み判定falseを確認した。読み取り比較でも展開済みLSP設定3件がソースと一致した。確認済み環境・用途の範囲でNV-03を完了とし、sqlsのDB機能と未確認環境は別途確認、既存Masonデータは保持する。
+
+#### DAPの修正とPythonの追加検証
+
+##### Python・Luaの設定修正と通常UI確認
+
 - NV-04の再現テスト：fix/neovim-dapで13件を追加し、登録・Luaのtype・Python選択とアダプター・UIイベント・キー操作の11件が失敗、既存動作2件が成功した。設定コードと依存は未変更。make checkは新規11件で失敗し、既存247件と独立実行のBats 18件は成功。[再現記録](../testing/neovim-dap-verification.md)を参照。
 - NV-04の設定修正と依存導入：DAP登録・Python選択・UIイベント・キー操作を修正し、debugpy 1.8.22をPython 3.13.18の専用環境へ導入した。診断用の迂回なしで回帰22件が成功し、全体はunittest 269件・Bats 18件成功、skipなし。Python・Luaの停止・変数取得・ステップ・続行を隔離実確認し、[通常UIの確認](../setup/neovim-dap.md)を残す。設定適用・commit・pushは未実施。
 - NV-04の通常UI確認完了：利用者がTermux + proot Ubuntu・Neovim v0.12.6でPython・Luaの停止・ステップ・変数表示・処理完了、UI表示、必要範囲のF11・F12、ログポイント・REPL、切断・終了の成功を確認した。展開済みDAP設定3件もソースと一致。確認済み環境・用途の範囲でNV-04を完了とする。miseのPythonは既存ツール用に保持し、新規プロジェクトはuvを使う意図を記録した。
+
+##### uv管理Pythonの検証
+
 - uv管理Pythonの追加検証：承認されたPython 3.14.10で.venvを作成し、既存のPython 3.13.18/debugpy 1.8.22から停止・各ステップ・変数取得・対象終了コード0を確認した。prootのonly-managed判定による再作成を確認し、検証用設定はmanagedへ変更。アダプター終了コード1が出る場合があり、[通常UIと終了警告の確認](../testing/neovim-uv-python-dap.md)を残す。既存の設定コード・ツールは変更していない。
 - uv管理Pythonの通常UI確認（2026-11-16）：利用者がTermux + proot Ubuntu・Neovim v0.12.6で、uv runの警告・不要な.venv再作成なし、停止・各ステップ・変数表示・対象処理完了、アダプター終了警告なしを確認した。REPLの版は3.14.10、アダプターのlatest実体は1.8.22。通常UIの検証は成功として記録し、過去の隔離実行で出た終了コード1の原因は未特定として残す。別作業のtmux変更は保持。
 
@@ -305,14 +376,26 @@ systemdの起動は共通前提ではない。`systemd-detect-virt`は存在時�
 - 対応方針：配置期待値を現状に合わせ、重要な振る舞いをモックで検証する。静的検査の実行コマンドを整え、その後CIに移す。
 - 注意・検証：DF-01用テスト追加はこの項目の一部にすぎない。実認証・インストール・実HOMEに依存しないこと、テンプレート検査で秘密取得を実行しないことを確認する。
 - 対応状況：完了。受け入れ条件は配置期待値の修正、重要処理の回帰テスト、ローカルとCIでの共通検証、PRでの必須チェック成立。実機の導入・認証・アプリ互換性は対象外とし、DF-04・DF-09などで継続する。Makefileにcheck・test・test-unit・test-smoke・lintを追加し、`tests/check.py`へ検証処理をまとめた。必須ツール不足・予期しないskip・全件skipを失敗にし、任意skipはYazi実起動の1件に限定する。
+
+#### CI定義とGit hooks
+
 - CI定義：`.github/workflows/check.yml`でmainへのpush・pull request・手動実行を対象に、Ubuntu 24.04上で同じmake checkを呼ぶ。checkoutはコミットSHA、chezmoiはv2.73.0と公開SHA256を固定。検証ツールのAPT導入はCI準備段階だけで行う。contents権限はread、checkoutの認証情報保存とリポジトリ秘密情報の利用はしない。
 - Git hooks：`lefthook.yml`でpre-commitのステージ済み空白確認と、pre-pushのmake checkを定義した。現在の作業コピーには既存hookとの競合がないことを確認してインストールした。core.hooksPathは変更せず、forceによる上書きも行っていない。PATHのlefthookがなければ失敗する設定とし、別のパッケージ管理ツールによる探索・導入を防ぐ。個別設定はlefthook-local.ymlとしてGitから除外する。
+
+#### hookの検証と導入結果
+
 - hook検証：`tests/test_git_hooks.py`で一時Gitリポジトリを使い、stage差分、部分stage保持、make失敗の伝播、実行ファイル不足時の停止、Termux相当シバンを検証する。実作業コピーのhookはcommit・pushせずに直接起動し、送信対象のないpre-pushはforce指定でジョブを実行して確認する。Termuxの実行ファイル準備・シバン補正は[再現手順](../testing/git-hooks.md)へ記録した。
 - hook導入後の結果：インストール済みpre-pushのforce実行からunittest全165件・Bats全18件・静的検証が成功し、skipはなかった。空stageでのpre-commitはジョブskipとなり、生成hookの起動は正常終了した。ステージ済み差分の検証は一時リポジトリの回帰テストで確認した。core.hooksPathは未設定のまま、実indexにも差分はない。CI定義のYAML解析・埋め込みBashの構文とShellCheckも成功した。
+
+#### 静的検証とCIの確認
+
 - 静的検証：対象一覧を`tests/check.py`で管理する。認証bootstrapのログ書式に限るSC2059除外と、update-agent-skillsの既存整形差分の保留を[検証手順](../testing/checks.md)へ明記した。テンプレートを直接ShellCheck・shfmtへ渡さず、既存の隔離展開テストで扱う。
 - CI導入時の検証：make checkからunittest全158件・Bats全18件と静的検証が成功し、skipはなかった。依存不足時のCLI異常終了、予期しないskip、任意skip、全件skip、検証コマンド失敗を確認した。ワークフローのYAML解析と埋め込みBashの構文・ShellCheckも成功した。当時はGitHub上のCI実行が未確認だった。
 - 利用者確認：main-ci rulesetのcheck登録・PR必須化に加え、[PR #1](https://github.com/shioyakizakana/dotfiles/pull/1)と[PR #2](https://github.com/shioyakizakana/dotfiles/pull/2)のcheck成功・マージの報告を受けた。PR #2のpush時にはローカルでもunittest全165件・Bats全18件・静的検証が成功し、skipはなかった。
 - 継続確認：Termuxネイティブのビルド・生成hookの起動はDF-04・DF-09の[実機チェックリスト](../testing/termux-checklist.md)へ引き継ぐ。重要処理の回帰テストは、今後の変更と不具合に応じて拡充する。
+
+#### 配置テストとコミット
+
 - 配置期待値の修正時の検証：修正前はBats17件成功・Brewfile期待パスで1件失敗。修正後はBats全18件とunittest全116件が成功した。パッケージ導入や実環境への適用は行っていない。
 - コミット：配置テストの期待パスと名称の修正を`e62489f`へコミットした。
 
@@ -377,6 +460,8 @@ uv run --no-project ~/.agents/skills/natural-japanese/scripts/calques.py --json 
 ```
 
 初回のlint.pyは1件を指摘したため、該当箇所を「管理対象全体のレンダリング」へ変更した。calques.pyが指摘した分岐の表現も、実行有無を明示する文へ変更した。「展開先」「配置先」「fallback先」は実際のファイル配置を表す用語、「入口」は過去の言い換えの記録なので残した。ID、重要度、技術的な判断、対応状況は変更していない。
+
+#### DF修正後の文章確認
 
 DF-01対応後の再実行結果：lint.pyは指摘0件、calques.pyは候補13件で、いずれも正常終了。候補は上記の技術用語と引用であり、理由を確認して残した。newfacts.pyが検出した追加語3件は、今回動作を確認したuvと辞書依存の名称なので残した。textlint-jaは23件の指摘が残り、終了コード1。依存不足は解消しており、文書の表現に対する指摘と区別する。
 
