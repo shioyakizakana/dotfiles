@@ -122,6 +122,22 @@ class EnvironmentPolicyTests(unittest.TestCase):
                     self.assertEqual(config["settings"], settings)
                     self.assertEqual(config["tools"], default["tools"])
 
+    def test_mise_holds_node_and_npm_tools_for_three_days_and_other_tools_for_one_day(self):
+        for flags in ({}, {"prootUbuntu": True}):
+            with self.subTest(flags=flags):
+                config = load_mise_config(flags)
+                self.assertEqual(config["settings"]["minimum_release_age"], "24h")
+                tools = config["tools"]
+                expected = {name for name in tools if name.startswith("npm:")} | {"node", "npm", "pnpm", "bun"}
+                delays = {
+                    name: options["minimum_release_age"]
+                    for name, options in tools.items()
+                    if isinstance(options, dict) and "minimum_release_age" in options
+                }
+                self.assertEqual(delays, dict.fromkeys(expected, "3d"))
+                for name in expected:
+                    self.assertEqual(tools[name]["version"], "latest")
+
     def test_yazi_svg_uses_magick_only_on_termux_and_preserves_git_fetchers(self):
         template = (ROOT / "home/dot_config/yazi/yazi.toml.tmpl").read_text()
         for flags in ({"termux": True}, {"prootUbuntu": True}, {}):

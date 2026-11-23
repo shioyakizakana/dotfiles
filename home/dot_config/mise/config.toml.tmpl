@@ -6,6 +6,7 @@ idiomatic_version_file_enable_tools = [
   "ruby",
 ]
 experimental = true
+minimum_release_age = "24h"
 {{ if get . "prootUbuntu" }}
 npm.package_manager = "npm"
 npm.shell_out = true
@@ -18,7 +19,7 @@ atuin = "latest"
 bat = "latest"
 bats = "latest"
 biome = "latest"
-bun = "latest"
+bun = { version = "latest", minimum_release_age = "3d" }
 "cargo:sleek" = "latest"
 delta = "latest"
 deno = "latest"
@@ -45,28 +46,28 @@ lua = "5.1" # NeoVim0.12に合わせる
 lua-language-server = "latest"
 marksman = "latest"
 neovim = "latest"
-node = "24"
-npm = "latest"
-"npm:@astrojs/language-server" = "latest"
-"npm:@fsouza/prettierd" = "latest"
-"npm:@olrtg/emmet-language-server" = "latest"
-"npm:@openai/codex" = "latest"
-"npm:@tailwindcss/language-server" = "latest"
-"npm:@vtsls/language-server" = "latest"
-"npm:@vue/language-server" = "latest"
-"npm:basedpyright" = "latest"
-"npm:bash-language-server" = "latest"
-"npm:editprompt" = "latest"
-"npm:oxlint" = "latest"
-"npm:prettier" = "latest"
-"npm:svelte-language-server" = "latest"
-"npm:typescript" = "latest"
-"npm:vscode-langservers-extracted" = "latest"
-"npm:yaml-language-server" = "latest"
+node = { version = "latest", minimum_release_age = "3d" }
+npm = { version = "latest", minimum_release_age = "3d" }
+"npm:@astrojs/language-server" = { version = "latest", minimum_release_age = "3d" }
+"npm:@fsouza/prettierd" = { version = "latest", minimum_release_age = "3d" }
+"npm:@olrtg/emmet-language-server" = { version = "latest", minimum_release_age = "3d" }
+"npm:@openai/codex" = { version = "latest", minimum_release_age = "3d" }
+"npm:@tailwindcss/language-server" = { version = "latest", minimum_release_age = "3d" }
+"npm:@vtsls/language-server" = { version = "latest", minimum_release_age = "3d" }
+"npm:@vue/language-server" = { version = "latest", minimum_release_age = "3d" }
+"npm:basedpyright" = { version = "latest", minimum_release_age = "3d" }
+"npm:bash-language-server" = { version = "latest", minimum_release_age = "3d" }
+"npm:editprompt" = { version = "latest", minimum_release_age = "3d" }
+"npm:oxlint" = { version = "latest", minimum_release_age = "3d" }
+"npm:prettier" = { version = "latest", minimum_release_age = "3d" }
+"npm:svelte-language-server" = { version = "latest", minimum_release_age = "3d" }
+"npm:typescript" = { version = "latest", minimum_release_age = "3d" }
+"npm:vscode-langservers-extracted" = { version = "latest", minimum_release_age = "3d" }
+"npm:yaml-language-server" = { version = "latest", minimum_release_age = "3d" }
 pipx = "latest"
 "pipx:debugpy" = { version = "latest", uvx_args = "--python 3.13", pipx_args = "--python python3.13" }
 "pipx:ty" = "latest"
-pnpm = "latest"
+pnpm = { version = "latest", minimum_release_age = "3d" }
 poppler = "latest"
 python = ["3.13", "3.12"]
 ripgrep = "latest"

@@ -444,6 +444,8 @@ miseの通常導入・再適用と更新後には、ホームのmise環境で `c
 
 Proot版Ubuntuでは、Bash・Zshの起動時と `update_apps mise` で既存の `~/.local/bin/mise` を優先する。更新時にこのmiseが実行できなければ、エラーで停止する。共通シェル設定と更新スクリプトをまとめて適用し、新しいシェルで `mise --version` が `linux-arm64` を示すことを確認する。
 
+公開直後のリリースの保留は全体で24時間を維持し、`npm:` の16ツールとNode・npm・pnpm・Bun本体は3日間に延ばす。Nodeは `latest` を指定し、メジャー更新も対象とする。完全な版指定や、プロジェクトで直接実行するパッケージ導入への適用範囲は[リリース保留の方針](docs/setup/tool-version-policy.md#公開直後のリリースの保留)を参照する。
+
 現在の固定値、追加固定の候補、更新処理の制約は[バージョン管理方針](docs/setup/tool-version-policy.md)を参照する。Termuxでの確認は[実機チェックリスト](docs/testing/termux-checklist.md)に沿って段階ごとに記録する。
 
 Yaziは26.9.1へ固定し、公開プラグイン・flavorを`home/dot_config/yazi/package.toml`で管理する。自動導入は行わない。既存manifestの統合確認と`ya pkg install`の手順は[Yazi依存一覧](docs/setup/yazi-dependencies.md)を参照する。
