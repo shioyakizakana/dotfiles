@@ -12,7 +12,7 @@ return {
     "rfc_csv",
     "rfc_semicolon",
   },
-  keys = { { "<Space>sc", "<Cmd>CsvViewToggle<CR>" } },
+  keys = { { "<leader>cv", "<Cmd>CsvViewToggle<CR>", desc = "[csv]表形式の表示切替" } },
   ---@module "csvview"
   ---@type CsvView.Options
   opts = {

@@ -5,7 +5,7 @@ vim.g.mapleader = " " --リーダーキー
 --ノーマルモード
 vim.keymap.set("n", "<leader>w", ":w<CR>")     --編集中のファイルを保存
 vim.keymap.set("n", "<leader>q", ":q<CR>")     --終了
-vim.keymap.set("n", "<leader>fr", ":oldfiles") --最近開いたファイルの一覧表示
+vim.keymap.set("n", "<leader>fR", "<cmd>oldfiles<CR>", { desc = "[file]履歴ファイルの一覧表示" })
 
 -- インサートモードでエスケープ
 vim.keymap.set("i", "<leader>jk", "<Esc>")

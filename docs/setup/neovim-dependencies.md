@@ -117,6 +117,43 @@ Codexは実環境への適用とプラグイン更新を行っていない。検
 
 その後、利用者が `chezmoi apply` と `:Lazy update nvim-scrollbar` を実行して再起動し、通知の解消とスクロールバーの正常動作を確認した。
 
+### キーマップの衝突整理（2026-11-23）
+
+リーダーキーはSpace。独自のグローバル設定で競合していた割り当てを次のキーへ移した。
+
+| 操作 | 以前のキー | 変更後のキー |
+| --- | --- | --- |
+| CSVの表形式表示を切り替える | `<Space>sc` | `<Space>cv` |
+| SnacksでLSPの参照一覧を表示する | `gr` | `grr` |
+| SnacksでLSPの宣言一覧を表示する | `gD` | `<Space>lD` |
+| `oldfiles` で履歴ファイルを一覧表示する | `<Space>fr` | `<Space>fR` |
+| Snacksのpickerで通知履歴を検索する | `<Space>n` | `<Space>sn` |
+
+`<Space>sc` はコマンド履歴、`<Space>fr` は最近使ったファイルのpicker、`<Space>n` は通知履歴表示として維持する。`gD` はLSP接続時のバッファ限定設定で宣言へ直接ジャンプする。Snacks内の `<Space>sb` の重複は1件へまとめた。参照一覧を `grr` へ移し、`gr` の即時実行をなくすことで、リネームの `grn` や実装ジャンプの `gri` を入力できるようにした。
+
+Quickerは `opts.keys` からQuickfix限定の `>`・`<`・`gr` を登録する。`<C-j><Space>f` の検索では、Oilのディレクトリを優先し、それ以外では `vim.fn.expand("%:p:h")` で現在のファイルのディレクトリを取得する。LazyGitの説明文もlazy.nvimが認識する `desc` フィールドへ修正した。`oldfiles` はキー入力だけでコマンドを実行する。
+
+回帰テストは `python3 -B -m unittest discover -s tests -p test_neovim_keymaps.py -v` で実行する。修正前は7件中6件が失敗し、修正後は7件すべてが成功した。全体の `make check` はunittest 381件・Bats 18件成功、skipなし。
+
+別途、隔離HOMEのNeovim 0.12.6と導入済みlazy.nvimで49プラグインの定義を解析し、独自グローバルキー118件の重複がないことを確認した。LSPの処理と外部検索を記録用関数に置き換え、キー列を一括投入して、参照・リネーム・実装・宣言・CSV・履歴の実行先を確認した。Quickerでは一時ファイルだけを使い、前後の行の表示・非表示・内容更新を実プラグインで確認した。
+
+その後、利用者が `chezmoi apply` で設定を適用し、通常画面で `grn`・`gri`・`grr` によるシンボル名のプロジェクト全体でのリネーム・実装ジャンプ・参照一覧表示を確認した。
+
+Quickfixでは、利用者がテスト用の `sample.txt` の検索結果2件を使い、`>` による前後の行の表示、`<` による非表示、1件目の編集後の `gr` による内容更新を通常画面で確認した。LSPの3キーとQuickfixの3キーは、実機確認まで完了した。
+
+実環境への適用は利用者が次のコマンドで行う。
+
+```shell
+chezmoi apply --exclude=scripts --refresh-externals=never \
+  "$HOME/.config/nvim/lua/config/keymaps.lua" \
+  "$HOME/.config/nvim/lua/plugins/editor/csvview.lua" \
+  "$HOME/.config/nvim/lua/plugins/ui/quicker.lua" \
+  "$HOME/.config/nvim/lua/plugins/utils/lazygit.lua" \
+  "$HOME/.config/nvim/lua/plugins/utils/snacks/index.lua"
+```
+
+適用後はNeovimを再起動する。設定の再読み込みだけでは旧キーが残る場合がある。通常の編集画面で `grn`・`gri`・`grr` と表の変更後キーを確認し、Quickfixでは `>`・`<`・`gr` を確認する。Codexは実環境への適用とプラグイン更新を行っていない。
+
 ## 環境別に移行完了を判断する
 
 | 環境 | 管理ソース上の状態 | 利用者が確認する範囲 |
