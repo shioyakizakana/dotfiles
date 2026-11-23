@@ -74,7 +74,7 @@ return {
     dependencies = { "nvim-treesitter/nvim-treesitter" },
     event = { "BufNewFile", "BufRead" },
     keys = {
-      { "<space>tc", ":TSContext toggle<CR>" },
+      { "<space>tc", ":TSContext toggle<CR>", desc = "[ui]構文のコンテキスト表示を切り替える" },
     },
     opts = {
       max_lines = 3,

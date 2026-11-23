@@ -121,8 +121,80 @@ assert(key[2] == "<cmd>LazyGit<CR>")
 assert(type(key.desc) == "string" and #key.desc > 0, "キー定義のdescで説明を渡す")
 ''')
 
+    def test_common_and_lazy_keys_have_japanese_descriptions(self):
+        self.run_lua(r'''
+load_spec("config/keymaps")
+for _, map in ipairs(maps) do
+  assert(map.opts.desc and map.opts.desc:match("^%[[a-z]+%].+") and map.opts.desc:find("[\128-\255]"), map.lhs)
+end
+for _, name in ipairs({
+  "dap/keymaps", "ui/yazi", "utils/which-key", "editor/md-render",
+  "editor/in-and-out", "editor/treesj", "utils/nvim-treesitter",
+}) do
+  local spec = load_spec("plugins/" .. name)
+  local plugins = spec[1] and type(spec[1]) == "table" and spec or {spec}
+  if name == "dap/keymaps" then plugins = {{keys=spec}} end
+  for _, plugin in ipairs(plugins) do
+    for _, key in ipairs(plugin.keys or {}) do
+      assert(type(key) == "table" and key.desc and key.desc:match("^%[[a-z]+%].+")
+        and key.desc:find("[\128-\255]"), name)
+    end
+  end
+end
+''')
+
+    def test_generated_descriptions_translate_without_changing_unknown_text(self):
+        self.run_lua(r'''
+local translate = load_spec("config/keymap-descriptions").translate
+assert(translate("Add surrounding") == "[edit]囲み文字を追加")
+assert(translate("vim.lsp.buf.rename()") == "[lsp]シンボル名を変更")
+assert(translate(":cnext") == "[quickfix]Quickfixの次の項目へ移動")
+assert(translate("cnext") == "[quickfix]Quickfixの次の項目へ移動")
+assert(translate(":unknown future command") == ":unknown future command")
+assert(translate("blink.cmp: Show, Show Documentation") == "[completion]候補を表示・説明を表示")
+assert(translate("skkelua handleKey (<c-j>)") == "[input]SKKのキー入力を処理 (<c-j>)")
+assert(translate("vim.snippet.jump if active, otherwise <Tab>") ==
+  "[completion]スニペット内を移動（それ以外は <Tab>）")
+assert(translate("[lsp]既存の説明") == "[lsp]既存の説明")
+assert(translate("既存の日本語") == "既存の日本語")
+assert(translate("unknown future action") == "unknown future action")
+assert(translate(nil) == nil)
+''')
+
+    def test_picker_translation_keeps_original_mapping_and_search_text(self):
+        self.run_lua(r'''
+local transform = load_spec("config/keymap-descriptions").picker_transform
+local callback = function() return "accepted" end
+local original = {desc="blink.cmp: Accept",callback=callback,expr=1,lhs="<CR>"}
+local item = {item=original,text="original search text"}
+transform(item)
+assert(original.desc == "blink.cmp: Accept", "内部判定に使われる元のdescを維持する")
+assert(item.item.desc == "[completion]候補を確定")
+assert(item.item.callback == callback and item.item.expr == 1 and item.item.lhs == "<CR>")
+assert(item.text:find("original search text",1,true) and item.text:find("候補を確定",1,true))
+local no_desc = {item={lhs="q"},text="no description"}
+transform(no_desc)
+assert(no_desc.text == "no description" and no_desc.item.desc == nil)
+''')
+
+    def test_display_plugins_use_translation_and_include_language_maps(self):
+        self.run_lua(r'''
+vim.api = {nvim_set_hl=function() end}
+local descriptions = require("config.keymap-descriptions")
+local picker = load_spec("plugins/utils/snacks/picker").config.sources.keymaps
+assert(picker.transform == descriptions.picker_transform)
+local language_maps = false
+for _, mode in ipairs(picker.modes) do
+  if mode == "l" then language_maps = true end
+end
+assert(language_maps, "SKKの言語マップを一覧に含める")
+local replacements = load_spec("plugins/utils/which-key").opts.replace.desc
+assert(replacements[#replacements] == descriptions.translate)
+''')
+
 
 HARNESS = r'''
+package.path = arg[1] .. "/lua/?.lua;" .. package.path
 os.execute = function() error("外部コマンドを実行しない") end
 io.popen = os.execute
 maps = {}

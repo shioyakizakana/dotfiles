@@ -11,17 +11,17 @@ return {
       "<Space>y",
       mode = { "n", "v" },
       "<cmd>Yazi<cr>",
-      desc = "[ui]Open yazi at the current file",
+      desc = "[ui]現在のファイルの場所でYaziを開く",
     },
     {
       "<Space>cy",
       "<cmd>Yazi cwd<cr>",
-      desc = "[ui]Open the file manager in nvim's working directory",
+      desc = "[ui]作業ディレクトリでYaziを開く",
     },
     {
       "<Space>Y",
       "<cmd>Yazi toggle<cr>",
-      desc = "[ui]Resume the last yazi session",
+      desc = "[ui]前回のYaziを再開",
     },
   },
   ---@type YaziConfig | {}

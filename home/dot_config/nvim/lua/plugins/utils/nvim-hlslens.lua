@@ -5,19 +5,21 @@ return {
   config = function()
     require("hlslens").setup()
 
-    local opts = { silent = true }
+    local function opts(desc)
+      return { silent = true, desc = desc }
+    end
 
     vim.keymap.set(
       "n",
       "n",
       [[<Cmd>execute("normal! " . v:count1 . "n")<CR><Cmd>lua require("hlslens").start()<CR>]],
-      opts
+      opts("[search]次の検索結果へ移動")
     )
     vim.keymap.set(
       "n",
       "N",
       [[<Cmd>execute("normal! " . v:count1 . "N")<CR><Cmd>lua require("hlslens").start()<CR>]],
-      opts
+      opts("[search]前の検索結果へ移動")
     )
 
     local hlslens = require("hlslens")
@@ -27,7 +29,7 @@ return {
       vim.fn.setreg("/", current_word)
       vim.opt.hlsearch = true
       hlslens.start()
-    end, opts)
+    end, opts("[search]カーソル下の単語を強調表示"))
     vim.keymap.set("n", "#", function()
       local current_word = vim.fn.expand("<cword>")
       vim.api.nvim_feedkeys(";%s/" .. current_word .. "//g", "n", false)
@@ -37,7 +39,7 @@ return {
       vim.api.nvim_feedkeys(ll, "n", false)
       vim.opt.hlsearch = true
       hlslens.start()
-    end, opts)
+    end, opts("[search]カーソル下の単語を置換"))
 
     local function getVisualSelection()
       vim.cmd("noau normal! 'vy")
@@ -65,7 +67,7 @@ return {
       vim.fn.setreg("/", current_word)
       vim.opt.hlsearch = true
       hlslens.start()
-    end, opts)
+    end, opts("[search]選択した文字列を強調表示"))
 
     vim.keymap.set("v", "#", function()
       local current_word = getVisualSelection()
@@ -82,6 +84,6 @@ return {
       vim.api.nvim_feedkeys(ll, "n", false)
       vim.opt.hlsearch = true
       hlslens.start()
-    end, opts)
+    end, opts("[search]選択した文字列を置換"))
   end,
 }
