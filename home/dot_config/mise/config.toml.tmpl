@@ -6,6 +6,10 @@ idiomatic_version_file_enable_tools = [
   "ruby",
 ]
 experimental = true
+{{ if get . "prootUbuntu" }}
+npm.package_manager = "npm"
+npm.shell_out = true
+{{ end }}
 
 [tools]
 7zip = "latest"

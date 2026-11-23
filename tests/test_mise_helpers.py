@@ -70,12 +70,27 @@ case "$1" in
     [[ "${PATH_EXIT:-0}" == 0 ]] || exit "$PATH_EXIT"
     printf '%s\n' "$MOCK_BIN"
     ;;
+  exec)
+    [[ "${MISE_AUTO_INSTALL:-}" == 0 && "$2" == -- ]] || exit 99
+    shift 2
+    "$@"
+    ;;
   *) exit 99 ;;
 esac
 ''')
         mise.chmod(0o755)
         self.mise_fixture = self.base / "mise-fixture"
         self.mise_fixture.write_text(mise.read_text())
+        for name in ("codex", "oxlint", "tsc"):
+            command = self.bin / name
+            command.write_text(
+                f'#!{BASH}\n'
+                f'printf "%s\\n" "{name} $*" >> "$TRACE"\n'
+                '[[ "$*" == --version ]] || exit 99\n'
+                'printf "dummy version\\n"\n'
+                f'[[ "${{FAIL_TOOL:-}}" != {name} ]] || exit 17\n'
+            )
+            command.chmod(0o755)
         for name, output, status in (
             ("nim", 'Nim Compiler Version ${NIM_VERSION:-2.4.2} [Linux: arm64]', "NIM_VERSION_EXIT"),
             ("nimlsp", 'nimlsp v0.4.7 - built for Nim version ${NIMLSP_BUILD_VERSION:-2.4.2}', "NIMLSP_VERSION_EXIT"),
@@ -276,6 +291,33 @@ esac
         self.assertEqual(rocks, ["luarocks --lua-version=5.1 install luacheck"])
         self.assertIn("nimble install -y nimlsp", trace)
         self.assertLess(trace.index(rocks[0]), trace.index("nimble install -y nimlsp"))
+
+    def test_bulk_installation_checks_npm_tools_before_supplementary_tools(self):
+        result = self.run_main()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        trace = self.trace.read_text().splitlines()
+        checks = [f"{tool} --version" for tool in ("codex", "oxlint", "tsc")]
+        self.assertEqual([line for line in trace if line in checks], checks)
+        for line in checks:
+            self.assertLess(trace.index(line), trace.index("rustup component list --installed"))
+            self.assertGreater(trace.index(line), trace.index(f"mise --cd {self.base} install"))
+
+    def test_npm_tool_failure_stops_before_supplementary_work_even_with_output(self):
+        for tool in ("codex", "oxlint", "tsc"):
+            with self.subTest(tool=tool):
+                self.trace.write_text("")
+                result = self.run_main(FAIL_TOOL=tool)
+                self.assertEqual(result.returncode, 17, result.stderr)
+                self.assertIn(f"起動確認: {tool} --version", result.stdout)
+                self.assertNotIn("rustup", self.trace.read_text())
+
+    def test_missing_npm_tool_is_not_automatically_reinstalled(self):
+        (self.state / "mise").write_text("node24")
+        (self.bin / "codex").unlink()
+        result = self.run_main("")
+        self.assertEqual(result.returncode, 127, result.stderr)
+        self.assert_no_install()
+        self.assertNotIn("rustup", self.trace.read_text())
 
     def test_decline_and_eof_allow_retry(self):
         declined = self.run_main("n\n")

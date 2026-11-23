@@ -1,6 +1,6 @@
 # NeovimのPython・Luaデバッグ
 
-NV-04でDAPの登録・UIイベント・Python選択・キー操作を修正した。管理ソースはhome/dot_config/nvim/lua/plugins/dap/、導入定義はhome/dot_config/mise/config.tomlにある。Masonは使用しない。
+NV-04でDAPの登録・UIイベント・Python選択・キー操作を修正した。管理ソースはhome/dot_config/nvim/lua/plugins/dap/、導入定義はhome/dot_config/mise/config.toml.tmplにある。Masonは使用しない。
 
 ## Pythonの導入担当と選択
 

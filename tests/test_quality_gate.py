@@ -79,8 +79,11 @@ class QualityGateTests(unittest.TestCase):
         calls = []
         with mock.patch.object(check, "require_tools"), \
              mock.patch.object(check, "run_command", side_effect=lambda args: calls.append(args)), \
+             mock.patch.object(check, "load_mise_config") as load_config, \
+             mock.patch.object(check, "render_template", return_value="#!/usr/bin/env bash\n"), \
              contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(check.run_lint(), 0)
+        load_config.assert_called_once_with()
         for arguments in calls:
             for argument in arguments[1:]:
                 self.assertFalse(str(argument).endswith(".tmpl"), arguments)

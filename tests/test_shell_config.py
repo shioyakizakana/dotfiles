@@ -1,6 +1,5 @@
 """隔離HOMEとダミーツールでBash・Zshの起動設定を検証する。"""
 
-import json
 import os
 from pathlib import Path
 import re
@@ -9,6 +8,8 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+
+from chezmoi_template import render_template
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -51,25 +52,12 @@ class ShellConfigTests(unittest.TestCase):
         return path
 
     def write_startup_files(self, proot=False, termux=None):
-        source = self.base / "empty-source"
-        source.mkdir(exist_ok=True)
-        config = self.base / "config.json"
         data = {"prootUbuntu": proot}
         if termux is not None:
             data["termux"] = termux
-        config.write_text(json.dumps({"data": data}))
-        rendered = subprocess.run(
-            [CHEZMOI, "--config", str(config), "--source", str(source),
-             "--destination", str(self.home), "--cache", str(self.base / "cache"),
-             "--persistent-state", str(self.base / "state.db"),
-             "--refresh-externals=never", "--no-tty", "execute-template"],
-            input=(ROOT / "home/dot_zshrc.tmpl").read_text(),
-            env=self.environment, capture_output=True, text=True, timeout=10,
-        )
-        self.assertEqual(rendered.returncode, 0, rendered.stderr)
         for name, text in (
             (".bashrc", (ROOT / "home/dot_bashrc").read_text()),
-            (".zshrc", rendered.stdout),
+            (".zshrc", render_template(ROOT / "home/dot_zshrc.tmpl", data)),
         ):
             # システム補完や固定パスのHomebrewを実行せず、起動設定全体を読む。
             for host_path in (
@@ -96,7 +84,8 @@ class ShellConfigTests(unittest.TestCase):
         shutil.copytree(common, self.home / ".config/shell", dirs_exist_ok=True)
         environment = self.home / ".config/shell/env.sh"
         # ホストのsnap内のコマンドも探索対象へ入れない。
-        environment.write_text(environment.read_text().replace("/snap/bin", str(self.base / "snap/bin")))
+        environment.write_text(render_template(common / "env.sh.tmpl", data).replace(
+            "/snap/bin", str(self.base / "snap/bin")))
 
     def run_shell(self, shell, command, **environment):
         if shell == "bash":
@@ -240,6 +229,44 @@ class ShellConfigTests(unittest.TestCase):
                 self.assertNotIn("no such file", result.stderr.lower())
                 paths = result.stdout.strip().split(":")
                 self.assertEqual(paths.count(str(self.local_bin)), 1)
+
+    def test_proot_prefers_local_mise_for_startup_and_child_commands(self):
+        self.write_startup_files(proot=True)
+        local_mise = self.local_bin / "mise"
+        local_mise.write_text(
+            f'#!{BASH}\nprintf "%s\\n" "linux-mise $*" >> "$TRACE"\nprintf ":\\n"\n'
+        )
+        local_mise.chmod(0o755)
+        self.environment["PATH"] += ":" + str(self.local_bin)
+        for shell in ("bash", "zsh"):
+            with self.subTest(shell=shell):
+                self.trace.write_text("")
+                result = self.run_shell(shell,
+                    '. "$HOME/.config/shell/env.sh"\n'
+                    '. "$HOME/.config/shell/env.sh"\n'
+                    f'"{BASH}" -c \'mise --version\'\n'
+                    'printf "%s\\n" "$PATH"')
+                self.assertEqual(result.returncode, 0, result.stderr)
+                trace = self.trace.read_text().splitlines()
+                self.assertIn(f"linux-mise activate {shell}", trace)
+                self.assertIn("linux-mise --version", trace)
+                self.assertFalse(any(line.startswith("mise ") for line in trace), trace)
+                self.assertEqual(result.stdout.splitlines()[-1].split(":").count(str(self.local_bin)), 1)
+
+    def test_non_proot_and_termux_keep_mise_path_priority(self):
+        local_mise = self.local_bin / "mise"
+        local_mise.write_text(f'#!{BASH}\nprintf "forbidden:local-mise\\n" >> "$TRACE"\nexit 91\n')
+        local_mise.chmod(0o755)
+        self.environment["PATH"] += ":" + str(self.local_bin)
+        for proot, termux in ((False, False), (False, True), (True, True)):
+            self.write_startup_files(proot=proot, termux=termux)
+            for shell in ("bash", "zsh"):
+                with self.subTest(proot=proot, termux=termux, shell=shell):
+                    self.trace.write_text("")
+                    result = self.run_shell(shell, ":")
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertIn(f"mise activate {shell}", self.trace.read_text())
+                    self.assertNotIn("forbidden:local-mise", self.trace.read_text())
 
     def test_startup_without_npm_does_not_add_an_implicit_bin_path(self):
         for shell in ("bash", "zsh"):

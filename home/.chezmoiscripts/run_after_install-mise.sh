@@ -126,7 +126,7 @@ install_nimlsp() {
 }
 
 main() {
-  local missing remaining tool_paths installer
+  local missing remaining tool_paths installer tool
   INSTALL_APPROVED=0
   INSTALL_CANCELLED=0
   export PATH="$HOME/.local/bin:$PATH"
@@ -159,6 +159,11 @@ $remaining" >&2
       return 1
     fi
   fi
+
+  for tool in codex oxlint tsc; do
+    log "起動確認: $tool --version"
+    MISE_AUTO_INSTALL=0 mise --cd "$HOME" exec -- "$tool" --version || return "$?"
+  done
 
   # env全体には秘密値も含まれ得るため、PATHだけを取得する。
   tool_paths="$(mise --cd "$HOME" env --paths)" || return "$?"

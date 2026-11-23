@@ -6,7 +6,11 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+import tempfile
 import unittest
+
+from chezmoi_template import render_template
+from mise_config import load_mise_config
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -21,13 +25,15 @@ BASH_FILES = (
     "home/.chezmoiscripts/run_after_install-apt.sh",
     "home/.chezmoiscripts/run_after_install-brew.sh",
     "home/.chezmoiscripts/run_after_install-mise.sh",
-    "home/dot_config/shell/env.sh",
     "home/dot_config/shell/aliases.sh",
     "home/dot_config/shell/functions.sh",
     "home/dot_config/bash/completions/proton-pass.bash",
-    "home/dot_local/bin/executable_update_apps",
     "home/dot_local/bin/executable_update-agent-skills",
     "home/dot_local/bin/executable_textlint-ja",
+)
+TEMPLATE_BASH_FILES = (
+    "home/dot_config/shell/env.sh.tmpl",
+    "home/dot_local/bin/executable_update_apps.tmpl",
 )
 
 
@@ -71,7 +77,7 @@ def run_smoke():
 def run_lint():
     import tomllib
 
-    require_tools(("bash", "zsh", "shellcheck", "shfmt", "git", "lefthook"))
+    require_tools(("bash", "zsh", "chezmoi", "shellcheck", "shfmt", "git", "lefthook"))
     run_command([sys.executable, "-B", "tests/check_instruction_budget.py", "--global-source"])
     run_command(["lefthook", "validate"])
     for name in (*BASH_FILES, "home/dot_bashrc", "home/dot_bash_aliases"):
@@ -88,9 +94,20 @@ def run_lint():
         if name != "home/dot_local/bin/executable_update-agent-skills":
             # 既存の整形差分は別途扱い、実行される処理は変更しない。
             run_command(["shfmt", "-i", "2", "-d", name])
+    with tempfile.TemporaryDirectory(prefix="shell lint ") as directory:
+        for proot in (False, True):
+            base = Path(directory) / str(proot)
+            base.mkdir()
+            for name in TEMPLATE_BASH_FILES:
+                path = base / Path(name).stem
+                path.write_text(render_template(ROOT / name, {"prootUbuntu": proot}))
+                run_command(["bash", "-n", str(path)])
+                run_command(["shellcheck", str(path)])
+                run_command(["shfmt", "-i", "2", "-d", str(path)])
     for path in sorted((ROOT / "tests").glob("*.py")):
         ast.parse(path.read_text(), filename=str(path))
-    for path in [ROOT / "home/dot_config/mise/config.toml", *sorted((ROOT / "home/dot_config/yazi").glob("*.toml"))]:
+    load_mise_config()
+    for path in sorted((ROOT / "home/dot_config/yazi").glob("*.toml")):
         tomllib.loads(path.read_text())
     # Go templateを静的検査へ直接渡さない。ダミー展開は既存unittestが担当する。
     run_command(["git", "diff", "--check"])

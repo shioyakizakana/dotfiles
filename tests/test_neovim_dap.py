@@ -4,8 +4,9 @@ from pathlib import Path
 import shutil
 import subprocess
 import tempfile
-import tomllib
 import unittest
+
+from mise_config import load_mise_config
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -15,7 +16,7 @@ LUA = shutil.which("lua")
 
 class NeovimDapDependencyTests(unittest.TestCase):
     def test_debugpy_has_managed_tool_definition(self):
-        tools = tomllib.loads((ROOT / "home/dot_config/mise/config.toml").read_text())["tools"]
+        tools = load_mise_config()["tools"]
         debugpy = tools["pipx:debugpy"]
         self.assertTrue(debugpy["version"])
         self.assertEqual(debugpy["uvx_args"], "--python 3.13")

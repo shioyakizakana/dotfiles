@@ -4,7 +4,7 @@ DF-06の一覧集約は完了している。検証環境との一致と設定の
 
 ## 現在の指定と追加固定の候補
 
-ツール一覧は`home/dot_config/mise/config.toml`で管理する。通常適用は`run_after_install-mise.sh`で不足を確認し、HOMEを対象に`mise install`する。スクリプト内に別のツール一覧や版指定は追加しない。
+ツール一覧は`home/dot_config/mise/config.toml.tmpl`で管理する。通常適用は`run_after_install-mise.sh`で不足を確認し、HOMEを対象に`mise install`する。スクリプト内に別のツール一覧や版指定は追加しない。
 
 | 対象 | 現在の指定 | 当面の扱い・更新時の確認 |
 | --- | --- | --- |
@@ -22,6 +22,16 @@ DF-06の一覧集約は完了している。検証環境との一致と設定の
 `24`や`3.13`は完全な版固定ではない。同じ系列内でも導入時期によって版が変わる。`latest`も含め、現在の指定だけで全環境を同じ状態に再現できるとは扱わない。
 
 Termux本体にはこのUbuntu向けmise設定を展開しない。Termuxのpkgで導入するmise本体、手動準備するlefthook、各バックエンドのAndroid互換性は別途確認する。
+
+## Proot版Ubuntuのnpm導入と起動確認
+
+Proot版Ubuntuでは、実行可能な `~/.local/bin/mise` がある場合、Bash・Zshの起動時にそのディレクトリをPATHの先頭へ移す。更新処理も同じ場所を優先し、実行可能なmiseがなければエラーで停止する。これにより、Termux側のmiseでUbuntu向けツールを更新することを防ぐ。環境判定には既存の `prootUbuntu` フラグを使い、Termuxのフラグが有効な場合はこの処理を適用しない。
+
+mise設定はchezmoiの `prootUbuntu` フラグに従い、Proot版Ubuntuの場合だけ `npm.package_manager = "npm"` と `npm.shell_out = true` を追加する。npm CLIによる導入とバージョン情報の照会を使い、ほかのUbuntu環境にはこの追加設定を出さない。Termux本体へのmise設定の展開除外も維持する。
+
+通常導入・再適用と `update_apps mise` の更新成功後には、ホームのmise環境で `codex --version`、`oxlint --version`、`tsc --version` を順に確認する。確認には `MISE_AUTO_INSTALL=0` を指定し、コマンド欠落や非0終了を検出した時点で停止する。導入処理は後続の補助ツール確認へ進まず、更新処理はmise対象を失敗として集計する。指定されたほかの更新対象の処理は継続し、最終終了コードは1になる。
+
+設定の適用だけで、既存の不完全な依存配置を修復したことにはならない。起動確認に失敗した場合は、エラーと対象版を確認し、必要な再導入を別途判断する。認証・秘密情報の取得や、自動での削除・再導入は行わない。
 
 ## Nimの配布物を固定する理由と更新手順
 

@@ -69,7 +69,7 @@ chezmoiを中心に、Linux環境の設定ファイル、開発ツール、初�
 │   │   │   ├── executable_setup-proton-pass-project.tmpl
 │   │   │   ├── executable_proton-pass.tmpl
 │   │   │   ├── private_executable_proton-pass-key-cache.py.tmpl
-│   │   │   ├── executable_update_apps
+│   │   │   ├── executable_update_apps.tmpl
 │   │   │   ├── executable_update-agent-skills
 │   │   │   └── executable_textlint-ja
 │   │   └── share/textlint-ja/
@@ -355,7 +355,7 @@ make -C "$HOME/.local/share/chezmoi" apply
 | --- | --- |
 | `run_after_install-apt.sh` | 不足パッケージがある場合に確認し、一覧更新後に`--no-upgrade`で不足分を導入 |
 | `run_after_install-brew.sh` | Homebrewの導入を確認し、`~/.Brewfile`の不足依存を`--no-upgrade`で導入 |
-| `run_after_install-mise.sh` | `~/.config/mise/config.toml`に従い不足ツールを`mise install`で導入。Rust・LuaRocks・nimlspの補助依存も確認 |
+| `run_after_install-mise.sh` | `~/.config/mise/config.toml`に従い不足ツールを`mise install`で導入。Codex・Oxlint・TypeScriptの起動と、Rust・LuaRocks・nimlspの補助依存も確認 |
 
 | 環境 | APT | Homebrew | mise一括導入・管理設定 |
 | --- | --- | --- | --- |
@@ -438,7 +438,11 @@ APTは一覧更新・upgrade・autoremove・autoclean、Homebrewはupdate・upgr
 
 miseの確認・更新はHOMEを対象にする。outdatedが非0で終了した場合はupgradeへ進まず、更新失敗として集計する。HOME配下の追加設定や環境変数の上書きはmiseの仕様に従う。
 PATHに該当するパッケージマネージャーがなければ省略する。これはchezmoiの環境別除外とは独立した処理なので、`all`を指定する前に実行環境と対象を確認する。
-miseのツール一覧は`home/dot_config/mise/config.toml`で管理し、多くは`latest`を指定している。全ツールのバージョンを厳密に固定した構成ではない。
+miseのツール一覧は`home/dot_config/mise/config.toml.tmpl`で管理し、多くは`latest`を指定している。Proot版Ubuntuではnpm CLIで情報照会・導入する設定を追加する。全ツールのバージョンを厳密に固定した構成ではない。
+
+miseの通常導入・再適用と更新後には、ホームのmise環境で `codex --version`、`oxlint --version`、`tsc --version` を確認する。失敗した場合は導入・更新を成功扱いにせず、チェック中の自動インストールも行わない。[環境別の設定と起動確認](docs/setup/tool-version-policy.md#proot版ubuntuのnpm導入と起動確認)を参照する。
+
+Proot版Ubuntuでは、Bash・Zshの起動時と `update_apps mise` で既存の `~/.local/bin/mise` を優先する。更新時にこのmiseが実行できなければ、エラーで停止する。共通シェル設定と更新スクリプトをまとめて適用し、新しいシェルで `mise --version` が `linux-arm64` を示すことを確認する。
 
 現在の固定値、追加固定の候補、更新処理の制約は[バージョン管理方針](docs/setup/tool-version-policy.md)を参照する。Termuxでの確認は[実機チェックリスト](docs/testing/termux-checklist.md)に沿って段階ごとに記録する。
 

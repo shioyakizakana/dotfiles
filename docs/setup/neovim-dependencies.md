@@ -16,7 +16,7 @@ Masonからmiseへの段階的な移行に伴い、管理ソースにある依�
 
 | 処理・依存 | 現在の担当と根拠 | 移行時の扱い |
 | --- | --- | --- |
-| Neovim本体 | `home/dot_config/mise/config.toml:43`の`neovim = "latest"` | 固定せず、miseの一括更新時に他ツールとともに最新版へ更新する |
+| Neovim本体 | `home/dot_config/mise/config.toml.tmpl`の`neovim = "latest"` | 固定せず、miseの一括更新時に他ツールとともに最新版へ更新する |
 | 起動順序 | `init.lua`→`lua/config/init.lua`→`lua/config/lazy.lua` | base・indent・ui・keymaps・filetypeもプラグインより先に読む |
 | lazy.nvim | `lua/config/lazy.lua:1-41`で不足時にGit clone、`stable`ブランチ | 他プラグインの導入はlazy.nvim。miseへ移さない |
 | プラグイン更新確認 | 同ファイル末尾の`checker = { enable = true }` | オフライン検証では実行しない |
@@ -400,7 +400,7 @@ DAPの設定登録、Pythonのアダプターと対象Pythonの選択、UIイベ
 普段は各環境でプラグインを更新し、LSP・補完・Treesitter等の変更前に手動で保存する。スナップショットと設定のGit履歴を組み合わせて復旧する。Neovim本体や外部ツールの固定は別途判断し、この設計で版を変更しない。
 
 - `home/.chezmoiignore`は`.config/nvim/lazy-lock.json`を展開対象から除外している。これはGitの除外設定とは異なるため、実装時にソース側の`/home/dot_config/nvim/lazy-lock.json`も`.gitignore`へ明示する。既存のchezmoi除外は維持する。
-- Bashは`home/dot_bashrc`、Zshは`home/dot_zsh/path.zsh`から共通の`home/dot_config/shell/env.sh`を読む。共通関数の定義をここから読み込めば、Zshだけのfunctionsディレクトリへ重複配置せずに済む。
+- Bashは`home/dot_bashrc`、Zshは`home/dot_zsh/path.zsh`から共通の`home/dot_config/shell/env.sh.tmpl`の展開結果を読む。共通関数の定義をここから読み込めば、Zshだけのfunctionsディレクトリへ重複配置せずに済む。
 - 旧手動配置の`~/scripts/shell/funciton.sh`は互換処理として維持し、今回の機能を追加しない。既存関数との名前の衝突時は上書きせず警告する。
 
 ### 保存先とファイル構成
@@ -591,7 +591,7 @@ Gitはグローバル・システム設定と環境変数による上書きを�
 
 ### Neovim本体の更新方針とNV-05の完了範囲（2026-11-17）
 
-利用者の方針により、Neovim本体は現時点でバージョン固定せず、miseの一括更新時に他ツールと同時に最新版へ更新する。既存のneovim = "latest"を維持し、版固定の検討をNV-05の残件から外す。home/dot_local/bin/executable_update_appsのmise対象は、すでにHOMEを対象としたmise upgradeを実行するため、コード変更は不要。
+利用者の方針により、Neovim本体は現時点でバージョン固定せず、miseの一括更新時に他ツールと同時に最新版へ更新する。既存のneovim = "latest"を維持し、版固定の検討をNV-05の残件から外す。home/dot_local/bin/executable_update_apps.tmplのmise対象は、すでにHOMEを対象としたmise upgradeを実行するため、Neovimの更新にはコード変更が不要。
 
 プラグインは各環境で更新し、必要時にlockfileを保存する方針を維持する。スナップショットには保存時のNeovimの版を記録するが、本体バイナリの保存や巻き戻しは行わない。
 
