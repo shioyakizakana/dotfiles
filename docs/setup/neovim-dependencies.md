@@ -95,6 +95,28 @@ Rust設定は`rustc`と`cargo`も呼ぶ（`after/lsp/rust_analyzer.lua:22-23,84-
 
 UbuntuのAPT定義にはbuild-essential・cmake・makeがあるが、全プラグインのビルド成功を保証しない。tree-sitter CLIはmise、RustコンパイラーはmiseのRustが担当する。パーサー・補完のネイティブモジュールについては、採用revisionの要件を確認して必要なC/C++コンパイラー等を確定する。
 
+### nvim-scrollbar v2への移行
+
+`ui/nvim-scrollbar.lua` はv2の設定書式を使う。v2はすでに `main` へ統合されているため、別のブランチ指定は追加しない。必要なNeovimは0.11以上。[公式の移行案内](https://github.com/petertriho/nvim-scrollbar/issues/121)と[設定の対応表](https://github.com/petertriho/nvim-scrollbar/blob/main/docs/migration.md)を参照する。
+
+| 以前の設定 | v2での設定 |
+| --- | --- |
+| `hide_if_all_visible = true` | `scrollbar.hide_if_all_visible = true` |
+| `show_in_active_only = true` | `scrollbar.visibility = "active"` |
+| `excluded_filetypes` | `exclude.filetypes` |
+
+除外対象の `prompt`・`cmp_docs`・`cmp_menu`・`noice` はリスト形式で引き継ぎ、v2の既定リストを置き換える。VSCode内での無効化と `VeryLazy` での読み込みも維持する。
+
+2026-11-23の移行前の確認では、導入済みプラグインとlockfileは通知を追加した旧版の `00fe857` を指していた。設定の修正だけでプラグイン本体がv2になるわけではない。利用者が適用するときは、次の操作を行う。
+
+1. `chezmoi apply --exclude=scripts --refresh-externals=never "$HOME/.config/nvim/lua/plugins/ui/nvim-scrollbar.lua"` で設定を反映する。
+2. Neovimで `:Lazy update nvim-scrollbar` を実行し、本体もv2の `main` へ更新する。この操作は[lockfileも更新する](https://lazy.folke.io/usage)。
+3. Neovimを再起動し、通知・設定エラーが出ないこと、アクティブな画面だけに表示されること、全行が収まる場合と除外ファイルタイプで非表示になることを確認する。
+
+Codexは実環境への適用とプラグイン更新を行っていない。検証ではv2の `4d2551c` の公開Luaソースを一時領域に置き、隔離HOMEのNeovim 0.12.6で旧設定の拒否を再現した。修正後は `setup()` が成功し、正規化後の表示条件・除外4種類・minimap無効を確認した。VSCode条件も確認済み。
+
+その後、利用者が `chezmoi apply` と `:Lazy update nvim-scrollbar` を実行して再起動し、通知の解消とスクロールバーの正常動作を確認した。
+
 ## 環境別に移行完了を判断する
 
 | 環境 | 管理ソース上の状態 | 利用者が確認する範囲 |
