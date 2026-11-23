@@ -37,12 +37,24 @@ update_brew() {
 }
 
 update_mise() {
+{{- if and (get . "prootUbuntu") (not (get . "termux")) }}
+  local PATH="$HOME/.local/bin:$PATH"
+  if [[ ! -x "$HOME/.local/bin/mise" ]]; then
+    log "Proot版Ubuntu用のmiseが見つかりません: $HOME/.local/bin/mise"
+    return 1
+  fi
+{{- end }}
   command -v mise >/dev/null 2>&1 || return 0
+  local tool
 
   log "Updating mise..."
 
-  mise --cd "$HOME" outdated &&
-    mise --cd "$HOME" upgrade
+  mise --cd "$HOME" outdated || return "$?"
+  mise --cd "$HOME" upgrade || return "$?"
+  for tool in codex oxlint tsc; do
+    log "起動確認: $tool --version"
+    MISE_AUTO_INSTALL=0 mise --cd "$HOME" exec -- "$tool" --version || return "$?"
+  done
 }
 
 run_update() {

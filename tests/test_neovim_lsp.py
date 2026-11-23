@@ -4,8 +4,9 @@ from pathlib import Path
 import shutil
 import subprocess
 import tempfile
-import tomllib
 import unittest
+
+from mise_config import load_mise_config
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -15,7 +16,7 @@ LUA = shutil.which("lua")
 
 class NeovimDependencyTests(unittest.TestCase):
     def test_tools_provide_enabled_servers_and_go_formatter(self):
-        tools = tomllib.loads((ROOT / "home/dot_config/mise/config.toml").read_text())["tools"]
+        tools = load_mise_config()["tools"]
         required = (
             "npm:@vtsls/language-server", "npm:@vue/language-server",
             "npm:svelte-language-server", "npm:oxlint",

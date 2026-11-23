@@ -57,6 +57,7 @@ APTはrootなら直接実行し、非rootならsudoを必要とする。導入�
 - Android版chezmoiを使うproot・QEMUも既存の初期設定が想定している。OS名だけでTermuxと判断せず、ゲスト環境のフラグを確認する。
 - termuxフラグがtrueの場合は、Ubuntuフラグが混在していても導入対象にしない。
 - prootへPREFIXが引き継がれていても、prootUbuntuフラグでAPT・miseを選ぶ。
+- Proot版UbuntuではBash・Zshの起動時とmise更新時に、既存の `~/.local/bin/mise` を優先する。更新時に実行可能なファイルがなければ、Termux側のmiseを使わず失敗として集計する。
 - TermuxではUbuntu用mise設定も対象外にする。既存のTermux側設定は取り込まず、上書きしない。独立したbootstrap-tools.shはTermux用pkgによる基礎導入に対応するが、chezmoi適用時の除外条件は維持する。
 
 ## 初期bootstrapのTermux対応

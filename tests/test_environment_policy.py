@@ -9,6 +9,8 @@ import tempfile
 import tomllib
 import unittest
 
+from mise_config import load_mise_config
+
 
 ROOT = Path(__file__).resolve().parents[1]
 CHEZMOI = shutil.which("chezmoi")
@@ -30,9 +32,9 @@ class EnvironmentPolicyTests(unittest.TestCase):
             (scripts / f"run_after_install-{name}.sh").write_text(
                 "#!/usr/bin/env bash\nexit 99\n"
             )
-        mise = self.source / "dot_config/mise/config.toml"
+        mise = self.source / "dot_config/mise/config.toml.tmpl"
         mise.parent.mkdir(parents=True)
-        mise.write_text("[tools]\n")
+        shutil.copyfile(ROOT / "home/dot_config/mise/config.toml.tmpl", mise)
         self.prefix = self.base / "data/data/com.termux/files/usr"
         (self.prefix / "bin").mkdir(parents=True)
         self.environment = {
@@ -84,7 +86,7 @@ class EnvironmentPolicyTests(unittest.TestCase):
             with self.subTest(flag=flag):
                 entries = self.managed({flag: True})
                 self.assertEqual(self.installer_names(entries), {"apt", "brew", "mise"})
-                self.assertIn("dot_config/mise/config.toml", entries)
+                self.assertIn("dot_config/mise/config.toml.tmpl", entries)
         entries = self.managed({"qemuUbuntu": True}, "android")
         self.assertEqual(self.installer_names(entries), {"apt", "brew", "mise"})
 
@@ -93,14 +95,48 @@ class EnvironmentPolicyTests(unittest.TestCase):
             with self.subTest(os_name=os_name):
                 entries = self.managed({"prootUbuntu": True}, os_name)
                 self.assertEqual(self.installer_names(entries), {"apt", "mise"})
-                self.assertIn("dot_config/mise/config.toml", entries)
+                self.assertIn("dot_config/mise/config.toml.tmpl", entries)
 
     def test_termux_excludes_ubuntu_installers_and_mise_configuration(self):
         for os_name in ("linux", "android"):
             with self.subTest(os_name=os_name):
                 entries = self.managed({"termux": True}, os_name)
                 self.assertEqual(self.installer_names(entries), set())
-                self.assertNotIn("dot_config/mise/config.toml", entries)
+                self.assertNotIn("dot_config/mise/config.toml.tmpl", entries)
+
+    def test_mise_npm_settings_are_only_added_for_proot(self):
+        default = load_mise_config()
+        self.assertNotIn("npm", default["settings"])
+        for flag in ("nativeUbuntu", "wslUbuntu", "qemuUbuntu", "prootUbuntu"):
+            for os_name in ("linux", "android"):
+                with self.subTest(flag=flag, os_name=os_name):
+                    result = self.run_chezmoi(
+                        ["execute-template"], {flag: True}, os_name,
+                        (ROOT / "home/dot_config/mise/config.toml.tmpl").read_text(),
+                    )
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    config = tomllib.loads(result.stdout)
+                    settings = dict(default["settings"])
+                    if flag == "prootUbuntu":
+                        settings["npm"] = {"package_manager": "npm", "shell_out": True}
+                    self.assertEqual(config["settings"], settings)
+                    self.assertEqual(config["tools"], default["tools"])
+
+    def test_mise_holds_node_and_npm_tools_for_three_days_and_other_tools_for_one_day(self):
+        for flags in ({}, {"prootUbuntu": True}):
+            with self.subTest(flags=flags):
+                config = load_mise_config(flags)
+                self.assertEqual(config["settings"]["minimum_release_age"], "24h")
+                tools = config["tools"]
+                expected = {name for name in tools if name.startswith("npm:")} | {"node", "npm", "pnpm", "bun"}
+                delays = {
+                    name: options["minimum_release_age"]
+                    for name, options in tools.items()
+                    if isinstance(options, dict) and "minimum_release_age" in options
+                }
+                self.assertEqual(delays, dict.fromkeys(expected, "3d"))
+                for name in expected:
+                    self.assertEqual(tools[name]["version"], "latest")
 
     def test_yazi_svg_uses_magick_only_on_termux_and_preserves_git_fetchers(self):
         template = (ROOT / "home/dot_config/yazi/yazi.toml.tmpl").read_text()
@@ -190,7 +226,8 @@ class EnvironmentPolicyTests(unittest.TestCase):
 
     def test_shared_shell_configuration_is_managed_across_environments(self):
         for source, destination in (
-            ("dot_config/shell/env.sh", "dot_config/shell/env.sh"),
+            ("dot_config/shell/env.sh.tmpl", "dot_config/shell/env.sh.tmpl"),
+            ("dot_local/bin/executable_update_apps.tmpl", "dot_local/bin/executable_update_apps.tmpl"),
             ("dot_config/shell/aliases.sh", "dot_config/shell/aliases.sh"),
             ("dot_bashrc", "dot_bashrc"),
             ("dot_bash_aliases", "dot_bash_aliases"),
@@ -203,7 +240,7 @@ class EnvironmentPolicyTests(unittest.TestCase):
             shutil.copyfile(ROOT / "home" / source, target)
         expected = {
             ".config/shell/env.sh", ".config/shell/aliases.sh", ".bashrc",
-            ".bash_aliases", ".zshrc", ".zsh/path.zsh", ".zsh/alias.zsh",
+            ".bash_aliases", ".zshrc", ".zsh/path.zsh", ".zsh/alias.zsh", ".local/bin/update_apps",
         }
         for flag, os_name in (
             ("termux", "linux"), ("termux", "android"),

@@ -12,7 +12,7 @@
 | golangci_lint_ls | golangci-lintの診断をNeovimへ渡す | miseのlangserverとgolangci-lintの2つ | プロジェクト側の上書きは空。nvim-lspconfigのcmd・Goルート探索・linterの版判定を継承 |
 | sqls | SQLの補完・DBスキーマ参照・クエリ操作 | mise `go:github.com/sqls-server/sqls`。接続情報は別途管理 | プロジェクト側の上書きは空。nvim-lspconfigのcmd・config.yml探索を継承。DB利用には接続設定が必要 |
 
-登録は`home/dot_config/nvim/lua/plugins/lsp/server-register.lua`、導入定義は`home/dot_config/mise/config.toml`で管理する。空の上書きファイルを未実装とは扱わない。使用するnvim-lspconfigの版によって継承する設定が変わるため、公開プラグインの版固定はNV-05で扱う。
+登録は`home/dot_config/nvim/lua/plugins/lsp/server-register.lua`、導入定義は`home/dot_config/mise/config.toml.tmpl`で管理する。空の上書きファイルを未実装とは扱わない。使用するnvim-lspconfigの版によって継承する設定が変わるため、公開プラグインの版固定はNV-05で扱う。
 
 利用者が5件すべての継続使用を選択したため、有効登録を維持する。EmmetはHTML等の構文支援、Tailwindはクラス名、Oxlintはlintという担当で、vtslsの型解析とは役割が異なる。golangci-lintはgoplsの診断と重なるルールを持つ場合があるが、今回の確認だけでは不要とは判断しない。未使用のサーバーを除外する場合は、利用者が用途を確認してから決める。
 

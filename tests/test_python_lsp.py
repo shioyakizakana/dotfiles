@@ -4,8 +4,9 @@ from pathlib import Path
 import shutil
 import subprocess
 import tempfile
-import tomllib
 import unittest
+
+from mise_config import load_mise_config
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -15,7 +16,7 @@ LUA = shutil.which("lua")
 
 class PythonToolTests(unittest.TestCase):
     def test_mise_defines_basedpyright_and_ruff_as_providers(self):
-        tools = tomllib.loads((ROOT / "home/dot_config/mise/config.toml").read_text())["tools"]
+        tools = load_mise_config()["tools"]
         self.assertTrue(tools["npm:basedpyright"])
         self.assertTrue(tools["ruff"])
         self.assertNotIn("npm:pyright", tools, "PythonのLSP導入定義を一本化する")

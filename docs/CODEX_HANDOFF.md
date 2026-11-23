@@ -156,7 +156,7 @@ PR #9のコミットは、2563be9（Python CLI・テスト）、311ee38（共通
 | --- | --- |
 | `home/dot_local/bin/executable_nvim-snapshot.py` | 保存・表示・整合性確認・復元準備 |
 | `home/dot_config/shell/functions.sh` | nvim_snapshot共通関数 |
-| `home/dot_config/shell/env.sh` | 共通関数の読み込み |
+| `home/dot_config/shell/env.sh.tmpl` | 共通関数の読み込み |
 | `.gitignore` | ソース側のlazy-lock.jsonを明示除外 |
 | `tests/test_neovim_snapshot.py` | スナップショットの回帰32件 |
 | `tests/test_shell_config.py` | 共通関数とGit除外の5件を追加 |
@@ -245,7 +245,7 @@ make check
 | Proton Passの呼び出し元 | [初期設定テンプレート](../home/.chezmoi.toml.tmpl)、[Git設定テンプレート](../home/dot_gitconfig.tmpl)、[Makefile](../Makefile) |
 | Proton Passの検証 | [setupテスト](../tests/test_proton_pass_setup.py)、[鍵キャッシュテスト](../tests/test_proton_pass_key_cache.py)、[利用者向け手順](setup/proton-pass.md) |
 | Neovimの設計と履歴 | [依存・NVタスク一覧](setup/neovim-dependencies.md)、[版管理方針](setup/tool-version-policy.md)、[DAP手順](setup/neovim-dap.md)、[uv DAP検証](testing/neovim-uv-python-dap.md) |
-| 直近の実装 | [スナップショットCLI](../home/dot_local/bin/executable_nvim-snapshot.py)、[共通関数](../home/dot_config/shell/functions.sh)、[mise設定](../home/dot_config/mise/config.toml)、[スナップショットテスト](../tests/test_neovim_snapshot.py) |
+| 直近の実装 | [スナップショットCLI](../home/dot_local/bin/executable_nvim-snapshot.py)、[共通関数](../home/dot_config/shell/functions.sh)、[mise設定](../home/dot_config/mise/config.toml.tmpl)、[スナップショットテスト](../tests/test_neovim_snapshot.py) |
 | 全体の背景 | [README](../README.md)、[監査・改善履歴](reviews/dotfiles-audit.md)、[環境別制御](testing/environment-matrix.md)、[PR運用](testing/pull-requests.md) |
 
 本書はtextlint・natural-japanese、ローカルリンク、テスト件数、差分書式を確認した。既存の全体テスト結果を再利用し、実認証・復号・設定適用・パッケージ操作・外部通信は行っていない。

@@ -1,11 +1,10 @@
 """Nimの配布定義を、公式リリースの公開メタデータと照合する。"""
 
-from pathlib import Path
-import tomllib
 import unittest
 
+from mise_config import load_mise_config
 
-ROOT = Path(__file__).resolve().parents[1]
+
 # 2026-11-14取得。ネットワークを使わず、URL・CPU・ダイジェストの組合せを検証する。
 # https://api.github.com/repos/nim-lang/nightlies/releases/tags/
 # 2026-11-13-version-2-4-b27dcb4f70883978e984e427cc24b64eeb7c875f
@@ -21,9 +20,7 @@ ASSETS = {
 
 class NimConfigTests(unittest.TestCase):
     def setUp(self):
-        self.nim = tomllib.loads(
-            (ROOT / "home/dot_config/mise/config.toml").read_text()
-        )["tools"]["nim"]
+        self.nim = load_mise_config()["tools"]["nim"]
 
     def test_version_is_pinned_to_release_with_arm64_asset(self):
         self.assertEqual(self.nim["version"], "2.4.2")

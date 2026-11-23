@@ -9,6 +9,8 @@ import time
 import tomllib
 import unittest
 
+from mise_config import load_mise_config
+
 
 CONFIG = Path(__file__).resolve().parents[1] / "home/dot_config/yazi"
 YAZI = shutil.which("yazi")
@@ -41,7 +43,7 @@ class YaziConfigTests(unittest.TestCase):
         self.assertEqual(len(entries), len(set(flavors.values())))
 
     def test_public_packages_pin_revisions_and_record_content_hashes(self):
-        mise = tomllib.loads((CONFIG.parent / "mise/config.toml").read_text())
+        mise = load_mise_config()
         self.assertRegex(mise["tools"]["yazi"], r"^\d+\.\d+\.\d+$")
         packages = tomllib.loads((CONFIG / "package.toml").read_text())
         for kind in ("plugin", "flavor"):
