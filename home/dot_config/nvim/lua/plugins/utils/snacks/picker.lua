@@ -2,6 +2,12 @@ local M = {}
 
 ---@type snacks.picker.Config
 M.config = {
+  sources = {
+    keymaps = {
+      modes = { "n", "v", "x", "s", "o", "i", "c", "t", "l" },
+      transform = require("config.keymap-descriptions").picker_transform,
+    },
+  },
   formatters = {
     file = {
       filename_first = true,

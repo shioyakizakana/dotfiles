@@ -23,6 +23,6 @@ return {
         reloadOnColorSchemeChange = true,
       },
     })
-    vim.keymap.set("n", "<leader>z", "<cmd>NoNeckPain<CR>")
+    vim.keymap.set("n", "<leader>z", "<cmd>NoNeckPain<CR>", { desc = "[window]余白表示を切り替える" })
   end,
 }

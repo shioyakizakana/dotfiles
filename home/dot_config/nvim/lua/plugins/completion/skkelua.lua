@@ -33,7 +33,7 @@ return {
 		require("skkelua").register_kanatable("rom", {
 			["jj"] = "escape",
 		})
-		vim.keymap.set({ "i", "c", "t" }, "<C-j>", "<Plug>(skkelua-toggle)")
+		vim.keymap.set({ "i", "c", "t" }, "<C-j>", "<Plug>(skkelua-toggle)", { desc = "[input]SKKを切り替える" })
 
 		-- Ctrl+j
 		-- vim.keymap.set({ "i", "c", "t" }, "<C-j>", function()
@@ -63,7 +63,7 @@ return {
 				})
 			end
 			return "<C-e>"
-		end, { expr = true })
+		end, { expr = true, desc = "[input]SKKの変換を取り消す" })
 
 		-- skkの現在のモードをステータスラインに表示する
 		-- skkelua無効化の直前にskkeluaの状態をグローバル変数にセット

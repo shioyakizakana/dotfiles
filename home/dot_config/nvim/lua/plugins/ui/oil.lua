@@ -10,10 +10,10 @@ return {
           show_hidden = true,
       },
       keymaps = {
-        ["<CR>"] = "actions.select",
-        ["<C-CR>"] = { "actions.select", opts = { vertical = true } },
-        ["<C-s>"] = { "actions.select", opts = { horizontal = true } },
-        ["<C-t>"] = { "actions.select", opts = { tab = true } },
+        ["<CR>"] = { "actions.select", desc = "[file]選択した項目を開く" },
+        ["<C-CR>"] = { "actions.select", opts = { vertical = true }, desc = "[file]左右に分割して開く" },
+        ["<C-s>"] = { "actions.select", opts = { horizontal = true }, desc = "[file]上下に分割して開く" },
+        ["<C-t>"] = { "actions.select", opts = { tab = true }, desc = "[file]新しいタブで開く" },
         ["<C-p>"] = {
           "actions.preview",
           desc = "[ui]プレビューを開く"
@@ -32,7 +32,7 @@ return {
           mode = "n",
           desc = "[ui]親ディレクトリに移動"
         },
-        ["gh"] = { "actions.open_cwd", mode = "n" },
+        ["gh"] = { "actions.open_cwd", mode = "n", desc = "[directory]作業ディレクトリを開く" },
         ["g?"] = {
           "actions.show_help",
           mode = "n",
@@ -43,10 +43,11 @@ return {
           mode = "n",
           desc = "[ui]ソート順を変更"
         },
-        ["gx"] = "actions.open_external",
+        ["gx"] = { "actions.open_external", desc = "[file]外部アプリで開く" },
         ["g."] = {
           "actions.toggle_hidden",
-          mode = "n"
+          mode = "n",
+          desc = "[file]隠しファイルの表示を切り替える"
         },
         ["<Space>y"] = {
           callback = function()

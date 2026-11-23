@@ -7,7 +7,8 @@ return {
             function()
                 require("in-and-out").in_and_out()
             end,
-            mode = "i"
+            mode = "i",
+            desc = "[edit]括弧・引用符の内外へ移動"
         }
     },
     opts = { additional_targets = { "“", "”" } }

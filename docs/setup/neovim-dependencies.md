@@ -117,6 +117,73 @@ Codexは実環境への適用とプラグイン更新を行っていない。検
 
 その後、利用者が `chezmoi apply` と `:Lazy update nvim-scrollbar` を実行して再起動し、通知の解消とスクロールバーの正常動作を確認した。
 
+### キーマップの衝突整理（2026-11-23）
+
+リーダーキーはSpace。独自のグローバル設定で競合していた割り当てを次のキーへ移した。
+
+| 操作 | 以前のキー | 変更後のキー |
+| --- | --- | --- |
+| CSVの表形式表示を切り替える | `<Space>sc` | `<Space>cv` |
+| SnacksでLSPの参照一覧を表示する | `gr` | `grr` |
+| SnacksでLSPの宣言一覧を表示する | `gD` | `<Space>lD` |
+| `oldfiles` で履歴ファイルを一覧表示する | `<Space>fr` | `<Space>fR` |
+| Snacksのpickerで通知履歴を検索する | `<Space>n` | `<Space>sn` |
+
+`<Space>sc` はコマンド履歴、`<Space>fr` は最近使ったファイルのpicker、`<Space>n` は通知履歴表示として維持する。`gD` はLSP接続時のバッファ限定設定で宣言へ直接ジャンプする。Snacks内の `<Space>sb` の重複は1件へまとめた。参照一覧を `grr` へ移し、`gr` の即時実行をなくすことで、リネームの `grn` や実装ジャンプの `gri` を入力できるようにした。
+
+Quickerは `opts.keys` からQuickfix限定の `>`・`<`・`gr` を登録する。`<C-j><Space>f` の検索では、Oilのディレクトリを優先し、それ以外では `vim.fn.expand("%:p:h")` で現在のファイルのディレクトリを取得する。LazyGitの説明文もlazy.nvimが認識する `desc` フィールドへ修正した。`oldfiles` はキー入力だけでコマンドを実行する。
+
+回帰テストは `python3 -B -m unittest discover -s tests -p test_neovim_keymaps.py -v` で実行する。修正前は7件中6件が失敗し、修正後は7件すべてが成功した。全体の `make check` はunittest 381件・Bats 18件成功、skipなし。
+
+別途、隔離HOMEのNeovim 0.12.6と導入済みlazy.nvimで49プラグインの定義を解析し、独自グローバルキー118件の重複がないことを確認した。LSPの処理と外部検索を記録用関数に置き換え、キー列を一括投入して、参照・リネーム・実装・宣言・CSV・履歴の実行先を確認した。Quickerでは一時ファイルだけを使い、前後の行の表示・非表示・内容更新を実プラグインで確認した。
+
+その後、利用者が `chezmoi apply` で設定を適用し、通常画面で `grn`・`gri`・`grr` によるシンボル名のプロジェクト全体でのリネーム・実装ジャンプ・参照一覧表示を確認した。
+
+Quickfixでは、利用者がテスト用の `sample.txt` の検索結果2件を使い、`>` による前後の行の表示、`<` による非表示、1件目の編集後の `gr` による内容更新を通常画面で確認した。LSPの3キーとQuickfixの3キーは、実機確認まで完了した。
+
+利用者は `<Space>cv` のdescriptionが `[csv]表形式の表示切替` であることを通常画面で確認した。`<Space>lD`・`<Space>fR`・`<Space>sn` も、descriptionがそれぞれ `[lsp]宣言一覧表示`・`[file]履歴ファイルの一覧表示`・`[notification]通知履歴を検索` となり、対応する処理が実行されることを確認した。
+
+実環境への適用は利用者が次のコマンドで行う。
+
+```shell
+chezmoi apply --exclude=scripts --refresh-externals=never \
+  "$HOME/.config/nvim/lua/config/keymaps.lua" \
+  "$HOME/.config/nvim/lua/plugins/editor/csvview.lua" \
+  "$HOME/.config/nvim/lua/plugins/ui/quicker.lua" \
+  "$HOME/.config/nvim/lua/plugins/utils/lazygit.lua" \
+  "$HOME/.config/nvim/lua/plugins/utils/snacks/index.lua"
+```
+
+適用後はNeovimを再起動する。設定の再読み込みだけでは旧キーが残る場合がある。通常の編集画面で `grn`・`gri`・`grr` と表の変更後キーを確認し、Quickfixでは `>`・`<`・`gr` を確認する。Codexは実環境への適用とプラグイン更新を行っていない。
+
+### キーマップdescriptionの日本語化
+
+手動定義の英語descriptionを日本語へ置き換え、説明のなかった共通操作・検索・SKK切り替えなどにも `desc` を追加した。キー、モード、実行先は維持する。Oil・CSVの独自キーにも日本語の説明を指定する。
+
+今回日本語化した説明は、Snacksと同じ `[処理の種類]処理の内容` の書式に統一する。分類は `[lsp]`・`[edit]`・`[navigation]` などのタグで明示し、補完には `[completion]`、SKKには `[input]` を使う。表示例は `[lsp]シンボル名を変更`、`[edit]囲み文字を追加`、`[completion]候補を表示・説明を表示`。既存のタグを二重に付けず、未登録の説明は原文を維持する。
+
+内部生成される説明文は `config/keymap-descriptions.lua` で表示時に変換する。which-keyは `replace.desc`、Snacksはキーマップ一覧の `transform` を使う。Snacksでは一覧用のマップをコピーして説明欄を変換し、日本語も検索対象へ追加する。SKKの言語マップを確認できるよう、一覧の対象に `l` モードを含めた。
+
+| 対象 | 対応する範囲 |
+| --- | --- |
+| 手動定義 | 共通操作、DAP、Yazi起動、Markdown、Oil、CSV、検索、SKK切り替えなどの実際の `desc` を日本語化 |
+| 内部生成 | Neovim標準、blink.cmp、skkelua、mini.surround、TreeSJ、DAP画面の既知の説明をwhich-keyとSnacksの一覧で日本語表示 |
+| 未登録の文言 | 原文を維持。プラグイン更新などで新しい説明が増えても表示を妨げない |
+
+blink.cmpの `blink.cmp: `、skkeluaの `skkelua` など、内部判定に使われる元の説明は書き換えない。このため `:map` や `ExportKeymaps` では内部生成分の英語が残る。YaziのF1ヘルプなど、プラグイン専用画面に直接書かれた文章も今回の表示変換には含めない。
+
+検証では、既存分を含むキーマップ回帰テスト11件と、全体のunittest 385件・Bats 18件が成功し、skipはなかった。変更したLua 18ファイルも警告・エラーなし。隔離HOMEのNeovim 0.12.6と実プラグインで、which-keyの既定説明155件の変換、既定の説明整形、Snacksの一覧描画と日本語の検索用テキスト、元の `desc`・キー・コールバックの維持を確認した。49プラグインの定義解析では、lazy.nvimのキー説明100件が日本語になった。
+
+適用するときは次を実行し、Neovimを再起動する。
+
+```shell
+chezmoi apply --exclude=scripts --refresh-externals=never "$HOME/.config/nvim/lua"
+```
+
+利用者は、最初の日本語化を `chezmoi apply` で適用し、Neovim起動後に以前英語だったdescriptionが日本語になったことを確認した。その後、分類付き書式へ統一し、隔離環境でwhich-keyとSnacksの描画・検索・元のマップの維持を確認した。利用者が書式統一後の設定も適用し、通常画面で日本語descriptionが指定の書式になっていることを確認した。
+
+通常画面では `<Space>?` のwhich-key表示と、`<Space>sk` のキーマップ一覧を確認する。補完・囲み文字・SKKが有効な状態でも分類付きの日本語表示を確認し、従来のキー操作を試す。Codexは実環境への適用を行っていない。
+
 ## 環境別に移行完了を判断する
 
 | 環境 | 管理ソース上の状態 | 利用者が確認する範囲 |

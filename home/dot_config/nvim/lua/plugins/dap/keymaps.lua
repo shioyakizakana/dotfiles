@@ -6,35 +6,35 @@ return {
         function()
             require("dap").continue()
         end,
-        desc = "Debug: Continue",
+        desc = "[debug]実行を開始・継続",
     },
     {
         "<F10>",
         function()
             require("dap").step_over()
         end,
-        desc = "Debug: Step Over",
+        desc = "[debug]ステップオーバー",
     },
     {
         "<F11>",
         function()
             require("dap").step_into()
         end,
-        desc = "Debug: Step Into",
+        desc = "[debug]ステップイン",
     },
     {
         "<F12>",
         function()
             require("dap").step_out()
         end,
-        desc = "Debug: Step Out",
+        desc = "[debug]ステップアウト",
     },
     {
         "<leader>b",
         function()
             require("dap").toggle_breakpoint()
         end,
-        desc = "Debug: Toggle breakpoint",
+        desc = "[debug]ブレークポイントを切り替える",
     },
     {
         "<leader>B",
@@ -44,7 +44,7 @@ return {
                 vim.fn.input("Breakpoint condition: ")
             )
         end,
-        desc = "Debug: Set conditional breakpoint",
+        desc = "[debug]条件付きブレークポイントを設定",
     },
     {
         "<leader>dL",
@@ -54,27 +54,27 @@ return {
                 vim.fn.input("Log point message: ")
             )
         end,
-        desc = "Debug: Set log point",
+        desc = "[debug]ログポイントを設定",
     },
     {
         "<leader>dr",
         function()
             require("dap").repl.open()
         end,
-        desc = "Debug: Open REPL",
+        desc = "[debug]REPLを開く",
     },
     {
         "<leader>bl",
         function()
             require("dap").run_last()
         end,
-        desc = "Debug: Run last debug session",
+        desc = "[debug]前回のデバッグを再実行",
     },
     {
         "<F7>",
         function()
             require("dap-view").toggle()
         end,
-        desc = "Debug: Toggle DAP UI",
+        desc = "[debug]デバッグ画面を切り替える",
     },
 }

@@ -3,6 +3,19 @@ return {
     "folke/which-key.nvim",
     event = "VeryLazy",
     opts = {
+        replace = {
+            desc = {
+                { "<Plug>%(?(.*)%)?", "%1" },
+                { "^%+", "" },
+                { "<[cC]md>", "" },
+                { "<[cC][rR]>", "" },
+                { "<[sS]ilent>", "" },
+                { "^lua%s+", "" },
+                { "^call%s+", "" },
+                { "^:%s*", "" },
+                require("config.keymap-descriptions").translate,
+            },
+        },
     },
     keys = {
         {
@@ -10,7 +23,7 @@ return {
             function()
                 require("which-key").show({})
             end,
-            desc = "Buffer Local Keymaps (which-key)",
+            desc = "[keymap]キーマップ一覧を表示（which-key）",
         },
     },
 }

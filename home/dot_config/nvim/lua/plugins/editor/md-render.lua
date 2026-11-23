@@ -6,20 +6,20 @@ return {
     { "delphinus/budoux.lua", version = "*" }, -- optional: CJK p
   },
   keys = {
-    { 
+    {
       "<leader>mp",
       "<Plug>(md-render-preview)",
-      desc = "Markdown preview (toggle)"
+      desc = "[markdown]プレビューを切り替える"
     },
     {
       "<leader>mt",
       "<Plug>(md-render-preview-tab)",
-      desc = "Markdown preview in tab (toggle)"
+      desc = "[markdown]タブ内のプレビューを切り替える"
     },
     {
       "<leader>md",
       "<Plug>(md-render-demo)",
-      desc = "Markdown render demo"
+      desc = "[markdown]描画のデモを表示"
     },
   },
 }

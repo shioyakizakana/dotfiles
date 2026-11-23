@@ -10,7 +10,7 @@ return {
     { "<leader>,", function() Snacks.picker.buffers() end, desc = "[buffer]バッファ一覧表示" },
     { "<leader>/", function() Snacks.picker.grep() end, desc = "[search]Grep検索" },
     { "<leader>:", function() Snacks.picker.command_history() end, desc = "[command]コマンド履歴表示" },
-    { "<leader>n", function() Snacks.picker.notifications() end, desc = "[notification]通知履歴表示" },
+    { "<leader>sn", function() Snacks.picker.notifications() end, desc = "[notification]通知履歴を検索" },
     { "<leader>e", function() Snacks.explorer() end, desc = "[file]ファイルエクスプローラー表示" },
     -- find
     { "<leader>fb", function() Snacks.picker.buffers() end, desc = "[buffer]バッファ一覧表示" },
@@ -33,7 +33,6 @@ return {
     { "<leader>gp", function() Snacks.picker.gh_pr() end, desc = "[github]未解決Pull Request一覧表" },
     { "<leader>gP", function() Snacks.picker.gh_pr({ state = "all" }) end, desc = "[github]Pull Request一覧表" },
     -- Grep
-    { "<leader>sb", function() Snacks.picker.lines() end, desc = "[buffer]バッファの行を検索" },
     { "<leader>sB", function() Snacks.picker.grep_buffers() end, desc = "[search]開いているバッファをGrep検索" },
     { "<leader>sg", function() Snacks.picker.grep() end, desc = "[search]Grep検索" },
     { "<leader>sw", function() Snacks.picker.grep_word() end, desc = "[search]選択範囲または単語を検索", mode = { "n", "x" } },
@@ -61,8 +60,8 @@ return {
     { "<leader>uC", function() Snacks.picker.colorschemes() end, desc = "[ui]カラースキーム一覧表示" },
     -- LSP
     { "gd", function() Snacks.picker.lsp_definitions() end, desc = "[lsp]定義へ移動" },
-    { "gD", function() Snacks.picker.lsp_declarations() end, desc = "[lsp]宣言へ移動" },
-    { "gr", function() Snacks.picker.lsp_references() end, nowait = true, desc = "[lsp]参照一覧表示" },
+    { "<leader>lD", function() Snacks.picker.lsp_declarations() end, desc = "[lsp]宣言一覧表示" },
+    { "grr", function() Snacks.picker.lsp_references() end, desc = "[lsp]参照一覧表示" },
     { "gI", function() Snacks.picker.lsp_implementations() end, desc = "[lsp]実装へ移動" },
     { "gy", function() Snacks.picker.lsp_type_definitions() end, desc = "[lsp]型定義へ移動" },
     { "gai", function() Snacks.picker.lsp_incoming_calls() end, desc = "[lsp]着信呼び出し表示" },
@@ -106,11 +105,11 @@ return {
       "<C-j><space>f",
       mode = { "n", "i" },
       function ()
-        local curdir = vim.bo.filetype == "oil" and require("oil").get_current_dir() or vim.expand("%:p:h")
+        local curdir = vim.bo.filetype == "oil" and require("oil").get_current_dir() or vim.fn.expand("%:p:h")
         Snacks.picker.files( { dirs = { curdir } })
       end,
       silent = true,
-      desc = "[file]Oilで選択したファイルをSnacksで開く"
+      desc = "[file]現在のディレクトリからファイル検索"
     },
   },
   opts = function()

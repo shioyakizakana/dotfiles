@@ -134,6 +134,6 @@ vim.api.nvim_create_autocmd({ "FileType" }, {
 	group = group_name,
 	pattern = { "help", "man" },
 	callback = function()
-		vim.keymap.set("n", "q", "<Cmd>quit<CR>", { buffer = true, silent = true })
+		vim.keymap.set("n", "q", "<Cmd>quit<CR>", { buffer = true, silent = true, desc = "[help]ヘルプを閉じる" })
 	end,
 })
