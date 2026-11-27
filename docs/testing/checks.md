@@ -26,7 +26,7 @@ test_environment_policy.pyは、本文を直接評価する検証に加え、.ch
 
 検証用の環境に実PAT・age秘密鍵・Proton Passのセッションは不要。既存テストはダミーと隔離HOMEを使う。Batsは配置確認だけを行い、実際のchezmoi適用、実認証、パッケージ操作、update_appsは検証から呼ばない。
 
-プロジェクト別PATの関連テストは`test_proton_pass_setup.py`、`test_proton_pass_key_cache.py`、`test_proton_pass_completion.py`。認証対象の分離、TTL・所有者判定、初期登録コマンド、Bash・Zsh補完をダミーで確認する。実機成功報告と未確認範囲は[Proton Pass手順書](../setup/proton-pass.md#現在の状態)を参照する。
+プロジェクト別PATの関連テストは`test_proton_pass_setup.py`、`test_proton_pass_key_cache.py`、`test_proton_pass_completion.py`、`test_proton_pass_recovery.py`。認証対象の分離、TTL・所有者判定、初期登録コマンド、Bash・Zsh補完をダミーで確認する。recoveryテストは偽age・偽CLIと実プロセス・Unixソケットで、更新・復旧・同時利用・期限後の停止を確認する。実機成功報告と未確認範囲は[Proton Pass手順書](../setup/proton-pass.md#現在の状態)を参照する。
 
 ## 静的検証の対象と例外
 
