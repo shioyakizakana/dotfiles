@@ -1,19 +1,24 @@
 # Codex開発引き継ぎ
 
-作成日：2026-11-17。最終更新：2026-11-22。対象は各環境のdotfiles作業コピー。
+作成日：2026-11-17。最終更新：2026-11-27。対象は各環境のdotfiles作業コピー。
 
 この文書は会話とリポジトリを確認してまとめた作業記録。作業規約と操作承認はAGENTS.mdに従い、再開時にはGit状態を再確認する。秘密情報の実値は記載していない。
 
-## 現在の到達点（2026-11-22）
+<a id="現在の到達点2026-11-22"></a>
+<a id="現在の到達点2026-11-23"></a>
 
-今回の文書整理で確認した基点は、PR #23を取り込んだ `main` の `c859580`。PR #22の `92d9336` からこの基点までの変更は引き継ぎ文書2本だけで、実装の変更はない。再開する環境ごとに作業コピーのブランチ、HEAD、未コミット変更を確認する。
+## 現在の到達点（2026-11-27）
+
+今回の作業開始時に、PR #27を取り込んだ `main` の `4ab32d7` と、作業ツリーがクリーンであることを確認した。利用者から各PRの内容とGitHub Actionsの成功を確認してマージし、ローカルのmain更新と旧作業ブランチ削除を行ったとの報告を受けた。
+
+現在の作業ブランチは、このmainから作成した `test/proton-pass-recovery`。Proton Passの更新・復旧・同時利用・キャッシュ期限の隔離結合テスト6件と、利用者の実機確認手順を追加した。proot・Termuxの利用者報告を確認し、確認済みの範囲と未確認事項を文書へ反映した。Codexは製品コードと実際の認証情報を変更していない。再開する環境ごとに作業コピーのブランチ、HEAD、未コミット変更を確認する。
 
 現行仕様と残件は本節を参照する。「作業履歴」と1〜7節は当時の記録であり、ブランチ名、テスト件数、未実装・未決定の記述を現在の状態として扱わない。過去の操作承認も、再開後の作業への承認を意味しない。
 
 | 環境 | 確認済みの範囲と参照先 |
 | --- | --- |
 | Termux本体 | 基礎パッケージ導入、Bats、共通テスト、通常のpushからのpre-push、tmux、YaziのPNG・PDF・SVG表示、グローバルとプロジェクト別Proton Passの切り替えを確認済み。NeovimのNV-06も適用後にLSP・保存時整形・SKK入力を確認した。[Termux版の引き継ぎ](CODEX_TERMUX_HANDOFF.md)・[実機チェックリスト](testing/termux-checklist.md)・[Neovim実機確認](setup/neovim-dependencies.md#nv-06適用後のtermux実機確認) |
-| proot Ubuntu | プロジェクト別Proton Passの認証切り替え・保管庫の参照範囲・補完・鍵キャッシュを確認済み。NeovimのLSP、DAP、スナップショットは個別の検証記録にある範囲で確認済み。[Proton Pass手順書](setup/proton-pass.md#現在の状態)・[Neovimの依存と検証記録](setup/neovim-dependencies.md) |
+| proot Ubuntu | プロジェクト別Proton Passの認証切り替え・保管庫の参照範囲・補完・鍵キャッシュを確認済み。Linux版miseの優先とnpm CLIによる導入を修正し、利用者が起動確認と更新保留を含む `upd mise` の正常終了を確認した。Neovimの確認範囲は個別記録を参照。[Proton Pass手順書](setup/proton-pass.md#現在の状態)・[ツール更新方針](setup/tool-version-policy.md)・[Neovimの検証記録](setup/neovim-dependencies.md) |
 | WSL2・ネイティブ・QEMUのUbuntu | 対応する環境フラグと導入方法は[環境別の検証範囲](testing/environment-matrix.md)を参照。GitHub ActionsのUbuntuで共通テストは通っている。各環境の通常起動、アプリ操作、実認証の結果は個別に確認する。 |
 
 ### 現行仕様の参照先
@@ -21,12 +26,24 @@
 | 対象 | 確定済みの仕様と参照先 |
 | --- | --- |
 | 構築と環境制御 | 展開ソースは `home/`。Termuxは専用bootstrapとpkg、Ubuntu系はAPT・miseを使い、prootではHomebrewを除外する。[README](../README.md)・[環境別制御](testing/environment-matrix.md) |
+| miseと日常更新 | prootでは既存の `~/.local/bin/mise` を優先し、npmのpackage managerとshell-outを条件付きで設定する。導入・更新後にCodex・Oxlint・TypeScriptの起動を確認する。Nodeはlatestとし、npm関連20ツールを3日、その他を24時間保留する。[版管理方針](setup/tool-version-policy.md) |
 | Proton Pass | `--profile NAME` で明示選択し、指定なしはグローバル利用。プロジェクトごとにPAT暗号文・CLIセッション・暗号化鍵・鍵キャッシュを分離する。プロジェクト側はenv限定で、既存のPAT用identityを共有する。[仕様・実装記録](setup/proton-pass.md) |
 | 鍵キャッシュ | CLI暗号化鍵だけを保持し、PATとidentityはキャッシュしない。既定15分、15・30・45・60分を選択できる。[操作手順](setup/proton-pass.md#7-プロジェクト別patとキャッシュ期限の実装2026-11-18) |
-| Neovim | Mason依存の除去、DAP修正、NV-06の旧設定整理は実装済み。本体はlatestを維持する。[NVタスク一覧](setup/neovim-dependencies.md#修正候補と推奨順序)・[版管理方針](setup/tool-version-policy.md) |
+| Neovim | Mason依存の除去、DAP修正、NV-06の旧設定整理、scrollbar v2移行、キーマップの衝突修正とdescriptionの日本語化は対応済み。本体はlatestを維持する。[依存・検証記録](setup/neovim-dependencies.md)・[版管理方針](setup/tool-version-policy.md) |
 | スナップショット | `lazy-lock.json` はGit・chezmoi管理から除外し、必要時に手動保存する。`save`・`list`・`show`・`prepare` を備え、復元は別の明示操作で行う。[設計と確認記録](setup/neovim-dependencies.md#nv-05のスナップショット設計2026-11-17) |
 
-直近のTermuxでの共通検証記録は、unittest 362件・Bats 18件成功、skip 0件。今回の文書整理では全体テストを再実行しておらず、現在環境での動作確認結果ではない。[Termuxの検証記録](CODEX_TERMUX_HANDOFF.md#現在の到達点2026-11-22)
+### PR #24〜#27の完了内容
+
+| PR | 完了内容と利用者の確認 |
+| --- | --- |
+| #24 | READMEとdocsの現行仕様・過去記録を整理し、長いセクションを話題ごとに分割した |
+| #25 | prootのmise選択・npm導入・起動確認と更新保留を実装。Codex・Oxlint・TypeScriptの起動、更新保留のログと `upd mise` の正常終了を確認済み |
+| #26 | nvim-scrollbarをv2の設定書式へ移行。利用者が設定適用・プラグイン更新・再起動後に通知の解消と正常表示を確認 |
+| #27 | `grr` や `<Space>cv` などへ競合するキーを再配置し、Quicker等の設定不備を修正。descriptionを `[処理の種類]処理の内容` の日本語へ統一し、内部生成分はwhich-keyとSnacksの表示時に変換する。利用者がLSP・Quickfix・再配置キーと日本語表示を確認。詳細は[キーマップの記録](setup/neovim-dependencies.md#キーマップの衝突整理2026-11-23)を参照 |
+
+前回の全体検証は、PR #27のpre-pushでunittest 385件・Bats 18件成功、skip 0件。Lua 21ファイルの静的検証と、PRのGitHub Actionsも成功した。Termux本体の実機記録はunittest 362件・Bats 18件成功、skip 0件であり、今回の結果へ置き換えない。[Termuxの検証記録](CODEX_TERMUX_HANDOFF.md#現在の到達点2026-11-23)
+
+今回の自動検証と利用者の実機結果は下記のProton Pass検証欄へ記録した。実機確認は利用者が実施し、Codexは実サービスへの認証を再実行していない。
 
 ### 別環境で再開する手順
 
@@ -36,8 +53,29 @@
 
 ### 保留と後続作業
 
+- Proton Passの結合検証追加・手順整備・実機結果の整理は完了。[環境別の確認結果](setup/proton-pass.md#利用者の実機確認結果)に、prootでの認証失効後の復帰と、Termuxでの同時・順次利用、5秒TTL、新PAT更新を記録した。初回の検証用キャッシュ起動待ちタイムアウトと、Termuxの長時間経過後のinfo失敗の原因特定は後続調査として残す。
 - ツール未導入のTermuxを用意できないため、`make bootstrap-neovim-tools` の初回一括導入は保留。既存環境での再実行と、隔離HOMEでのNimLSP初回ビルドは確認済み。[一括導入の手順](setup/dependencies.md#neovim用ツールの一括導入)
-- PATの期限切れ・更新・復旧、複数プロジェクトの同時利用、sqlsの実DB接続は別途確認する。SOPSとmiseの連携は、対象プロジェクトが決まってから鍵の保管・復旧とタスクへの値の渡し方を設計する。[Proton Passの残件](setup/proton-pass.md#現在の状態)
+- PATそのものの期限経過による失効、logout失敗時の実機復旧、未許可項目への直接アクセス拒否、sqlsの実DB接続は未確認。SOPSとmiseの連携は、対象プロジェクトが決まってから鍵の保管・復旧とタスクへの値の渡し方を設計する。[Proton Passの残件](setup/proton-pass.md#現在の状態)
+
+### Proton Pass検証の進め方
+
+目的は、更新や認証失敗の後にも指定したプロファイルだけを復旧でき、global・A・BのPAT、CLIセッション、CLI暗号化鍵、キャッシュが混線しないことを確認すること。対象は既存のbootstrap、通常ラッパー、鍵キャッシュと対応テスト。SOPS連携や保存方式の変更は含めない。
+
+1. `tests/test_proton_pass_setup.py` と `tests/test_proton_pass_key_cache.py` の隔離HOME・偽CLI・ダミーデータを再利用し、既存の単体テストと過去の連続切り替え検証が確認する範囲を整理する。
+2. 偽CLIでPAT失効・セッション切れ・logout失敗を再現し、対象の停止と再ログイン、PAT更新時の退避・再登録を検証する。共有identity、CLI暗号化鍵、他のプロファイルのデータが維持されることも確認する。退避・更新は一時環境のダミーファイルだけで行う。[既存の復旧手順](setup/proton-pass.md#再実行pat更新と残件)に従い、自動的な削除や鍵の再生成は追加しない。
+3. A・Bを同時に実行し、各CLIへ渡る認証対象・セッション保存先・鍵が一致すること、同じプロファイルの競合は既存の排他制御で停止すること、片方のlock・logoutが他方とglobalへ影響しないことを確認する。
+4. キャッシュは一時領域のソケットと実プロセスを使い、短いTTLで期限後の終了、ソケットの後始末、再unlockを確認する。既存の900・1800・2700・3600秒の判定テストは維持する。プロセスの待機には上限を設け、失敗時も検証用の子プロセスを終了する。
+5. 不足する回帰テストを追加し、不具合を再現した場合は最小限の修正を行う。関連テスト、必要な隔離テンプレート検証、`make check` の順で確認し、環境・結果・未確認事項を記録する。
+
+新しいテストの実行前に、HOME・XDG・PATHと継承する環境変数を確認する。復号と実サービスへの通信は偽age・偽CLIへ置き換え、実PAT・実鍵・実セッションを使わない。実機での失効・認証・退避・再登録は別途承認の対象とする。
+
+この手順に沿って `tests/test_proton_pass_recovery.py` に6件を追加した。既存の単体テスト65件は変更前に成功し、追加6件の3回繰り返しも計18件成功した。初回全体テストの起動待ちタイムアウトと、その後の対応は[14節の検証記録](setup/proton-pass.md#隔離結合テストの範囲)を参照する。製品コードは変更せず、logout後のlockと、セッションが残る場合の退避を手順書へ明記した。
+
+最終の `make check` は静的検証、unittest 391件・Bats 18件が成功し、skipは0件だった。Proton Pass関連71件を含む。今回のLinux環境の自動検証であり、Termux本体で共通テストを再実行した結果とは区別する。
+
+利用者はprootのpass-cli 2.6.0で、登録・順次利用・認証分離・同じPATの再登録と認証失効後の復帰を確認した。Termux 0.118.3とpass-cli 2.7.1では、同時・順次利用、5秒TTLと再unlock、別の新PATへの更新、共有鍵と他プロファイルの認証維持を確認した。Termuxで長時間経過後の失敗から再loginで戻ることも確認したが、自然失効が原因かは未確認として残す。詳しい条件と記録上の制約は[実機結果](setup/proton-pass.md#利用者の実機確認結果)を参照する。
+
+完了条件は、ダミー環境で上記の復旧・同時利用・期限後の停止が成功し、既存のグローバル利用と各プロファイルのデータを維持できること。実サービスでの成功は別の確認結果として残す。
 
 ## 作業履歴
 
