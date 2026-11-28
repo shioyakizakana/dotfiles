@@ -57,7 +57,9 @@ miseの追加CLIは既存の`latest`指定と更新保留方針に従う。Termu
 
 dust・navi・worktrunkはCargo経由のため、ソースビルドになる場合はRustとビルド環境が必要。naviの選択操作にはfzfなどが必要で、Termuxのpkgはfzf・gitを依存として導入する。agent-deckにはtmuxと利用するエージェントCLI、git-spiceには対応するGitが必要になる。Worktrunkやnaviのシェル連携、既定のpager・エイリアスの変更は行わない。
 
-設定の対象選択は隔離テストで確認済み。利用者から、現在のproot Ubuntu環境へ`chezmoi apply`で反映した後、ツールのインストールが成功したとの報告を受けた。個々のCLIの機能、他環境での導入・起動、trippyの権限付与、Playwrightのブラウザ導入と起動は別途確認する。今回の設定変更で、既に導入済みの対象外ツールを削除することはない。
+設定の対象選択は隔離テストで確認済み。利用者から、現在のproot Ubuntu環境へ`chezmoi apply`で反映した後、ツールのインストールが成功したとの報告を受けた。mise一覧を用途別に整理した設定の適用も確認済み。
+
+Termux本体では、利用者が`make bootstrap-tools`による追加対象の新規導入と、対象外ツールがインストールされていないことを確認した。これによりproot・Termuxの導入確認は完了とする。[Termux実機記録](../testing/termux-checklist.md#追加cliの導入確認)を参照する。個々のCLIの機能、他環境での導入・起動、trippyの権限付与、Playwrightのブラウザ導入と起動は別途確認する。今回の設定変更で、既に導入済みの対象外ツールを削除することはない。
 
 ## tealdeerからtlrcへの移行
 
