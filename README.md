@@ -498,6 +498,13 @@ update-agent-skills check natural-japanese
 update-agent-skills update natural-japanese
 ```
 
+natural-japaneseの文章確認には、スクリプト内の依存宣言を扱う`uv run`を使う。`python3`で直接実行すると、宣言された依存が利用できない場合がある。既存キャッシュだけで実行する場合は、リポジトリのルートで次を実行する。依存がキャッシュにない場合は停止するため、必要な取得は通信・パッケージ操作の承認後に行う。
+
+```shell
+uv run --offline --no-python-downloads --no-project "$HOME/.agents/skills/natural-japanese/scripts/lint.py" --json README.md
+uv run --offline --no-python-downloads --no-project "$HOME/.agents/skills/natural-japanese/scripts/calques.py" --json README.md
+```
+
 `textlint-ja`は`~/.local/share/textlint-ja/node_modules/.bin/textlint`を使用する。設定とnpm依存定義は管理しているが、node_modulesの自動導入処理はない。Node.js・npmを用意し、初回は展開先の`~/.local/share/textlint-ja`で`npm ci`を実行する。
 
 ```shell
