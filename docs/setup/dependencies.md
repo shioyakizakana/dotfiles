@@ -42,6 +42,52 @@ LuaRocksの準備では、OS側のLuaとmiseのLua 5.1を混同しない。`--lu
 
 依存を用意した後は、新しいシェルで確認する。ツールを削除した後の既存シェルには古いエイリアスが残り得るため、新しいシェルを使う。読み込み可能なプラグインの実装自体が正常であることまでは、存在確認で保証しない。
 
+## 追加CLIの導入対象
+
+miseの追加CLIは既存の`latest`指定と更新保留方針に従う。TermuxにはUbuntu用mise設定を展開せず、公式pkgのあるツールだけをbootstrapへ追加した。
+
+| 対象 | ネイティブ・WSL・QEMUのUbuntu | proot Ubuntu | Termux本体 |
+| --- | --- | --- | --- |
+| sd・dust・xh・doggo・hyperfine・navi・moor・glow | mise | mise | bootstrapのpkg導入 |
+| jnv・worktrunk・agent-deck・git-spice・ov | mise | mise | 自動導入しない |
+| btop・duf・procs・trippy・Playwright CLI | mise | 導入対象外 | 導入対象外 |
+| tldrクライアント | tlrcをmiseで導入 | tlrcをmiseで導入 | 既存のtealdeerをpkgで維持 |
+
+制約のある5ツールは`termux`・`prootUbuntu`が有効な場合に除外し、ネイティブ・WSL・QEMUのUbuntuフラグがある場合だけmiseの一覧へ含める。未指定・混在フラグでも、この除外を優先する。Windows専用のpsmuxは今回追加していない。
+
+dust・navi・worktrunkはCargo経由のため、ソースビルドになる場合はRustとビルド環境が必要。naviの選択操作にはfzfなどが必要で、Termuxのpkgはfzf・gitを依存として導入する。agent-deckにはtmuxと利用するエージェントCLI、git-spiceには対応するGitが必要になる。Worktrunkやnaviのシェル連携、既定のpager・エイリアスの変更は行わない。
+
+設定の対象選択は隔離テストで確認済み。利用者から、現在のproot Ubuntu環境へ`chezmoi apply`で反映した後、ツールのインストールが成功したとの報告を受けた。mise一覧を用途別に整理した設定の適用も確認済み。
+
+Termux本体では、利用者が`make bootstrap-tools`による追加対象の新規導入と、対象外ツールがインストールされていないことを確認した。これによりproot・Termuxの導入確認は完了とする。[Termux実機記録](../testing/termux-checklist.md#追加cliの導入確認)を参照する。個々のCLIの機能、他環境での導入・起動、trippyの権限付与、Playwrightのブラウザ導入と起動は別途確認する。今回の設定変更で、既に導入済みの対象外ツールを削除することはない。
+
+## tealdeerからtlrcへの移行
+
+Ubuntu系のmise設定は`tealdeer`を外し、`github:tldr-pages/tlrc`へ置き換えた。tlrcが提供するコマンドも`tldr`なので、既存の`man='tldr'`と`tldr`の呼び出しは維持する。`tlrc`というコマンドへの書き換えは不要。[tlrcの導入・利用手順](https://github.com/tldr-pages/tlrc#installation)
+
+以下は利用者が選択して行う適用・導入手順。Termux本体では実行しない。
+
+1. 管理ソースと差分を確認し、mise設定と共通エイリアスを反映する。
+
+   ```shell
+   chezmoi apply --exclude=scripts --refresh-externals=never \
+     "$HOME/.config/mise/config.toml" \
+     "$HOME/.config/shell/aliases.sh"
+   ```
+
+2. HOMEのmise設定に従いtlrcを導入し、選択される実行ファイルと起動を確認する。
+
+   ```shell
+   mise --cd "$HOME" install github:tldr-pages/tlrc
+   mise --cd "$HOME" which tldr
+   MISE_AUTO_INSTALL=0 mise --cd "$HOME" exec -- tldr --version
+   ```
+
+3. 新しいシェルを開き、`type -a tldr`と`alias man`を確認する。`tldr`がtlrcの配置を指していなければ、古い手動配置やshim、PATHの順序を確認してから進む。Bashはmiseの初期化より前にエイリアスを読むため、tlrcが見える状態でも`man`エイリアスが未定義なら、`. "$HOME/.config/shell/aliases.sh"`で再読込する。既存tealdeerを先に削除して回避しない。
+4. 必要なら`tldr --update`でtlrcのページキャッシュを取得する。この操作は通信を伴い、自動テストやシェル起動からは行わない。
+
+既存tealdeerの設定・キャッシュ・実行ファイルは自動削除せず、tlrcへコピーもしない。個人設定が必要な場合はtlrc側の仕様を確認して移す。Termuxはtlrcを無理にビルドせず、従来のtealdeerと同じエイリアスを維持する。
+
 ## Neovim
 
 Pythonのデバッグにはmise管理のdebugpyを使い、アダプターと対象プロジェクトのPythonを分離する。[DAPの設定・導入と確認](neovim-dap.md)を参照する。
@@ -125,7 +171,7 @@ mise --version
 
 ### pkgへ移すツールとmiseの扱い
 
-Ubuntu系のmise管理ツールのうち、Termux公式のパッケージ定義を確認できた51項目をpkgで導入する。名前が異なるものは次のとおり。その他は原則として同名のパッケージを使う。
+Termuxのpkg導入対象は`TERMUX_PACKAGES`で管理し、Ubuntu系と共通の開発CLIもここに含める。追加CLIの環境差は[導入対象の表](#追加cliの導入対象)を参照する。名前が異なるものは次のとおり。その他は原則として同名のパッケージを使う。
 
 | miseの指定 | Termuxのパッケージ |
 | --- | --- |
@@ -133,6 +179,8 @@ Ubuntu系のmise管理ツールのうち、Termux公式のパッケージ定義�
 | `go` / `node` / `lua` | `golang` / `nodejs-lts` / `lua51` |
 | `go:golang.org/x/tools/cmd/goimports` / `go:golang.org/x/tools/gopls` | `goimports` / `gopls` |
 | `npm:@openai/codex` / `npm:oxlint` / `pipx:ty` | `codex` / `oxlint` / `ty` |
+| `cargo:du-dust` / `cargo:navi` / `aqua:walles/moor` | `dust` / `navi` / `moor` |
+| `github:tldr-pages/tlrc` | 代わりに既存の`tealdeer`を維持（コマンドはどちらも`tldr`） |
 | Proton Pass CLI（mise管理外） | `proton-pass-cli`（コマンドは`pass-cli`） |
 
 導入対象は[Termux公式のパッケージ定義](https://github.com/termux/termux-packages/tree/master/packages)で確認した。選択中のミラーやCPUでの候補は実機で確認する。候補がない場合は異常終了し、Linux向けインストーラーへは切り替えない。

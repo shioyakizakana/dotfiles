@@ -4,6 +4,7 @@
 command -v bat >/dev/null 2>&1 && alias cat='bat --paging=never'
 command -v gomi >/dev/null 2>&1 && alias rm='gomi'
 command -v rg >/dev/null 2>&1 && alias grep='rg'
+# tlrcもTermuxで維持するtealdeerも、実行コマンドはtldr。
 command -v tldr >/dev/null 2>&1 && alias man='tldr'
 command -v fd >/dev/null 2>&1 && alias find='fd'
 

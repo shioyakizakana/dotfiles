@@ -35,11 +35,11 @@ mise設定はchezmoiの `prootUbuntu` フラグに従い、Proot版Ubuntuの場�
 
 ## 公開直後のリリースの保留
 
-全体の `minimum_release_age = "24h"` を明示し、npm関連の20ツールだけツール単位で `minimum_release_age = "3d"` にする。Nodeはメジャー系列の指定を外して `latest` に変更し、公開から3日間は新しい版の選択を保留する。他のツールの版指定は維持する。
+全体の `minimum_release_age = "24h"` を明示し、npm関連ツールはツール単位で `minimum_release_age = "3d"` にする。Nodeはメジャー系列の指定を外して `latest` に変更し、公開から3日間は新しい版の選択を保留する。追加CLIもこの方針に従い、Playwright CLIは通常のUbuntu系だけに含める。環境別の対象とtlrc移行は[依存一覧](dependencies.md#追加cliの導入対象)を参照する。
 
 | 対象 | 保留期間 |
 | --- | --- |
-| `npm:` の16ツール。Codex・Oxlint・TypeScript・言語サーバーなど | 3日間 |
+| `npm:` のツール。Codex・Oxlint・TypeScript・言語サーバー・対象環境のPlaywright CLIなど | 3日間 |
 | Node.js本体 | 3日間 |
 | npm・pnpm・Bun本体 | 3日間 |
 | その他のツール | 24時間（全体設定） |

@@ -47,6 +47,8 @@ chezmoiがない場合、環境選択のテストは明示的にskipされる。
 | termux | 対象外 | 対象外 | 対象外 |
 | 未指定・未知・未対応OS | 対象外 | 対象外 | 対象外 |
 
+miseの追加CLIのうちbtop・duf・procs・trippy・Playwright CLIは、ネイティブ・WSL・QEMUのUbuntuだけを導入対象とする。Termux・prootフラグが混在する場合も除外する。`test_environment_policy.py`はこの選択と、tlrcへの置き換え・npmツールの3日間保留を隔離展開で確認する。[追加CLIの環境別一覧と移行手順](../setup/dependencies.md#追加cliの導入対象)を参照する。
+
 APTはrootなら直接実行し、非rootならsudoを必要とする。導入済みなら権限確認と対話も省く。パッケージ一覧の更新が失敗した場合はinstallへ進まない。Homebrewはrootでの新規導入をスキップする。対応Ubuntuに既存brewがある場合の処理は維持し、実際のbrewの権限制約までは模擬しない。
 
 環境別の対象選択は、chezmoi経由の適用に対して働く。`.chezmoiscripts/`のスクリプトを直接起動すると除外設定を経由しないため、単体実行を環境判定の代わりに使わない。

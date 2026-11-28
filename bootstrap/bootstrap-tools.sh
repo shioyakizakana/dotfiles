@@ -30,10 +30,10 @@ readonly TERMUX_PACKAGES=(
   ca-certificates curl git chezmoi make openssl-tool wget util-linux procps file coreutils
   mise proton-pass-cli
   7zip age atuin bat biome2 bun codex deno eza fd ffmpeg gh ghq git-delta git-lfs
-  gofumpt goimports golang golangci-lint gopls imagemagick jq lazygit
-  lua-language-server lua51 marksman neovim nim nodejs-lts npm oxlint pnpm poppler
-  python ripgrep ruby ruff rust shellcheck shfmt sops stylua taplo tealdeer tmux
-  tree-sitter ty uv yazi yq zoxide
+  doggo dust glow gofumpt goimports golang golangci-lint gopls hyperfine imagemagick jq lazygit
+  lua-language-server lua51 marksman moor navi neovim nim nodejs-lts npm oxlint pnpm poppler
+  python ripgrep ruby ruff rust sd shellcheck shfmt sops stylua taplo tealdeer tmux
+  tree-sitter ty uv xh yazi yq zoxide
 )
 
 readonly BATS_VERSION="1.13.0"
