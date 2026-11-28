@@ -384,7 +384,7 @@ Vueの利用者確認と、2026-11-14の7サーバー・5整形CLIの隔離検�
 
 通常導入のvusetedはvustedの誤記だった。将来の開発用途はmini.testへ切り替え、LuaRocksの必須導入から外した。既存のeditor/mini-test.luaのotsをoptsへ修正し、v0.18.0のrevisionへ固定した。開発プロジェクトでは依存を個別に管理し、[最小構成の手順と検証結果](../testing/neovim-plugin-tests.md)を使う。luacheckのLuaRocks導入と既存のdotfilesテストは維持する。
 
-利用者による最新の実機報告では、Nimの導入とmini.testの初期化が成功した。Rustの接続・補完・定義ジャンプ・診断は成功した。Nimは接続・補完・定義ジャンプが成功したが、ビルド時バージョン不一致が表示され、診断は失敗した。[実機確認記録](../testing/neovim-lsp-verification.md#利用者による実機確認の追記)と[次の確認手順](../testing/neovim-nim-rust.md)を参照する。
+2026-11-14時点の実機報告では、Nimの導入とmini.testの初期化が成功した。Rustの接続・補完・定義ジャンプ・診断は成功した。Nimは接続・補完・定義ジャンプが成功したが、ビルド時バージョン不一致が表示され、診断は失敗した。[当時の実機確認記録](../testing/neovim-lsp-verification.md#利用者による実機確認の追記)と[その後の修正・確認結果](../testing/neovim-nim-rust.md)を参照する。
 
 NimLSPは承認後にNim 2.4.2で再ビルドし、退避して実体を切り替えた。隔離検証で診断の検出・解消と定義ジャンプが成功し、版警告は出なかった。利用者がPATH明示の起動で保存時の診断5件、フロート表示、修正・保存後の診断解消を確認した。通常起動時のPATH確認とハイライトは残件。[復旧手順](nimlsp-recovery.md)を参照する。
 

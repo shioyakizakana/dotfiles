@@ -2,6 +2,8 @@
 
 Nimの導入成功後、nimlsとrust_analyzerの接続・補完・定義ジャンプ・診断を確認する。以下は利用者向けの実機手順。確認用ファイルの作成だけでは、接続成功とは記録しない。
 
+現行ソースはMason依存と移行用切替を除去済みで、通常の`nvim`起動で確認する。Termux + proot Ubuntuでは、Nimの通常起動・ハイライト・保存時診断とRustの確認まで完了した。以下の版不一致や未適用の記述は対応途中の履歴で、最新結果は末尾の「適用後の利用者確認」を参照する。
+
 ## 確認用プロジェクト
 
 作成した一時ディレクトリのnim/とrust/を別々に開く。場所は作業完了時の案内に記載する。一時領域は再起動等で消える可能性があるため、継続使用する場合はフォルダ全体を利用者が保管する。
@@ -21,12 +23,12 @@ Nimの導入成功後、nimlsとrust_analyzerの接続・補完・定義ジャ�
 
 ```shell
 cd <確認用ディレクトリ>/nim
-nvim --cmd 'lua vim.g.dotfiles_use_mason = false' src/main.nim
+nvim src/main.nim
 ```
 
 ```shell
 cd <確認用ディレクトリ>/rust
-RUSTUP_AUTO_INSTALL=0 CARGO_NET_OFFLINE=true nvim --cmd 'lua vim.g.dotfiles_use_mason = false' src/main.rs
+RUSTUP_AUTO_INSTALL=0 CARGO_NET_OFFLINE=true nvim src/main.rs
 ```
 
 それぞれ新しいNeovimプロセスで開く。LspInfoでNimにはnimls、Rustにはrust_analyzerが接続し、root_dirがそれぞれの確認用プロジェクトを指すことを確認する。
@@ -50,7 +52,7 @@ rust-analyzerがshimの場合は、同じrust/フォルダのシェルでRUSTUP_
 4. wrong_numberの値を42に、greetの引数をNimなら"Nim"、Rustなら"Rust"へ修正し、保存後に診断が解消することを確認する。Nimが先頭のエラーだけを表示する場合は、1件ずつ直して次の診断を確認する。同時に2件表示されることは条件にしない。
 5. 確認用ディレクトリのRESULTS.mdへ環境名、実行パス、成功・失敗・未確認とログを記録する。実環境名はWSL・proot・Termux・ネイティブLinuxのどれかを利用者が記入する。
 
-保存時の整形は今回の受け入れ条件に含めない。Mason削除の判断は、この結果と[既存の検証記録](neovim-lsp-verification.md)を合わせて行う。
+保存時の整形はこの確認の受け入れ条件に含めない。Mason削除前の判断と、その後の完了結果は[既存の検証記録](neovim-lsp-verification.md)を参照する。
 
 ## 手動確認後の状態
 
@@ -62,7 +64,7 @@ rust-analyzerがshimの場合は、同じrust/フォルダのシェルでRUSTUP_
 
 ## 保存時の診断と最新の確認結果
 
-再ビルド後、利用者がPATHへ~/.nimble/binを追加して起動したNeovimで、filetype=nim、保存時の診断5件、フロート表示、修正・保存後の診断解消を確認した。NimLSPは保存通知を受けて診断するため、接続後に:wを実行して確認する。PATHを明示しない起動方法と、未適用のシンタックスハイライトは別の残件。
+再ビルド直後は、利用者がPATHへ~/.nimble/binを追加して起動したNeovimで、filetype=nim、保存時の診断5件、フロート表示、修正・保存後の診断解消を確認した。NimLSPは保存通知を受けて診断するため、接続後に:wを実行して確認する。この時点で残っていた通常起動とハイライトも、末尾の利用者確認で完了した。
 
 ## PATHの補助探索とハイライトの適用
 
@@ -84,14 +86,14 @@ chezmoi apply --exclude=scripts \
 
 ```shell
 cd <確認用ディレクトリ>/nim
-nvim --cmd 'lua vim.g.dotfiles_use_mason = false' src/diagnostics.nim
+nvim src/diagnostics.nim
 ```
 
 LspInfoでcmdが既定配置の絶対パスを指すことを確認し、保存して診断を確認する。診断用ファイルを修正済みなら、再度意図的な型エラーを入れて試し、確認後は直す。ハイライトは:InspectTreeで構文木を開けること、キーワード等の上で:InspectにTree-sitterのcaptureが表示されることを確認する。色の違いだけで判断しない。
 
 ### 隔離検証と回帰テスト
 
-今回の隔離検証では、NimbleをPATHに入れず、修正ソースの既定配置探索から実NimLSPを起動して診断を取得した。Nimとnim_format_stringを一時領域だけへ取得・ビルドし、再起動後に構文エラーのない解析、ハイライト開始、capture 24件を確認した。実HOMEへのパーサー導入と設定の適用は未実施。適用後のTermux + proot Ubuntuでの通常起動と表示は利用者の確認待ち。
+この隔離検証では、NimbleをPATHに入れず、修正ソースの既定配置探索から実NimLSPを起動して診断を取得した。Nimとnim_format_stringを一時領域だけへ取得・ビルドし、再起動後に構文エラーのない解析、ハイライト開始、capture 24件を確認した。Codexは実HOMEへのパーサー導入と設定の適用を行っていない。その後のTermux + proot Ubuntuでの適用・通常起動・表示は、下記の利用者報告で確認した。
 
 関連unittestは22件、make check全体はunittest 232件・Bats 18件が成功し、skipなし。PATH優先、既定配置、空白を含むNIMBLE_DIR、欠落時の動作、Nimの導入・ハイライト開始をモックで確認する。回帰テストとCIからパーサーを取得することはない。
 

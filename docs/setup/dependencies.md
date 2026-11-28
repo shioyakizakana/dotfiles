@@ -20,7 +20,7 @@
 
 Ubuntu向けのAPT手順はnative Ubuntu・WSL Ubuntu・proot Ubuntuが対象。その他のLinuxではOSのパッケージ提供状況を確認する。bootstrap-tools.shはTermux本体も判定し、pkgを使う。chezmoi適用時の環境別制御では、引き続きTermux本体へのUbuntu用mise設定と3本の導入スクリプトの展開を除外する。
 
-proot UbuntuではHomebrewを省くため、Brewfileの内容は準備されない。Termuxでも同様に、必要な機能だけをその環境で準備する。chafa・resvgがない場合は画像・SVGプレビューを保証しない。systemdやkeyringの導入を、これらの任意機能の前提にしない。
+proot UbuntuではHomebrewを省くため、Brewfileの内容は準備されない。Termuxでも同様に、必要な機能だけをその環境で準備する。TermuxのSVGプレビューはImageMagickの`magick`を使い、resvgは単体変換の任意ツールとして扱う。その他の画像・PDFプレビューの依存も環境ごとに確認する。systemdやkeyringの導入を、これらの任意機能の前提にしない。
 
 ## Bash・Zsh
 
@@ -91,7 +91,7 @@ textlint-ja /path/to/document.md
 
 ## 残る実機確認
 
-初期認証前のPython、LuaRocksのLua 5.1向けビルド、fzfとシェル設定の組み合わせ、Yazi追加プラグイン、tmux補助コマンド、画像プレビューは実機で確認する。隔離テストの成功を、パッケージの導入成功や実アプリの互換性保証として扱わない。
+Termuxの基礎導入、tmux操作、YaziのPNG・PDF・SVGプレビューと一部のプラグイン・flavorは利用者が確認済み。[実機チェックリスト](../testing/termux-checklist.md#結果の記録欄)と[Yaziの結果](yazi-dependencies.md#次の作業と確認順序)を参照する。LuaRocksのLua 5.1向けビルド、tmux補助コマンド、未確認のプラグイン操作・環境は別途確認する。隔離テストの成功を、パッケージの導入成功や実アプリの互換性保証として扱わない。
 
 ## Termuxでの導入と実機確認
 
@@ -145,7 +145,7 @@ TermuxにはUbuntu用mise設定と導入スクリプトを展開しないため�
 
 pkg版のバージョンはリポジトリに従い、Ubuntuのmise固定版と同じとは限らない。Lua 5.1のコマンドはlua5.1、Pythonはpkgの提供版を使う。Python 3.13・3.12の併存、LuaRocks、debugpy、lefthookなど、一覧にないツールは基礎導入の対象外。Zsh・fzfも別途準備する。Neovimの追加ツールは下記の専用ターゲットで導入できる。
 
-Homebrewと認証の自動実行は対象外。利用者から、pkg install proton-pass-cli後のbootstrap、PATログイン、保管庫一覧表示、ssh-agent起動の成功報告を受けている。シバン修正後のchezmoi applyも正常終了したとの報告がある。今回追加した開発ツール一括導入の実機確認は未実施。
+Homebrewと認証の自動実行は対象外。利用者から、pkg install proton-pass-cli後のbootstrap、PATログイン、保管庫一覧表示、ssh-agent起動の成功報告を受けている。シバン修正後のchezmoi applyも正常終了したとの報告がある。その後、Termux本体で基礎パッケージ・pkg対応開発ツールの導入と共通テストの成功を確認した。[実機チェックリスト](../testing/termux-checklist.md#結果の記録欄)を参照する。
 
 #### Make操作で使うchezmoi
 
@@ -160,6 +160,8 @@ TypeScriptが未導入の場合や、`~/.local/bin/tsc` が起動できない場
 NimLSPは動作確認済みのNim 2.4.2のコミットに合わせてビルドする。取得した一時ソースで、Androidの場合に既存の同期I/Oを使うよう変更する。ほかのNimの版で新規ビルドする場合や既存のNimLSPとNimの版が異なる場合は停止する。Nimを更新した後は対応するソースでの再検証が必要。
 
 導入後はNeovimを開き直し、対象言語で `:LspInfo` と `:ConformInfo`、サンプルファイルの診断と保存時整形を確認する。
+
+導入済み環境での再実行と、隔離HOMEでのNimLSP初回ビルド・配置は確認済み。ツール未導入のTermuxを用意できていないため、このターゲット全体の初回一括導入は保留している。基礎ツールのpkg導入成功とは分けて扱う。
 
 ### Batsの導入と更新
 
@@ -200,4 +202,4 @@ DENO_SQLITE_PATH="$PREFIX/lib/libsqlite3.so" zsh
 chezmoi apply --include=files --refresh-externals=never "$HOME/.zshrc"
 ```
 
-新しいZshを起動して確認する。隔離テストでは、子プロセスへのパス引き継ぎ、明示指定の保持、Ubuntu・prootへの影響、ライブラリ不在時の動作を確認する。Termux上での実SQLiteの読み込みとzeno起動の成功は未確認。
+新しいZshを起動して確認する。隔離テストでは、子プロセスへのパス引き継ぎ、明示指定の保持、Ubuntu・prootへの影響、ライブラリ不在時の動作を確認した。その後、利用者が設定適用後にzenoのソケット不具合が再発していないことを報告した。[Termux引き継ぎの到達点](../CODEX_TERMUX_HANDOFF.md#現在の到達点2026-11-28)を参照する。実SQLiteの読み込みを単独で再検証した結果とは区別する。

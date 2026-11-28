@@ -12,7 +12,7 @@
 | golangci_lint_ls | golangci-lintの診断をNeovimへ渡す | miseのlangserverとgolangci-lintの2つ | プロジェクト側の上書きは空。nvim-lspconfigのcmd・Goルート探索・linterの版判定を継承 |
 | sqls | SQLの補完・DBスキーマ参照・クエリ操作 | mise `go:github.com/sqls-server/sqls`。接続情報は別途管理 | プロジェクト側の上書きは空。nvim-lspconfigのcmd・config.yml探索を継承。DB利用には接続設定が必要 |
 
-登録は`home/dot_config/nvim/lua/plugins/lsp/server-register.lua`、導入定義は`home/dot_config/mise/config.toml.tmpl`で管理する。空の上書きファイルを未実装とは扱わない。使用するnvim-lspconfigの版によって継承する設定が変わるため、公開プラグインの版固定はNV-05で扱う。
+登録は`home/dot_config/nvim/lua/plugins/lsp/server-register.lua`、導入定義は`home/dot_config/mise/config.toml.tmpl`で管理する。空の上書きファイルを未実装とは扱わない。使用するnvim-lspconfigの版によって継承する設定が変わるため、NV-05では必要時にlockfileを手動保存する運用を実装した。詳細は[スナップショット設計](../setup/neovim-dependencies.md#nv-05のスナップショット設計2026-11-17)を参照する。
 
 利用者が5件すべての継続使用を選択したため、有効登録を維持する。EmmetはHTML等の構文支援、Tailwindはクラス名、Oxlintはlintという担当で、vtslsの型解析とは役割が異なる。golangci-lintはgoplsの診断と重なるルールを持つ場合があるが、今回の確認だけでは不要とは判断しない。未使用のサーバーを除外する場合は、利用者が用途を確認してから決める。
 
@@ -36,10 +36,10 @@ GoはGOPROXY・GOSUMDBをoff、GOTOOLCHAINをlocal、GOENV・GOWORK・telemetry�
 
 ## 手動確認
 
-確認用フォルダのREADME.mdとRESULTS.mdに手順と記入欄を用意した。各言語フォルダで、Masonを無効にして起動する。
+確認用フォルダのREADME.mdとRESULTS.mdに手順と記入欄を用意した。現行ソースはMason依存と移行用切替を除去済み。各言語フォルダで通常起動する。
 
 ```sh
-nvim --cmd 'lua vim.g.dotfiles_use_mason = false' <確認用ファイル>
+nvim <確認用ファイル>
 ```
 
 | フォルダ | 操作 | 期待結果 |
@@ -55,7 +55,7 @@ Goの修正例は`_ = os.Chdir(".")`。この検証はLSPを通じた診断確�
 sqlsだけは、確認用のsqlsフォルダで次のコマンドを使い、空の接続設定を明示する。通常の接続設定へ依存せず初期化を確認するための起動方法である。
 
 ```sh
-nvim --cmd "lua vim.g.dotfiles_use_mason = false; vim.lsp.config('sqls', {cmd = {'sqls', '-config', vim.fn.getcwd() .. '/config.yml'}, settings = {sqls = {connections = {}}}})" main.sql
+nvim --cmd "lua vim.lsp.config('sqls', {cmd = {'sqls', '-config', vim.fn.getcwd() .. '/config.yml'}, settings = {sqls = {connections = {}}}})" main.sql
 ```
 
 ## NV-03の残件とMason削除の判断

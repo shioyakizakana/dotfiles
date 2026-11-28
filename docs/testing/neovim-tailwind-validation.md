@@ -34,9 +34,11 @@
 
 ## 利用者による通常起動の再確認
 
+現行ソースはMason依存と移行用切替を除去済みなので、通常起動する。以下の一時フォルダが消失している場合は、本文の条件に合わせて検証用プロジェクトを用意し直す。
+
 ```sh
 cd /tmp/neovim-tailwind-check-jdfuyvgs
-nvim --cmd 'lua vim.g.dotfiles_use_mason = false' src/index.html
+nvim src/index.html
 ```
 
 1. `:set filetype?`がhtmlで、`:LspInfo`にtailwindcssが接続していることを確認する。rootは上記フォルダ、実行ファイルはmise管理のtailwindcss-language-serverを期待する。

@@ -2,11 +2,13 @@
 
 調査日：2026-11-11。管理ソースと公開仕様を確認した後、一時HOMEで公開依存の取得・復元と隔離起動を検証した。共有manifestを追加し、Yaziを26.9.1へ固定、full-borderのオプションを更新した。Codexから実ホームへの導入・設定適用や、私的設定の調査は行っていない。利用者からは適用後のrounded表示確認の報告を受けた。
 
+2026-11-28の整理では、[Termux実機記録](../testing/termux-checklist.md#yaziのプラグインとflavor)にある公開依存の導入、fzf・zoxide・smart-enter・full-border・bunny・明暗両flavorの成功報告を反映した。Git状態表示・toggle-pane・chmod・sessionと、他環境での同じ操作は未確認のまま残す。
+
 ## 管理できている範囲
 
 管理対象は`home/dot_config/yazi/`の`init.lua`・`yazi.toml`・`keymap.toml`・`theme.toml`と、公開依存だけの`package.toml`。プラグイン・flavor本体は管理しない。Yazi用のchezmoi externalsや、自動導入スクリプトは追加しない。
 
-`home/.chezmoiignore:5-6`で展開先の`.config/yazi/plugins/`と`.config/yazi/flavors/`を除外する。既存の本体やbunny-privateは削除しない。以下の「手動準備」は、利用者がmanifestを確認・配置した後に`ya pkg install`を実行するという意味。実端末の導入状態は未確認。
+`home/.chezmoiignore`で展開先の`.config/yazi/plugins/`と`.config/yazi/flavors/`を除外する。既存の本体やbunny-privateは削除しない。以下の「手動準備」は、利用者がmanifestを確認・配置した後に`ya pkg install`を実行するという意味。Termuxでは利用者が実行済みで、他端末の導入状態は個別に確認する。
 
 ## プラグインと外部コマンド
 
@@ -33,7 +35,7 @@ bunnyは[作者の説明](https://github.com/stelcodes/bunny.yazi)を確認し�
 
 ## テーマとその他のコマンド
 
-`theme.toml:2-3`は`catppuccin-latte`・`catppuccin-mocha`を参照する。[公式flavors一覧](https://github.com/yazi-rs/flavors)の同名ディレクトリをmanifestで指定する。手動準備が必要で、個人の導入状態は未確認。[flavorの配置・互換性](https://yazi-rs.github.io/docs/flavors/overview/)も参照する。
+`theme.toml:2-3`は`catppuccin-latte`・`catppuccin-mocha`を参照する。[公式flavors一覧](https://github.com/yazi-rs/flavors)の同名ディレクトリをmanifestで指定する。手動準備が必要で、Termuxでは利用者が両flavorの適用を確認した。他環境は個別に確認する。[flavorの配置・互換性](https://yazi-rs.github.io/docs/flavors/overview/)も参照する。
 
 `yazi.toml`のedit openerは`EDITOR`を使う。preview openerにはmacOS向け`qlmanage`が宣言されているが、現行のopenルールからの参照はない。Linuxでの自動実行や動作不良は確認していない。画像・PDFなどのプレビュー依存は[既存の依存一覧](dependencies.md)で別に扱う。
 
@@ -43,7 +45,7 @@ bunnyは[作者の説明](https://github.com/stelcodes/bunny.yazi)を確認し�
 | --- | --- | --- | --- |
 | YZ-01 | 修正前の`yazi.toml:5,10`が`prepend_feachers`で、正式キーの登録テストが失敗した。実機の障害再現は未実施 | `prepend_fetchers`へ修正。TOML解析後に2件のgit fetcherのurl・run・group・順序を検証する | 設定適用の報告あり・Git状態表示は未確認 |
 | YZ-02 | 旧`type`は採用revisionでも非推奨 | `set = "rounded"`へ変更。モックと公開実装を使った隔離描画で確認した | 修正済み・利用者が適用後のrounded表示を確認 |
-| YZ-03 | 公開依存を再現するmanifestがなかった | 公開プラグイン6件・flavor 2件を完全SHAと内容ハッシュで記録。別の空HOMEへ復元できた | 管理方式を実装済み・実機確認は残件 |
+| YZ-03 | 公開依存を再現するmanifestがなかった | 公開プラグイン6件・flavor 2件を完全SHAと内容ハッシュで記録。別の空HOMEへ復元できた | 管理方式を実装済み。Termuxで利用者が依存導入と一部の操作を確認。実機で全revisionが一致するかは未確認 |
 
 YZ-01の根拠は[gitの登録例](https://github.com/yazi-rs/plugins/tree/main/git.yazi)と[fetcher設定の公式仕様](https://yazi-rs.github.io/docs/configuration/yazi/#fetchers)。YZ-02は[full-borderの実装](https://github.com/yazi-rs/plugins/blob/main/full-border.yazi/main.lua)で`type`の互換処理と警告を確認した。公開mainの内容は変わり得るため、固定時は選んだrevisionで再確認する。
 
@@ -53,7 +55,7 @@ YZ-01の根拠は[gitの登録例](https://github.com/yazi-rs/plugins/tree/main/
 | --- | --- | --- |
 | Yazi・ya | `26.9.1`を採用する検証基準とし、miseも同版へ固定する | 公開設定・依存を使った隔離起動と描画まで確認。全キー操作・Termux等の実機互換性を保証するものではない。yaも同じ版を使う |
 | 組み込みプラグイン | 本体と一緒に版をそろえる | zoxide・fzfなどの外部コマンドは別に確認する |
-| 公式追加プラグイン・bunny・flavor | 下記のrevisionをmanifestへ固定 | 復元・初期化・描画は確認済み。個々のキー操作は未確認。更新時はソース変更と再検証を同じPRで行う |
+| 公式追加プラグイン・bunny・flavor | 下記のrevisionをmanifestへ固定 | 隔離環境で復元・初期化・描画を確認。Termuxでは下記の一部操作も確認済み。更新時はソース変更と再検証を同じPRで行う |
 | bunny-private | 共有する固定対象から除外 | 個人パスをダミーに置き換えた確認方法だけを共有する |
 
 Yazi・yaの同一版利用と、依存の`rev`・`hash`による復元は[公式CLI仕様](https://yazi-rs.github.io/docs/cli/)に従う。manifestでは`rev`の先頭に`=`を付けて更新を抑える。内容ハッシュには、一時HOMEでyaが生成した管理用の値を使用する。
@@ -70,6 +72,8 @@ Yazi・yaの同一版利用と、依存の`rev`・`hash`による復元は[公�
 
 ## 次の作業と確認順序
 
+以下は新規環境や未確認の操作を確認する手順。Termuxで成功報告のある操作は下表に記録し、未着手として扱わない。
+
 1. 既存環境では、manifestを配布する前に個人用依存の統合を利用者が確認する。手順は[依存一覧](dependencies.md#yazi)に従う。
 2. 配置した共有manifestを確認し、同じ版のYazi・yaで`ya pkg install`する。この操作は通信と展開先の変更を伴い、自動実行しない。
 3. 利用者が実機で下記のキー操作を確認し、Yazi・yaの版、OS・CPU、合否を記録する。Termux本体ではUbuntu用mise設定を展開せず、同版の実行ファイルを別途準備する。
@@ -77,12 +81,12 @@ Yazi・yaの同一版利用と、依存の`rev`・`hash`による復元は[公�
 
 | 確認対象 | ダミー素材による確認 | 結果 |
 | --- | --- | --- |
-| 初期化・flavor | 公開設定と依存で起動し、明暗両flavorの読み込み・一覧描画・正常終了を確認する | Linux ARM64の隔離環境で成功。利用者も適用後のrounded表示を確認。実機のOS・実行版・明暗両flavorの結果は未記録 |
-| smart-enter・toggle-pane | ダミーディレクトリとテキストでEnter、Ctrl-pの往復を確認する | 未実施 |
+| 初期化・flavor | 公開設定と依存で起動し、明暗両flavorの読み込み・一覧描画・正常終了を確認する | Linux ARM64の隔離環境で成功。Termuxの通常設定でもfull-borderと明暗両flavorの適用を利用者が確認。Yazi・yaの実行版は未記録 |
+| smart-enter・toggle-pane | ダミーディレクトリとテキストでEnter、Ctrl-pの往復を確認する | Termuxでsmart-enterのファイル種別ごとの処理を確認。toggle-paneは未確認 |
 | git | 一時Gitリポジトリの未追跡ファイル・変更済みファイルを表示する。実リポジトリのindexを変更しない | 未実施 |
 | chmod | 一時ファイルの権限だけを変更する。Termuxではホーム配下と共有ストレージを区別する | 未実施 |
-| fzf・zoxide | ダミーの選択対象と隔離した履歴で移動を確認する。実際の履歴を読み出さない | 未実施 |
-| bunny・session | 公開のダミーブックマークと一時セッションで動作を確認する。bunny-privateは使わない | 未実施 |
+| fzf・zoxide | ダミーの選択対象と隔離した履歴で移動を確認する。実際の履歴を読み出さない | Termuxの通常設定でfzfの検索とzoxideの指定パスへの移動を利用者が確認。左記の隔離した履歴による検証とは区別 |
+| bunny・session | 公開のダミーブックマークと一時セッションで動作を確認する。bunny-privateは使わない | Termuxの通常設定でbunnyの指定パスへの移動を利用者が確認。左記のダミー設定による検証とsessionは未確認 |
 
 ## 既存テストの範囲
 
