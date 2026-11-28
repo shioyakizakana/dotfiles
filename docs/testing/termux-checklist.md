@@ -87,9 +87,9 @@ Termux本体では、Androidが管理する親ディレクトリの権限が従�
 
 | 項目 | 結果 |
 | --- | --- |
-| 確認日・対象コミット | 2026-11-21、`e20eeb3`（PR #19のマージ後） |
-| Termux本体 / proot Ubuntu、CPU、OS・Termuxの版 | 未実施 |
-| 基礎確認・不足ツール | 未実施 |
+| 確認日・対象コミット | 初回は2026-11-21、`e20eeb3`（PR #19のマージ後）。SVG対応後の共通テスト結果などは各行に追記。Proton Passの後続結果は[専用記録](../setup/proton-pass.md#利用者の実機確認結果)を参照 |
+| Termux本体 / proot Ubuntu、CPU、OS・Termuxの版 | 以下はTermux本体の結果。各確認時のCPU・OS・Termuxの版は未記録。後続のProton Pass検証ではTermux 0.118.3を記録しているが、下記の全確認と同一条件とは扱わない |
+| 基礎確認・不足ツール | 基礎パッケージ・pkg対応開発ツールとBatsの導入、共通テストの成功を報告済み。個別の不足一覧は未記録。Neovim用ツールの初回一括導入は[保留中](../setup/dependencies.md#neovim用ツールの一括導入) |
 | lefthookの版・直接起動 | Termux本体で2.2.2。設定検証とpre-commitの直接起動に成功。直接起動時はステージ済みファイルがなく、差分検証はskip。利用者は `TMPDIR="$PREFIX/tmp" lefthook run pre-push --force` でテストの通過を確認した |
 | 通常commit・pushでのhook起動、PR番号 | Gitからpre-commitとpre-pushが起動し、検証に成功。PR #19のGitHub Actionsも利用者が成功を確認した |
 | make checkの結果・件数・skip理由 | Termux本体で `TMPDIR="$PREFIX/tmp" make check` が成功。SVG対応後の `49dc9ec` では静的検証、unittest 362件、Bats 18件が通過し、skipは0件。Proton Passはダミーデータで確認した |

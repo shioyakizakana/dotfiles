@@ -66,7 +66,7 @@ APTはrootなら直接実行し、非rootならsudoを必要とする。導入�
 
 Termuxの基礎パッケージ・mise・Proton Pass CLI・pkg対応開発ツールの導入、導入済みの省略、pkg一覧更新の重複防止、更新失敗・導入失敗・導入後確認失敗、root・未対応パッケージマネージャーの拒否を検証する。UbuntuゲストはPREFIXを引き継いでもTermuxと誤認しないこと、UbuntuのAPT引数とprootのHomebrew新規導入省略も確認する。
 
-`--check`ではpkg・ダウンロード・pass-cliを実行せず、HOME内のファイルを作成しない。ファイル・bash -c・標準入力からの起動は`--help`で検証する。Termuxの実パッケージ候補、Android上でのバイナリ実行、ミラーへの接続、Proton Pass認証は未実施であり、[実機確認手順](../setup/dependencies.md#termuxでの導入と実機確認)に沿って利用者が確認する。
+`--check`ではpkg・ダウンロード・pass-cliを実行せず、HOME内のファイルを作成しない。ファイル・bash -c・標準入力からの起動は`--help`で検証する。これらの自動テストはTermuxの実パッケージ候補、Android上のバイナリ実行、ミラー接続、Proton Pass認証を検証しない。利用者による導入・操作の結果は[実機チェックリスト](termux-checklist.md#結果の記録欄)と[Proton Pass手順書](../setup/proton-pass.md#現在の状態)を参照する。
 
 Git hooksのテストでは、一時リポジトリとダミーmakeを使う。ステージ済み空白エラー、部分stageの保持、make失敗時の異常終了、lefthook不足時に別の導入処理を起動しないことを確認する。Termux相当のPREFIX内のshで生成hookを起動するが、Android/Bionicや実機でのビルド・実行保証とは区別する。対応版と導入手順は[Git hooksの説明](git-hooks.md)を参照する。
 
@@ -93,13 +93,13 @@ APTのテストはid・apt・sudoをダミーに置き換える。実際のUID�
 
 ## Proton Passの確認済み範囲
 
-prootでのUID差異に対応し、利用者からグローバルとpat-testの認証切り替え、許可した保管庫だけの一覧表示、補完、30分キャッシュの開始と分・秒表示の成功報告を受けた。確認内容は[Proton Pass手順書](../setup/proton-pass.md#現在の状態)を参照する。Termux本体や他のUbuntu環境、実パッケージ操作などの確認完了とは区別する。
+prootでのUID差異に対応し、利用者からグローバルとpat-testの認証切り替え、許可した保管庫だけの一覧表示、補完、30分キャッシュの開始と分・秒表示の成功報告を受けた。Termux本体でも初期登録・認証切り替え・保管庫一覧・同時利用・短いTTL・PAT更新後の鍵の維持を確認した。環境・実行版・条件ごとの結果と未確認事項は[Proton Pass手順書](../setup/proton-pass.md#現在の状態)を参照する。他のUbuntu環境へは結果を一般化しない。
 
 ## 実機確認が必要な内容
 
 Termux本体とproot Ubuntuの確認順序・合否基準・結果欄は[実機チェックリスト](termux-checklist.md)にまとめた。既存の導入手順と組み合わせ、確認できた環境と未実施の環境を分けて記録する。
 
-このテストはAndroidのカーネル、Bionic、prootそのものをエミュレートしない。ARM64メタデータを渡すことも、ARM64バイナリの動作検証とは異なる。次の項目は実機確認の残件とする。
+このテストはAndroidのカーネル、Bionic、prootそのものをエミュレートしない。ARM64メタデータを渡すことも、ARM64バイナリの動作検証とは異なる。次の項目は実機で確認する。Termuxでのシバン対応・通常hook起動・tmux操作などの確認済み結果は、上記チェックリストに記録している。
 
 - Termuxの実際のPREFIX、実行ファイル、シバン解決とtermux-execの有無。
 - 共有ストレージ上の実行属性・リンクなど、Android固有のファイルシステム制約。

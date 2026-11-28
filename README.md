@@ -61,8 +61,9 @@ chezmoiを中心に、Linux環境の設定ファイル、開発ツール、初�
 │   ├── dot_codex/symlink_AGENTS.md.tmpl
 │   ├── dot_config/
 │   │   └── shell/
-│   │       ├── env.sh
-│   │       └── aliases.sh
+│   │       ├── env.sh.tmpl
+│   │       ├── aliases.sh
+│   │       └── functions.sh
 │   ├── dot_local/
 │   │   ├── bin/
 │   │   │   ├── executable_init-proton-pass.tmpl
@@ -95,6 +96,7 @@ Codex CLIではこのリポジトリ内から`/skills`や`$スキル名`で選�
 | --- | --- |
 | `env.sh` | TMPDIR、Go・pnpm・fzfのパス、EDITOR、LANG・LANGUAGE、既存ディレクトリのPATH追加 |
 | `aliases.sh` | コマンド置換、eza、ホーム・chezmoiへの移動、LazyGit起動、upd |
+| `functions.sh` | Neovimのlockfileスナップショットを操作する`nvim_snapshot`関数 |
 
 BashもZshと同じ共通設定を使う。PATHは存在するディレクトリだけを末尾へ追加し、再読み込みで同じ項目を増やさない。
 
@@ -110,7 +112,7 @@ mise外のnpmグローバル導入を使う場合は、共通設定の読み込�
 reload、プロンプト、補完、キー操作、mise・zoxide・atuinなどのシェル別初期化は各シェルの設定に残す。SSH_AUTH_SOCKも既存どおりZsh側だけで設定する。
 
 旧構成の`~/scripts/shell/funciton.sh`は、読み取り可能な場合だけ任意拡張として読み込む。既存端末の手動配置を引き続き利用できるが、その内容はリポジトリで管理・検証していない。
-共通モジュール自体は必須の管理対象なので、適用時は新しい2ファイルと読み込み側のBash・Zsh設定をまとめて反映する。`.bashrc`や`.zshrc`だけを先に反映すると共通ファイルを読み込めない。
+共通モジュールは管理対象なので、適用時は`env.sh`・`aliases.sh`・`functions.sh`と読み込み側のBash・Zsh設定をまとめて反映する。`.bashrc`や`.zshrc`だけを先に反映すると共通ファイルを読み込めない。
 
 ## 3. セットアップ前の準備
 
@@ -248,7 +250,7 @@ chezmoi init shioyakizakana
 初期化後、秘密情報を含まないproviderだけを表示し、使用するKey Providerと一致していることを確認する。
 
 ```shell
-~/.local/bin/chezmoi execute-template '{{ .protonPassProvider }}'
+chezmoi execute-template '{{ .protonPassProvider }}'
 ```
 
 設定内容を修正する場合は、chezmoiのローカル設定ファイルを編集する。(デフォルトは`~/.config/chezmoi/chezmoi.toml`)
@@ -494,6 +496,13 @@ natural-japaneseの更新には専用コマンドを使う。`check`もGit fetch
 update-agent-skills list
 update-agent-skills check natural-japanese
 update-agent-skills update natural-japanese
+```
+
+natural-japaneseの文章確認には、スクリプト内の依存宣言を扱う`uv run`を使う。`python3`で直接実行すると、宣言された依存が利用できない場合がある。既存キャッシュだけで実行する場合は、リポジトリのルートで次を実行する。依存がキャッシュにない場合は停止するため、必要な取得は通信・パッケージ操作の承認後に行う。
+
+```shell
+uv run --offline --no-python-downloads --no-project "$HOME/.agents/skills/natural-japanese/scripts/lint.py" --json README.md
+uv run --offline --no-python-downloads --no-project "$HOME/.agents/skills/natural-japanese/scripts/calques.py" --json README.md
 ```
 
 `textlint-ja`は`~/.local/share/textlint-ja/node_modules/.bin/textlint`を使用する。設定とnpm依存定義は管理しているが、node_modulesの自動導入処理はない。Node.js・npmを用意し、初回は展開先の`~/.local/share/textlint-ja`で`npm ci`を実行する。

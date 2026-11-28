@@ -76,4 +76,4 @@ lefthook run pre-push --force
 
 `tests/test_git_hooks.py`は一時リポジトリとダミーmakeを使い、設定の検証、ステージ済み差分、部分stageの保持、失敗伝播、lefthook不足時の停止、Termux相当パスのシバンを確認する。ダミーHEAD用のGitオブジェクトだけを用意し、実リポジトリの履歴やindexは変更しない。CIでも同じlefthook 2.2.2を取得し、このテストを実行する。
 
-Termuxの実バイナリ・Bionic・実際のGit hook起動、WSLやネイティブLinuxそれぞれの実機動作は別途確認が必要。hookを使わない操作も可能なので、main-ciの必須チェックとPR必須の設定は維持する。
+利用者がTermux本体でlefthook 2.2.2の直接起動と、通常commit・pushからの生成hook起動を確認した。[実機結果](termux-checklist.md#結果の記録欄)を参照する。この結果をBionic上の全動作やWSL・ネイティブLinuxの確認へ一般化しない。hookを使わない操作も可能なので、main-ciの必須チェックとPR必須の設定は維持する。
