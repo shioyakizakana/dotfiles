@@ -446,7 +446,9 @@ miseの通常導入・再適用と更新後には、ホームのmise環境で `c
 
 Proot版Ubuntuでは、Bash・Zshの起動時と `update_apps mise` で既存の `~/.local/bin/mise` を優先する。更新時にこのmiseが実行できなければ、エラーで停止する。共通シェル設定と更新スクリプトをまとめて適用し、新しいシェルで `mise --version` が `linux-arm64` を示すことを確認する。
 
-公開直後のリリースの保留は全体で24時間を維持し、`npm:` の16ツールとNode・npm・pnpm・Bun本体は3日間に延ばす。Nodeは `latest` を指定し、メジャー更新も対象とする。完全な版指定や、プロジェクトで直接実行するパッケージ導入への適用範囲は[リリース保留の方針](docs/setup/tool-version-policy.md#公開直後のリリースの保留)を参照する。
+公開直後のリリースの保留は全体で24時間を維持し、`npm:` のツールとNode・npm・pnpm・Bun本体は3日間に延ばす。Nodeは `latest` を指定し、メジャー更新も対象とする。完全な版指定や、プロジェクトで直接実行するパッケージ導入への適用範囲は[リリース保留の方針](docs/setup/tool-version-policy.md#公開直後のリリースの保留)を参照する。
+
+追加CLIは[環境別一覧](docs/setup/dependencies.md#追加cliの導入対象)に従う。btop・duf・procs・trippy・Playwright CLIはTermux・proot Ubuntuから除外する。Ubuntu系のtldrクライアントはtlrcへ移行し、コマンド名が同じため`man='tldr'`を維持する。Termuxは既存のtealdeerを使う。[tlrcへの移行手順](docs/setup/dependencies.md#tealdeerからtlrcへの移行)を参照する。
 
 現在の固定値、追加固定の候補、更新処理の制約は[バージョン管理方針](docs/setup/tool-version-policy.md)を参照する。Termuxでの確認は[実機チェックリスト](docs/testing/termux-checklist.md)に沿って段階ごとに記録する。
 

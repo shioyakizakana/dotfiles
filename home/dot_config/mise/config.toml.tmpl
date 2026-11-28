@@ -15,20 +15,31 @@ npm.shell_out = true
 [tools]
 7zip = "latest"
 age = "latest"
+"aqua:noborus/ov" = "latest"
+"aqua:walles/moor" = "latest"
 atuin = "latest"
 bat = "latest"
 bats = "latest"
 biome = "latest"
 bun = { version = "latest", minimum_release_age = "3d" }
+"cargo:du-dust" = "latest"
+"cargo:navi" = "latest"
 "cargo:sleek" = "latest"
+"cargo:worktrunk" = { version = "latest", os = ["linux"] }
 delta = "latest"
 deno = "latest"
+doggo = "latest"
 eza = "latest"
 fd = "latest"
 ffmpeg = "latest"
 gh = "latest"
 ghq = "latest"
 git-lfs = "latest"
+"github:abhinav/git-spice" = "latest"
+"github:asheshgoplani/agent-deck" = { version = "latest", os = ["linux"] }
+"github:sharkdp/hyperfine" = "latest"
+"github:tldr-pages/tlrc" = "latest"
+glow = "latest"
 go = "latest"
 "go:github.com/babarot/gomi" = "latest"
 "go:github.com/nametake/golangci-lint-langserver" = "latest"
@@ -38,6 +49,7 @@ go = "latest"
 gofumpt = "latest"
 golangci-lint = "latest"
 imagemagick = "latest"
+jnv = "latest"
 jq = "latest"
 lazydocker = "latest"
 lazygit = "latest"
@@ -74,18 +86,30 @@ ripgrep = "latest"
 ruby = "latest"
 ruff = "latest"
 rust = "latest"
+sd = "latest"
 shellcheck = "latest"
 shfmt = "latest"
 sops = "latest"
 stylua = "latest"
 taplo = "latest"
-tealdeer = "latest"
 tmux = "latest"
 tree-sitter = "latest"
 uv = "latest"
+xh = "latest"
 yazi = "26.9.1"
 yq = "latest"
 zoxide = "latest"
+
+{{ if and (not (get . "termux")) (not (get . "prootUbuntu")) (or (get . "nativeUbuntu") (get . "wslUbuntu") (get . "qemuUbuntu")) }}
+# Androidの権限・情報取得・ブラウザ起動の制約があるツールは通常のUbuntu系だけに導入する。
+btop = "latest"
+duf = "latest"
+"github:dalance/procs" = "latest"
+
+"aqua:fujiapple852/trippy" = "latest"
+
+"npm:@playwright/cli" = { version = "latest", minimum_release_age = "3d" }
+{{ end }}
 
 # 公式配布物とSHA256の確認・更新手順: docs/setup/tool-version-policy.md
 [tools.nim]

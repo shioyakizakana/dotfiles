@@ -120,10 +120,13 @@ class EnvironmentPolicyTests(unittest.TestCase):
                     if flag == "prootUbuntu":
                         settings["npm"] = {"package_manager": "npm", "shell_out": True}
                     self.assertEqual(config["settings"], settings)
-                    self.assertEqual(config["tools"], default["tools"])
+                    self.assertEqual(
+                        {name: config["tools"][name] for name in default["tools"]},
+                        default["tools"],
+                    )
 
     def test_mise_holds_node_and_npm_tools_for_three_days_and_other_tools_for_one_day(self):
-        for flags in ({}, {"prootUbuntu": True}):
+        for flags in ({}, {"prootUbuntu": True}, {"nativeUbuntu": True}):
             with self.subTest(flags=flags):
                 config = load_mise_config(flags)
                 self.assertEqual(config["settings"]["minimum_release_age"], "24h")
@@ -137,6 +140,40 @@ class EnvironmentPolicyTests(unittest.TestCase):
                 self.assertEqual(delays, dict.fromkeys(expected, "3d"))
                 for name in expected:
                     self.assertEqual(tools[name]["version"], "latest")
+
+    def test_cli_tools_and_tldr_provider_follow_environment_policy(self):
+        common = {
+            "sd", "jnv", "cargo:du-dust", "xh", "doggo", "github:tldr-pages/tlrc",
+            "github:sharkdp/hyperfine", "cargo:navi", "github:abhinav/git-spice",
+            "aqua:noborus/ov", "aqua:walles/moor", "glow",
+        }
+        restricted = {
+            "btop", "duf", "github:dalance/procs", "aqua:fujiapple852/trippy",
+            "npm:@playwright/cli",
+        }
+        for flags, enabled in (
+            ({"nativeUbuntu": True}, True),
+            ({"wslUbuntu": True}, True),
+            ({"qemuUbuntu": True}, True),
+            ({"prootUbuntu": True}, False),
+            ({"termux": True}, False),
+            ({"nativeUbuntu": True, "termux": True}, False),
+            ({"nativeUbuntu": True, "prootUbuntu": True}, False),
+            ({}, False),
+        ):
+            for os_name in ("linux", "android"):
+                with self.subTest(flags=flags, os_name=os_name):
+                    result = self.run_chezmoi(
+                        ["execute-template"], flags, os_name,
+                        (ROOT / "home/dot_config/mise/config.toml.tmpl").read_text(),
+                    )
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    tools = tomllib.loads(result.stdout)["tools"]
+                    self.assertTrue(common <= tools.keys())
+                    self.assertNotIn("tealdeer", tools)
+                    self.assertEqual(restricted & tools.keys(), restricted if enabled else set())
+                    for name in ("cargo:worktrunk", "github:asheshgoplani/agent-deck"):
+                        self.assertEqual(tools[name], {"version": "latest", "os": ["linux"]})
 
     def test_yazi_svg_uses_magick_only_on_termux_and_preserves_git_fetchers(self):
         template = (ROOT / "home/dot_config/yazi/yazi.toml.tmpl").read_text()

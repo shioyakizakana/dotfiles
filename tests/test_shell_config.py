@@ -374,6 +374,24 @@ class ShellConfigTests(unittest.TestCase):
                     "fd dir", "eza --group-directories-first", "eza --tree --level=2 --group-directories-first",
                 ])
 
+    def test_man_alias_follows_tldr_when_switching_from_tealdeer_to_tlrc(self):
+        self.stub("tldr", 'printf "tealdeer %s\\n" "$*"\n')
+        tlrc_bin = self.base / "tlrc/bin"
+        tlrc_bin.mkdir(parents=True)
+        executable = tlrc_bin / "tldr"
+        executable.write_text(f'#!{BASH}\nprintf "tlrc %s\\n" "$*"\n')
+        executable.chmod(0o755)
+        for shell in ("bash", "zsh"):
+            with self.subTest(shell=shell):
+                result = self.run_shell(
+                    shell, 'man topic\nPATH="$TLRC_BIN:$PATH"\nman topic\ntldr --version',
+                    TLRC_BIN=str(tlrc_bin),
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout.splitlines(), [
+                    "tealdeer topic", "tlrc topic", "tlrc --version",
+                ])
+
     def test_tool_initializers_receive_the_matching_shell(self):
         for shell in ("bash", "zsh"):
             with self.subTest(shell=shell):

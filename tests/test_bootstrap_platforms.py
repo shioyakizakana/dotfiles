@@ -21,7 +21,8 @@ PACKAGES = {"ca-certificates", "curl", "git", "age", "chezmoi", "python", "make"
             "lua-language-server", "lua51", "marksman", "neovim", "nim", "nodejs-lts",
             "npm", "oxlint", "pnpm", "poppler", "ripgrep", "ruby", "ruff", "rust",
             "shellcheck", "shfmt", "sops", "stylua", "taplo", "tealdeer", "tmux",
-            "tree-sitter", "ty", "uv", "yazi", "yq", "zoxide"}
+            "tree-sitter", "ty", "uv", "yazi", "yq", "zoxide",
+            "sd", "dust", "xh", "doggo", "hyperfine", "navi", "moor", "glow"}
 
 
 @unittest.skipUnless(BASH and MKDIR and CAT and CHMOD, "Bash・mkdir・cat・chmodが必要です")
