@@ -13,101 +13,127 @@ npm.shell_out = true
 {{ end }}
 
 [tools]
-7zip = "latest"
-age = "latest"
-"aqua:noborus/ov" = "latest"
-"aqua:walles/moor" = "latest"
-atuin = "latest"
-bat = "latest"
-bats = "latest"
-biome = "latest"
+# 言語ランタイム・パッケージ管理（Nimの配布物指定は末尾）
 bun = { version = "latest", minimum_release_age = "3d" }
-"cargo:du-dust" = "latest"
-"cargo:navi" = "latest"
-"cargo:sleek" = "latest"
-"cargo:worktrunk" = { version = "latest", os = ["linux"] }
-delta = "latest"
 deno = "latest"
-doggo = "latest"
-eza = "latest"
-fd = "latest"
-ffmpeg = "latest"
-gh = "latest"
-ghq = "latest"
-git-lfs = "latest"
-"github:abhinav/git-spice" = "latest"
-"github:asheshgoplani/agent-deck" = { version = "latest", os = ["linux"] }
-"github:sharkdp/hyperfine" = "latest"
-"github:tldr-pages/tlrc" = "latest"
-glow = "latest"
 go = "latest"
-"go:github.com/babarot/gomi" = "latest"
-"go:github.com/nametake/golangci-lint-langserver" = "latest"
-"go:github.com/sqls-server/sqls" = "latest"
-"go:golang.org/x/tools/cmd/goimports" = "latest"
-"go:golang.org/x/tools/gopls" = "latest"
-gofumpt = "latest"
-golangci-lint = "latest"
-imagemagick = "latest"
-jnv = "latest"
-jq = "latest"
-lazydocker = "latest"
-lazygit = "latest"
-lefthook = "2.2.2"
 lua = "5.1" # NeoVim0.12に合わせる
-lua-language-server = "latest"
-marksman = "latest"
-neovim = "latest"
 node = { version = "latest", minimum_release_age = "3d" }
 npm = { version = "latest", minimum_release_age = "3d" }
+pipx = "latest"
+pnpm = { version = "latest", minimum_release_age = "3d" }
+python = ["3.13", "3.12"]
+ruby = "latest"
+rust = "latest"
+uv = "latest"
+
+# エディター・構文解析・LSP・型検査
+neovim = "latest"
+tree-sitter = "latest"
+lua-language-server = "latest"
+marksman = "latest"
+"go:golang.org/x/tools/gopls" = "latest"
+"go:github.com/nametake/golangci-lint-langserver" = "latest"
+"go:github.com/sqls-server/sqls" = "latest"
 "npm:@astrojs/language-server" = { version = "latest", minimum_release_age = "3d" }
-"npm:@fsouza/prettierd" = { version = "latest", minimum_release_age = "3d" }
 "npm:@olrtg/emmet-language-server" = { version = "latest", minimum_release_age = "3d" }
-"npm:@openai/codex" = { version = "latest", minimum_release_age = "3d" }
 "npm:@tailwindcss/language-server" = { version = "latest", minimum_release_age = "3d" }
 "npm:@vtsls/language-server" = { version = "latest", minimum_release_age = "3d" }
 "npm:@vue/language-server" = { version = "latest", minimum_release_age = "3d" }
 "npm:basedpyright" = { version = "latest", minimum_release_age = "3d" }
 "npm:bash-language-server" = { version = "latest", minimum_release_age = "3d" }
-"npm:editprompt" = { version = "latest", minimum_release_age = "3d" }
-"npm:oxlint" = { version = "latest", minimum_release_age = "3d" }
-"npm:prettier" = { version = "latest", minimum_release_age = "3d" }
 "npm:svelte-language-server" = { version = "latest", minimum_release_age = "3d" }
 "npm:typescript" = { version = "latest", minimum_release_age = "3d" }
 "npm:vscode-langservers-extracted" = { version = "latest", minimum_release_age = "3d" }
 "npm:yaml-language-server" = { version = "latest", minimum_release_age = "3d" }
-pipx = "latest"
-"pipx:debugpy" = { version = "latest", uvx_args = "--python 3.13", pipx_args = "--python python3.13" }
 "pipx:ty" = "latest"
-pnpm = { version = "latest", minimum_release_age = "3d" }
-poppler = "latest"
-python = ["3.13", "3.12"]
-ripgrep = "latest"
-ruby = "latest"
+taplo = "latest"
+
+# 整形・静的解析
+biome = "latest"
+"cargo:sleek" = "latest"
+"go:golang.org/x/tools/cmd/goimports" = "latest"
+gofumpt = "latest"
+golangci-lint = "latest"
+"npm:@fsouza/prettierd" = { version = "latest", minimum_release_age = "3d" }
+"npm:oxlint" = { version = "latest", minimum_release_age = "3d" }
+"npm:prettier" = { version = "latest", minimum_release_age = "3d" }
 ruff = "latest"
-rust = "latest"
-sd = "latest"
 shellcheck = "latest"
 shfmt = "latest"
-sops = "latest"
 stylua = "latest"
-taplo = "latest"
+
+# テスト・デバッグ・ベンチマーク
+bats = "latest"
+"pipx:debugpy" = { version = "latest", uvx_args = "--python 3.13", pipx_args = "--python python3.13" }
+"github:sharkdp/hyperfine" = "latest"
+
+# Git・GitHub・worktree管理
+delta = "latest"
+gh = "latest"
+ghq = "latest"
+git-lfs = "latest"
+lazygit = "latest"
+lefthook = "2.2.2"
+"github:abhinav/git-spice" = "latest"
+"cargo:worktrunk" = { version = "latest", os = ["linux"] }
+
+# AIコーディング支援
+"npm:@openai/codex" = { version = "latest", minimum_release_age = "3d" }
+"npm:editprompt" = { version = "latest", minimum_release_age = "3d" }
+"github:asheshgoplani/agent-deck" = { version = "latest", os = ["linux"] }
+
+# シェル・セッション・履歴
+atuin = "latest"
 tmux = "latest"
-tree-sitter = "latest"
-uv = "latest"
-xh = "latest"
-yazi = "26.9.1"
-yq = "latest"
 zoxide = "latest"
+
+# ファイル操作・検索・容量確認・データ処理
+7zip = "latest"
+eza = "latest"
+fd = "latest"
+ripgrep = "latest"
+sd = "latest"
+"cargo:du-dust" = "latest"
+"go:github.com/babarot/gomi" = "latest"
+yazi = "26.9.1"
+jq = "latest"
+jnv = "latest"
+yq = "latest"
+
+# 文書・ヘルプ・ページャー
+bat = "latest"
+glow = "latest"
+"cargo:navi" = "latest"
+"github:tldr-pages/tlrc" = "latest"
+"aqua:noborus/ov" = "latest"
+"aqua:walles/moor" = "latest"
+
+# ネットワーク・コンテナー
+doggo = "latest"
+xh = "latest"
+lazydocker = "latest"
+
+# 画像・動画・PDF処理
+ffmpeg = "latest"
+imagemagick = "latest"
+poppler = "latest"
+
+# 暗号化・秘密情報管理
+age = "latest"
+sops = "latest"
 
 {{ if and (not (get . "termux")) (not (get . "prootUbuntu")) (or (get . "nativeUbuntu") (get . "wslUbuntu") (get . "qemuUbuntu")) }}
 # Androidの権限・情報取得・ブラウザ起動の制約があるツールは通常のUbuntu系だけに導入する。
+# システム監視・容量表示・プロセス一覧
 btop = "latest"
 duf = "latest"
 "github:dalance/procs" = "latest"
 
+# ネットワーク経路の調査
 "aqua:fujiapple852/trippy" = "latest"
 
+# ブラウザ操作・検証
 "npm:@playwright/cli" = { version = "latest", minimum_release_age = "3d" }
 {{ end }}
 
